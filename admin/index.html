@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Box Fraise — Admin</title>
+  <style>
+    :root {
+      --bg: #fbf7f3;
+      --ink: #1a1a1a;
+      --rule: #d8cfc3;
+      --accent: #b21b1b;
+      --ok: #1d6b3e;
+      --warn: #b25a00;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 24px 20px 64px; }
+    h1 { font-weight: 600; font-size: 22px; margin: 0 0 24px; letter-spacing: -0.01em; }
+    h2 { font-weight: 600; font-size: 15px; margin: 32px 0 8px; text-transform: uppercase; letter-spacing: 0.08em; color: #555; }
+    fieldset { border: 1px solid var(--rule); border-radius: 6px; padding: 16px; margin: 0 0 20px; background: #fff; }
+    legend { padding: 0 6px; font-size: 13px; color: #555; }
+    label { display: block; font-size: 13px; margin: 10px 0 4px; color: #444; }
+    input, select, textarea, button {
+      font: inherit; padding: 8px 10px; border: 1px solid var(--rule);
+      border-radius: 4px; background: #fff; color: var(--ink); width: 100%;
+    }
+    input[type=checkbox] { width: auto; }
+    button { background: var(--ink); color: var(--bg); border: none; cursor: pointer; padding: 10px 16px; }
+    button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--rule); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .row > * { flex: 1; }
+    .row > button { flex: 0 0 auto; }
+    .muted { color: #666; font-size: 13px; }
+    .msg { padding: 10px 12px; border-radius: 4px; margin: 12px 0; font-size: 14px; }
+    .msg.ok { background: #e6f3eb; color: var(--ok); }
+    .msg.err { background: #fbe9e9; color: var(--accent); }
+    .msg.warn { background: #fdf3e3; color: var(--warn); }
+    .count { font-size: 48px; font-weight: 600; letter-spacing: -0.02em; }
+    video { width: 100%; max-height: 60vh; background: #000; border-radius: 6px; display: block; }
+    .hidden { display: none !important; }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #eee5d8; padding: 1px 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Box Fraise — Admin</h1>
+
+    <!-- Login -->
+    <section id="login">
+      <fieldset>
+        <legend>Sign in</legend>
+        <label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password">
+        <div style="margin-top: 14px;">
+          <button id="login-btn">Sign in</button>
+        </div>
+        <div id="login-msg"></div>
+      </fieldset>
+    </section>
+
+    <!-- Main dashboard -->
+    <section id="dashboard" class="hidden">
+      <fieldset>
+        <legend>Event</legend>
+        <label for="event-select">Active event (for verification scans)</label>
+        <div class="row">
+          <select id="event-select"></select>
+          <button class="secondary" id="refresh-events">Refresh</button>
+        </div>
+        <div class="muted" id="event-meta"></div>
+        <details style="margin-top: 14px;">
+          <summary style="cursor: pointer; font-size: 14px;">Create a new event</summary>
+          <div style="margin-top: 12px;">
+            <label>Name</label><input id="ev-name">
+            <label>Host name</label><input id="ev-host">
+            <label>Description</label><textarea id="ev-desc" rows="2"></textarea>
+            <label>Address</label><input id="ev-address">
+            <div class="row" style="margin-top: 4px;">
+              <div><label>Latitude</label><input id="ev-lat" type="number" step="0.000001"></div>
+              <div><label>Longitude</label><input id="ev-lng" type="number" step="0.000001"></div>
+            </div>
+            <div class="row">
+              <div><label>Starts at</label><input id="ev-start" type="datetime-local"></div>
+              <div><label>Ends at</label><input id="ev-end" type="datetime-local"></div>
+            </div>
+            <label style="margin-top: 10px;"><input id="ev-pub" type="checkbox"> Published</label>
+            <div style="margin-top: 12px;"><button id="create-event-btn">Create event</button></div>
+            <div id="create-event-msg"></div>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Scanner</legend>
+        <div class="row">
+          <button id="start-scan">Start scanning</button>
+          <button id="stop-scan" class="secondary hidden">Stop</button>
+        </div>
+        <div id="scan-meta" class="muted" style="margin-top: 8px;"></div>
+        <video id="cam" class="hidden" autoplay playsinline muted></video>
+        <div id="scan-msg"></div>
+
+        <details style="margin-top: 12px;">
+          <summary style="cursor: pointer; font-size: 14px;">Manual paste (fallback)</summary>
+          <p class="muted">Paste the QR's JSON contents — <code>{"nonce":"…","signature_b64":"…"}</code> — and click verify.</p>
+          <textarea id="manual-qr" rows="3"></textarea>
+          <div style="margin-top: 8px;"><button id="manual-verify" class="secondary">Verify pasted QR</button></div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Verified at this event</legend>
+        <div class="count" id="verified-count">—</div>
+        <div class="muted">Refreshes every 5 seconds.</div>
+      </fieldset>
+
+      <p style="margin-top: 32px;">
+        <button id="logout" class="secondary">Sign out</button>
+      </p>
+    </section>
+  </main>
+
+<script>
+  // ── State ────────────────────────────────────────────────────────
+  const TOKEN_KEY = 'bf_admin_token';
+  let token = localStorage.getItem(TOKEN_KEY) || null;
+  let events = [];
+  let activeEventId = localStorage.getItem('bf_active_event') || null;
+  let scanController = null; // { stream, video, detector, raf }
+  let countTimer = null;
+
+  // ── HTTP helper ──────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const r = await fetch('/v1' + path, Object.assign({}, opts, { headers }));
+    if (r.status === 401) {
+      // Token expired or invalid — drop to login.
+      token = null;
+      localStorage.removeItem(TOKEN_KEY);
+      render();
+      throw new Error('unauthorized');
+    }
+    const text = await r.text();
+    const body = text ? JSON.parse(text) : null;
+    if (!r.ok) throw new Error((body && (body.message || body.error)) || ('http ' + r.status));
+    return body;
+  }
+
+  // ── DOM helpers ──────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const setMsg = (el, kind, text) => {
+    el.innerHTML = text ? `<div class="msg ${kind}">${text}</div>` : '';
+  };
+  const escape = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+
+  // ── Render ───────────────────────────────────────────────────────
+  function render() {
+    if (token) {
+      $('login').classList.add('hidden');
+      $('dashboard').classList.remove('hidden');
+      loadEvents().catch(e => setMsg($('login-msg'), 'err', e.message));
+    } else {
+      $('login').classList.remove('hidden');
+      $('dashboard').classList.add('hidden');
+      stopCountPolling();
+      stopScanning();
+    }
+  }
+
+  // ── Login ────────────────────────────────────────────────────────
+  $('login-btn').addEventListener('click', async () => {
+    const email = $('email').value.trim();
+    const password = $('password').value;
+    if (!email || !password) {
+      setMsg($('login-msg'), 'err', 'Email and password required.');
+      return;
+    }
+    try {
+      const r = await api('/admin/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+      token = r.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      setMsg($('login-msg'), 'ok', 'Signed in.');
+      render();
+    } catch (e) {
+      setMsg($('login-msg'), 'err', 'Sign-in failed: ' + e.message);
+    }
+  });
+
+  $('logout').addEventListener('click', () => {
+    token = null;
+    localStorage.removeItem(TOKEN_KEY);
+    render();
+  });
+
+  // ── Events ───────────────────────────────────────────────────────
+  async function loadEvents() {
+    events = await api('/admin/events');
+    const sel = $('event-select');
+    sel.innerHTML = '';
+    if (!events.length) {
+      const opt = document.createElement('option');
+      opt.textContent = '(no events — create one below)';
+      opt.value = '';
+      sel.appendChild(opt);
+    }
+    for (const ev of events) {
+      const opt = document.createElement('option');
+      opt.value = ev.id;
+      opt.textContent = `${ev.name} — ${ev.host_name} (${ev.published ? 'published' : 'draft'})`;
+      sel.appendChild(opt);
+    }
+    if (activeEventId && events.some(e => e.id === activeEventId)) {
+      sel.value = activeEventId;
+    } else if (events.length) {
+      activeEventId = events[0].id;
+      localStorage.setItem('bf_active_event', activeEventId);
+      sel.value = activeEventId;
+    } else {
+      activeEventId = null;
+      localStorage.removeItem('bf_active_event');
+    }
+    updateEventMeta();
+    startCountPolling();
+  }
+
+  function updateEventMeta() {
+    const ev = events.find(e => e.id === activeEventId);
+    $('event-meta').textContent = ev
+      ? `${new Date(ev.starts_at).toLocaleString()} → ${new Date(ev.ends_at).toLocaleString()} · ${ev.address}`
+      : '';
+  }
+
+  $('event-select').addEventListener('change', e => {
+    activeEventId = e.target.value || null;
+    if (activeEventId) localStorage.setItem('bf_active_event', activeEventId);
+    else localStorage.removeItem('bf_active_event');
+    updateEventMeta();
+    startCountPolling();
+  });
+
+  $('refresh-events').addEventListener('click', () => loadEvents().catch(() => {}));
+
+  $('create-event-btn').addEventListener('click', async () => {
+    const body = {
+      name: $('ev-name').value.trim(),
+      host_name: $('ev-host').value.trim(),
+      description: $('ev-desc').value.trim() || null,
+      address: $('ev-address').value.trim(),
+      latitude: parseFloat($('ev-lat').value),
+      longitude: parseFloat($('ev-lng').value),
+      starts_at: $('ev-start').value ? new Date($('ev-start').value).toISOString() : null,
+      ends_at: $('ev-end').value ? new Date($('ev-end').value).toISOString() : null,
+      published: $('ev-pub').checked,
+    };
+    try {
+      await api('/admin/events', { method: 'POST', body: JSON.stringify(body) });
+      setMsg($('create-event-msg'), 'ok', 'Event created.');
+      await loadEvents();
+    } catch (e) {
+      setMsg($('create-event-msg'), 'err', e.message);
+    }
+  });
+
+  // ── Verified-count polling ───────────────────────────────────────
+  function startCountPolling() {
+    stopCountPolling();
+    refreshCount();
+    countTimer = setInterval(refreshCount, 5000);
+  }
+  function stopCountPolling() {
+    if (countTimer) { clearInterval(countTimer); countTimer = null; }
+  }
+  async function refreshCount() {
+    if (!activeEventId) { $('verified-count').textContent = '—'; return; }
+    try {
+      const r = await api(`/admin/events/${activeEventId}/verified-count`);
+      $('verified-count').textContent = r.verified_count;
+    } catch { /* leave previous value */ }
+  }
+
+  // ── Scanner ──────────────────────────────────────────────────────
+  $('start-scan').addEventListener('click', startScanning);
+  $('stop-scan').addEventListener('click', stopScanning);
+
+  async function startScanning() {
+    if (!activeEventId) {
+      setMsg($('scan-msg'), 'warn', 'Pick an event first.');
+      return;
+    }
+    if (!('BarcodeDetector' in window)) {
+      setMsg($('scan-msg'), 'warn', 'BarcodeDetector not supported in this browser — use the manual-paste fallback below.');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const video = $('cam');
+      video.srcObject = stream;
+      video.classList.remove('hidden');
+      $('start-scan').classList.add('hidden');
+      $('stop-scan').classList.remove('hidden');
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      scanController = { stream, video, detector, raf: 0, lastNonce: null };
+      $('scan-meta').textContent = 'Hold a QR in frame.';
+      scanLoop();
+    } catch (e) {
+      setMsg($('scan-msg'), 'err', 'Camera access failed: ' + e.message + ' (HTTPS or localhost required.)');
+    }
+  }
+
+  function stopScanning() {
+    if (!scanController) return;
+    cancelAnimationFrame(scanController.raf);
+    for (const t of scanController.stream.getTracks()) t.stop();
+    scanController.video.srcObject = null;
+    scanController.video.classList.add('hidden');
+    scanController = null;
+    $('start-scan').classList.remove('hidden');
+    $('stop-scan').classList.add('hidden');
+    $('scan-meta').textContent = '';
+  }
+
+  async function scanLoop() {
+    if (!scanController) return;
+    try {
+      const codes = await scanController.detector.detect(scanController.video);
+      if (codes.length) {
+        const raw = codes[0].rawValue;
+        // Deduplicate against the same QR sitting in frame for multiple ticks.
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.nonce && parsed.nonce !== scanController.lastNonce) {
+            scanController.lastNonce = parsed.nonce;
+            await submitVerify(parsed);
+          }
+        } catch {
+          setMsg($('scan-msg'), 'err', 'QR is not the expected JSON format.');
+        }
+      }
+    } catch (e) {
+      // detect() can throw on bad frames; just retry next tick.
+    }
+    scanController.raf = requestAnimationFrame(scanLoop);
+  }
+
+  $('manual-verify').addEventListener('click', async () => {
+    try {
+      const parsed = JSON.parse($('manual-qr').value);
+      await submitVerify(parsed);
+    } catch (e) {
+      setMsg($('scan-msg'), 'err', 'Could not parse pasted JSON.');
+    }
+  });
+
+  async function submitVerify(parsed) {
+    if (!parsed.nonce || !parsed.signature_b64) {
+      setMsg($('scan-msg'), 'err', 'QR missing nonce or signature_b64.');
+      return;
+    }
+    if (!activeEventId) {
+      setMsg($('scan-msg'), 'err', 'No active event.');
+      return;
+    }
+    try {
+      const r = await api('/admin/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          nonce: parsed.nonce,
+          signature_b64: parsed.signature_b64,
+          event_id: activeEventId,
+        }),
+      });
+      setMsg($('scan-msg'), 'ok', `Verified · user ${r.user_id.slice(0, 8)}…`);
+      refreshCount();
+    } catch (e) {
+      setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
+    }
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>

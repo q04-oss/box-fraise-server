@@ -1,0 +1,34 @@
+[package]
+name = "box-fraise"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Module layout is one crate by design (MVP), but the internal module tree
+# (domain / http / server-init in app.rs / integrations stubs) is laid out so
+# a future split into `domain` / `server` / `integrations` is a rote
+# file-move — no logic changes.
+
+[dependencies]
+axum            = { version = "0.8", features = ["macros"] }
+tokio           = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time"] }
+sqlx            = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "macros", "uuid", "chrono", "json"] }
+serde           = { version = "1", features = ["derive"] }
+serde_json      = "1"
+uuid            = { version = "1", features = ["v4", "serde"] }
+chrono          = { version = "0.4", features = ["serde"] }
+p256            = { version = "0.13", features = ["ecdsa", "pkcs8"] }
+sha2            = "0.10"
+argon2          = "0.5"
+rand            = "0.8"
+base64          = "0.22"
+tower           = "0.5"
+tower-http      = { version = "0.6", features = ["cors", "trace", "fs"] }
+tracing         = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow          = "1"
+thiserror       = "1"
+
+[dev-dependencies]
+# Tests need a real Postgres; spin one up via docker-compose.
+hex             = "0.4"

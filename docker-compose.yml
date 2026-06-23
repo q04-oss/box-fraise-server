@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: box_fraise
+    ports:
+      # Host port 5434 → container 5432 to leave the standard port
+      # free for other projects on the same machine.
+      - "5434:5432"
+    volumes:
+      - bf_postgres:/var/lib/postgresql/data
+      # One-time init: create the restricted `bf_app` runtime role. The
+      # owner role (`postgres`) above is what migrations run as.
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bf_postgres:
