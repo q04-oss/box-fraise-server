@@ -453,6 +453,51 @@ async fn verify_round_trips_in_process() {
 /// not present, the test is in-process and #[ignore]d so it does not
 /// run by default. Swap the body and remove #[ignore] when a real
 /// capture is available.
+/// (13) /v1/me embeds the verified event after a successful verify, so
+/// the iOS client gets `{name, host_name, starts_at, address}` in one
+/// round-trip instead of having to follow up with /v1/events/{id}.
+#[tokio::test]
+async fn me_embeds_verified_event_after_verify() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let (user_id, sk) = register_with_keypair(&pool).await;
+
+    // Pre-verify: status pending, event embedded as None.
+    let pre = onboarding_service::me(&pool, user_id).await.unwrap();
+    assert_eq!(pre.status, "pending");
+    assert!(
+        pre.event.is_none(),
+        "pending user should have no embedded event"
+    );
+
+    let chal = onboarding_service::issue_challenge(&pool, ChronoDuration::seconds(120), user_id)
+        .await
+        .unwrap();
+    let sig_b64 = URL_SAFE_NO_PAD.encode(sign_der(&sk, &chal.nonce));
+    onboarding_service::verify(
+        &pool,
+        admin_id,
+        VerifyRequest {
+            nonce: chal.nonce,
+            signature_b64: sig_b64,
+            event_id,
+        },
+    )
+    .await
+    .unwrap();
+
+    let post = onboarding_service::me(&pool, user_id).await.unwrap();
+    assert_eq!(post.status, "verified");
+    let event = post
+        .event
+        .expect("verified user should have embedded event");
+    assert_eq!(event.id, event_id);
+    assert!(!event.name.is_empty());
+    assert!(!event.host_name.is_empty());
+    assert!(!event.address.is_empty());
+}
+
 #[tokio::test]
 #[ignore = "real iOS-emitted fixture goes here"]
 async fn ios_signature_fixture_round_trips() {

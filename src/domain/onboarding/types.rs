@@ -51,5 +51,21 @@ pub struct MeResponse {
     pub id: Uuid,
     pub status: String,
     pub verified_at: Option<DateTime<Utc>>,
-    pub verified_at_event_id: Option<Uuid>,
+    /// Embedded so the client doesn't have to make a second
+    /// `/v1/events/{id}` round-trip just to show the verified-state UI.
+    /// Resolved by LEFT JOIN under the user's RLS context — that means
+    /// the user only sees the event when the events SELECT policy
+    /// permits it (i.e. `published = true`). Verified at a now-draft
+    /// event → `event` is null and the UI shows the generic "verified"
+    /// confirmation. The status itself never regresses.
+    pub event: Option<VerifiedEvent>,
+}
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct VerifiedEvent {
+    pub id: Uuid,
+    pub name: String,
+    pub host_name: String,
+    pub starts_at: DateTime<Utc>,
+    pub address: String,
 }

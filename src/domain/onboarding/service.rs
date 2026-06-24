@@ -157,14 +157,14 @@ pub async fn verify(pool: &Pool, admin_id: Uuid, req: VerifyRequest) -> AppResul
 
 pub async fn me(pool: &Pool, user_id: Uuid) -> AppResult<MeResponse> {
     let mut tx = RlsTransaction::begin(pool, user_id).await?;
-    let (status, verified_at, verified_at_event_id) = repository::get_user_me(tx.conn(), user_id)
+    let row = repository::get_user_me(tx.conn(), user_id)
         .await?
         .ok_or(AppError::NotFound)?;
     tx.commit().await?;
     Ok(MeResponse {
         id: user_id,
-        status,
-        verified_at,
-        verified_at_event_id,
+        status: row.status,
+        verified_at: row.verified_at,
+        event: row.event,
     })
 }
