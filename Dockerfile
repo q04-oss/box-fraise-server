@@ -2,7 +2,10 @@
 
 # ── build stage ──────────────────────────────────────────────────────
 # Rust slim image + system libs sqlx / rustls need at compile time.
-FROM rust:1.83-slim-bookworm AS build
+# 1.85+ is required because some deps in the graph (e.g. base64ct 1.8+)
+# use edition2024, which was only stabilised in that release. Bump if
+# a future dep needs newer; do not downgrade.
+FROM rust:1.95-slim-bookworm AS build
 
 WORKDIR /app
 
