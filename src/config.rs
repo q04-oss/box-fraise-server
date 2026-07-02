@@ -15,7 +15,13 @@ impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         let database_url =
             env::var("DATABASE_URL").map_err(|_| anyhow::anyhow!("DATABASE_URL is required"))?;
-        let bind_addr = env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:3000".into());
+        // Prefer BIND_ADDR when explicitly set. Otherwise pick up the
+        // PORT env var that Railway / Heroku / Fly / most PaaS inject,
+        // and bind on 0.0.0.0 so the platform's router can reach us.
+        let bind_addr = env::var("BIND_ADDR")
+            .ok()
+            .or_else(|| env::var("PORT").ok().map(|p| format!("0.0.0.0:{p}")))
+            .unwrap_or_else(|| "0.0.0.0:3000".into());
         let cors_allowed_origins = env::var("CORS_ALLOWED_ORIGINS")
             .unwrap_or_else(|_| "http://localhost:3000".into())
             .split(',')

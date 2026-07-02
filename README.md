@@ -52,6 +52,8 @@ On boot, the server will:
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
+| `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
+| `GET  /`                                     | public    | Marketing site (`web/index.html`), and fallback for any unmatched path |
 
 Auth is `Authorization: Bearer <token>`. Only `sha256(token)` is
 persisted server-side.

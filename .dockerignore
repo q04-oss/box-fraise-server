@@ -1,0 +1,9 @@
+target/
+.git/
+.github/
+.env
+docker-compose.yml
+docker/
+tests/
+CLAUDE.md
+README.md

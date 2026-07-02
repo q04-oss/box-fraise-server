@@ -60,6 +60,8 @@ impl AppState {
 }
 
 pub fn build_router(state: AppState) -> Router {
+    use axum::routing::get;
+    use tower_http::services::ServeDir;
     use tower_http::trace::TraceLayer;
 
     let cors = build_cors(&state.cfg.cors_allowed_origins);
@@ -78,12 +80,28 @@ pub fn build_router(state: AppState) -> Router {
             crate::http::middleware::resolve_bearer,
         ));
 
+    // Static marketing site fallback. Order matters here — real routes
+    // (/v1, /health, /admin) must be registered BEFORE the fallback,
+    // otherwise ServeDir would try to 404 requests the router should be
+    // handling. Axum's `.fallback_service` only fires when no route
+    // matches, so the ordering below is safe by construction, but keep
+    // the fallback last on the chain for clarity.
     Router::new()
         .nest("/v1", v1)
+        .route("/health", get(health))
         .merge(crate::http::admin_assets::router())
+        .fallback_service(ServeDir::new("web").append_index_html_on_directories(true))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+/// Liveness endpoint. Kept dumb on purpose: returns 200 as long as the
+/// process is up. If Railway's healthcheck needs to include DB
+/// reachability, add a separate `/ready` that runs `SELECT 1` — a
+/// hot-path readiness check on every heartbeat is not what we want.
+async fn health() -> &'static str {
+    "ok"
 }
 
 fn build_cors(origins: &[String]) -> tower_http::cors::CorsLayer {

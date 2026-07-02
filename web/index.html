@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>box fraise</title>
+  <meta name="description" content="A hair-events community. Private by default, verified in person.">
+  <meta name="theme-color" content="#fbf7f3">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:      #fbf7f3;
+      --ink:     #1a1a1a;
+      --rule:    #d8cfc3;
+      --muted:   #6a6259;
+      --accent:  #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .wordmark {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(72px, 16vw, 180px);
+      letter-spacing: -0.025em;
+      line-height: 0.9;
+      margin: 0;
+    }
+
+    .beta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      padding: 5px 12px 4px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      margin-top: 20px;
+      background: rgba(255,255,255,0.4);
+    }
+    .beta::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .search {
+      margin-top: 44px;
+      max-width: 440px;
+      width: 100%;
+      display: flex;
+      align-items: baseline;
+      border-bottom: 1px solid var(--rule);
+      padding: 8px 4px 8px 0;
+      transition: border-color 140ms ease;
+    }
+    .search:focus-within { border-color: var(--ink); }
+    .search::before {
+      content: "›";
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 14px;
+      color: var(--muted);
+      margin-right: 12px;
+      line-height: 1;
+    }
+    .search input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 14px;
+      color: var(--ink);
+      caret-color: var(--accent);
+      padding: 0;
+    }
+    .search input::placeholder {
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 22px 24px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 28px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      background: rgba(255,255,255,0.4);
+    }
+    footer a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 120ms ease;
+    }
+    footer a:hover { color: var(--ink); }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:    #17140f;
+        --ink:   #f4ece2;
+        --rule:  #2e2820;
+        --muted: #8a8175;
+      }
+      .beta, footer { background: rgba(0,0,0,0.15); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 class="wordmark">box fraise</h1>
+    <span class="beta">beta</span>
+
+    <form class="search" role="search" aria-label="Private search" onsubmit="return false">
+      <input
+        type="search"
+        name="q"
+        autocomplete="off"
+        spellcheck="false"
+        autocapitalize="off"
+        placeholder="private search"
+        aria-label="Search"
+      >
+    </form>
+  </main>
+
+  <footer>
+    <a href="/working-paper">Working paper</a>
+    <a href="/security">Security</a>
+    <a href="/privacy">Privacy</a>
+    <a href="/support">Support</a>
+  </footer>
+</body>
+</html>
