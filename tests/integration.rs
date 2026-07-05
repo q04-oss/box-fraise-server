@@ -18,8 +18,15 @@ use box_fraise::{
             service as consultations_service,
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
-        oauth::{jwt as oauth_jwt, keys as oauth_keys, service as oauth_service, types::TokenRequest as OauthTokenRequest},
         events::{service as events_service, types::CreateEventRequest},
+        modeling::{
+            service as modeling_service,
+            types::{CreateModelRequestRequest, HairProfileInput, UpdateOwnHairProfileRequest},
+        },
+        oauth::{
+            jwt as oauth_jwt, keys as oauth_keys, service as oauth_service,
+            types::TokenRequest as OauthTokenRequest,
+        },
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
@@ -667,6 +674,7 @@ async fn consultation_lifecycle_end_to_end() {
                 "revenue_share": true,
             }),
             design_version: "v1".into(),
+            hair_profile: None,
         },
     )
     .await
@@ -731,6 +739,7 @@ async fn consultant_cannot_verify_themselves() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
+            hair_profile: None,
         },
     )
     .await;
@@ -764,6 +773,7 @@ async fn untrained_staff_cannot_consult() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
+            hair_profile: None,
         },
     )
     .await;
@@ -791,6 +801,7 @@ async fn card_replacement_flow() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
+            hair_profile: None,
         },
     )
     .await
@@ -849,7 +860,9 @@ async fn oauth_token_round_trips() {
     let resp = oauth_service::issue_token(
         &pool,
         user_id,
-        OauthTokenRequest { audience: "https://partner.example".into() },
+        OauthTokenRequest {
+            audience: "https://partner.example".into(),
+        },
     )
     .await
     .unwrap();
@@ -862,10 +875,12 @@ async fn oauth_token_round_trips() {
     assert_eq!(claims["aud"].as_str().unwrap(), "https://partner.example");
     assert_eq!(claims["iss"].as_str().unwrap(), "https://fraise.box");
     assert_eq!(claims["tier"].as_i64().unwrap(), 1);
-    assert_eq!(claims["verified"].as_bool().unwrap(), false);
+    assert!(!claims["verified"].as_bool().unwrap());
 
     // userinfo endpoint accepts the token.
-    let info = oauth_service::userinfo(&pool, &resp.access_token).await.unwrap();
+    let info = oauth_service::userinfo(&pool, &resp.access_token)
+        .await
+        .unwrap();
     assert_eq!(info.sub, user_id);
     assert_eq!(info.tier, 1);
     assert!(!info.verified);
@@ -880,7 +895,9 @@ async fn oauth_tampered_token_rejected() {
     let resp = oauth_service::issue_token(
         &pool,
         user_id,
-        OauthTokenRequest { audience: "https://partner.example".into() },
+        OauthTokenRequest {
+            audience: "https://partner.example".into(),
+        },
     )
     .await
     .unwrap();
@@ -895,7 +912,254 @@ async fn oauth_tampered_token_rejected() {
     let tampered = parts.join(".");
 
     let r = oauth_service::userinfo(&pool, &tampered).await;
-    assert!(matches!(r, Err(AppError::Unauthorized)), "tampered sig should reject: {r:?}");
+    assert!(
+        matches!(r, Err(AppError::Unauthorized)),
+        "tampered sig should reject: {r:?}"
+    );
+}
+
+/// (23) Model request lifecycle: student posts a request, the server
+/// fans out invitations to matching willing-to-model users, the first
+/// accept fills the request, further accepts race and lose.
+#[tokio::test]
+async fn model_request_matches_and_fills() {
+    let pool = test_pool().await;
+
+    let (consultant_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_id).await;
+
+    // A unique hair_type per test run so other tests' fixtures don't
+    // accidentally match this test's fan-out filter.
+    let unique_type = format!("test-{}", Uuid::new_v4());
+
+    let (student_id, _) = register_with_keypair(&pool).await;
+    consultations_service::complete_consultation(
+        &pool,
+        consultant_id,
+        CompleteConsultationRequest {
+            user_id: student_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+            hair_profile: Some(HairProfileInput {
+                hair_length: Some("long".into()),
+                hair_texture: Some("straight".into()),
+                hair_type: Some(unique_type.clone()),
+                hair_thickness: None,
+                natural_color: Some("brown".into()),
+                current_color: None,
+                chemically_treated: false,
+                willing_services: None,
+                willing_to_model: false,
+                is_hair_student: true,
+                hair_notes: None,
+            }),
+        },
+    )
+    .await
+    .unwrap();
+
+    // Two matching willing-to-model users (share the unique hair_type)
+    // and one non-matcher that has the same type but wrong length.
+    let (model_a, _) = register_with_keypair(&pool).await;
+    let (model_b, _) = register_with_keypair(&pool).await;
+    let (model_c, _) = register_with_keypair(&pool).await;
+    for (uid, length) in [(model_a, "long"), (model_b, "long"), (model_c, "short")] {
+        consultations_service::complete_consultation(
+            &pool,
+            consultant_id,
+            CompleteConsultationRequest {
+                user_id: uid,
+                salon_id: None,
+                consultation_notes: None,
+                consent_snapshot: serde_json::Value::Null,
+                design_version: "v1".into(),
+                hair_profile: Some(HairProfileInput {
+                    hair_length: Some(length.into()),
+                    hair_texture: Some("straight".into()),
+                    hair_type: Some(unique_type.clone()),
+                    hair_thickness: None,
+                    natural_color: Some("brown".into()),
+                    current_color: None,
+                    chemically_treated: false,
+                    willing_services: None,
+                    willing_to_model: true,
+                    is_hair_student: false,
+                    hair_notes: None,
+                }),
+            },
+        )
+        .await
+        .unwrap();
+    }
+
+    let now = Utc::now();
+    let created = modeling_service::create_model_request(
+        &pool,
+        student_id,
+        CreateModelRequestRequest {
+            service: "colour practice".into(),
+            starts_at: now + ChronoDuration::days(3),
+            ends_at: now + ChronoDuration::days(3) + ChronoDuration::hours(2),
+            location: "Cosmetology school, Edmonton".into(),
+            location_lat: None,
+            location_lng: None,
+            filter_length: vec!["long".into()],
+            filter_texture: vec![],
+            filter_type: vec![unique_type.clone()],
+            filter_color: vec![],
+            additional_notes: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(created.invitations_sent, 2, "should fan out to A + B only");
+
+    let a_inv = modeling_service::list_own_invitations(&pool, model_a)
+        .await
+        .unwrap();
+    assert_eq!(a_inv.len(), 1);
+    let a_invitation_id = a_inv[0].invitation.id;
+
+    let c_inv = modeling_service::list_own_invitations(&pool, model_c)
+        .await
+        .unwrap();
+    assert!(c_inv.is_empty(), "model_c hair does not match");
+
+    modeling_service::respond_to_invitation(&pool, model_a, a_invitation_id, true)
+        .await
+        .unwrap();
+
+    let b_inv = modeling_service::list_own_invitations(&pool, model_b)
+        .await
+        .unwrap();
+    let b_invitation_id = b_inv[0].invitation.id;
+    let r = modeling_service::respond_to_invitation(&pool, model_b, b_invitation_id, true).await;
+    assert!(
+        matches!(r, Err(AppError::Conflict)),
+        "second accept should conflict: {r:?}"
+    );
+}
+
+/// (24) A non-student cannot create a model request.
+#[tokio::test]
+async fn non_student_cannot_post_model_request() {
+    let pool = test_pool().await;
+    let (consultant_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_id).await;
+
+    let (user_id, _) = register_with_keypair(&pool).await;
+    consultations_service::complete_consultation(
+        &pool,
+        consultant_id,
+        CompleteConsultationRequest {
+            user_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+            hair_profile: Some(HairProfileInput {
+                hair_length: None,
+                hair_texture: None,
+                hair_type: None,
+                hair_thickness: None,
+                natural_color: None,
+                current_color: None,
+                chemically_treated: false,
+                willing_services: None,
+                willing_to_model: false,
+                is_hair_student: false,
+                hair_notes: None,
+            }),
+        },
+    )
+    .await
+    .unwrap();
+
+    let now = Utc::now();
+    let r = modeling_service::create_model_request(
+        &pool,
+        user_id,
+        CreateModelRequestRequest {
+            service: "cut".into(),
+            starts_at: now + ChronoDuration::hours(1),
+            ends_at: now + ChronoDuration::hours(2),
+            location: "somewhere".into(),
+            location_lat: None,
+            location_lng: None,
+            filter_length: vec![],
+            filter_texture: vec![],
+            filter_type: vec![],
+            filter_color: vec![],
+            additional_notes: None,
+        },
+    )
+    .await;
+    assert!(
+        matches!(r, Err(AppError::Forbidden)),
+        "non-student should be Forbidden: {r:?}"
+    );
+}
+
+/// (25) User can toggle their own willing_to_model flag from /me.
+#[tokio::test]
+async fn user_can_toggle_willing_to_model() {
+    let pool = test_pool().await;
+    let (consultant_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_id).await;
+
+    let (user_id, _) = register_with_keypair(&pool).await;
+    consultations_service::complete_consultation(
+        &pool,
+        consultant_id,
+        CompleteConsultationRequest {
+            user_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+            hair_profile: Some(HairProfileInput {
+                hair_length: Some("medium".into()),
+                hair_texture: Some("wavy".into()),
+                hair_type: None,
+                hair_thickness: None,
+                natural_color: None,
+                current_color: None,
+                chemically_treated: false,
+                willing_services: None,
+                willing_to_model: true,
+                is_hair_student: false,
+                hair_notes: None,
+            }),
+        },
+    )
+    .await
+    .unwrap();
+
+    let updated = modeling_service::update_own_willing_to_model(
+        &pool,
+        user_id,
+        UpdateOwnHairProfileRequest {
+            willing_to_model: false,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(!updated.willing_to_model);
+    assert_eq!(updated.hair_length.as_deref(), Some("medium"));
+
+    let updated = modeling_service::update_own_willing_to_model(
+        &pool,
+        user_id,
+        UpdateOwnHairProfileRequest {
+            willing_to_model: true,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(updated.willing_to_model);
 }
 
 #[tokio::test]

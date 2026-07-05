@@ -73,8 +73,8 @@ pub async fn complete_consultation(
 
     let serial = generate_serial();
 
-    // Both writes go in the same admin transaction so the two records
-    // land together or not at all.
+    // Verification + card + optional hair profile all go in the same
+    // admin transaction so they land together or not at all.
     let mut tx = AdminRlsTransaction::begin(pool).await?;
     let verification = repository::insert_verification(
         tx.conn(),
@@ -95,6 +95,10 @@ pub async fn complete_consultation(
         &req.design_version,
     )
     .await?;
+    if let Some(ref hair) = req.hair_profile {
+        crate::domain::modeling::repository::upsert_hair_profile(tx.conn(), req.user_id, hair)
+            .await?;
+    }
     tx.commit().await?;
 
     // Audit outside the tx, as always.

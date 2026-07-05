@@ -40,7 +40,8 @@ pub struct IdentityCard {
 
 /// Body of POST /v1/admin/consultations. Records a completed
 /// consultation and issues a card in one atomic operation — the two
-/// are treated as inseparable at the service layer.
+/// are treated as inseparable at the service layer. If hair_profile
+/// is supplied, it's also written in the same transaction.
 #[derive(Debug, Deserialize)]
 pub struct CompleteConsultationRequest {
     pub user_id: Uuid,
@@ -53,6 +54,9 @@ pub struct CompleteConsultationRequest {
     pub consent_snapshot: Value,
     #[serde(default = "default_design_version")]
     pub design_version: String,
+    /// Optional hair profile captured during the consultation.
+    /// Written to hair_profiles in the same admin transaction.
+    pub hair_profile: Option<crate::domain::modeling::types::HairProfileInput>,
 }
 
 fn default_design_version() -> String {
