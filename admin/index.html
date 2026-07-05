@@ -146,8 +146,19 @@
       throw new Error('unauthorized');
     }
     const text = await r.text();
-    const body = text ? JSON.parse(text) : null;
-    if (!r.ok) throw new Error((body && (body.message || body.error)) || ('http ' + r.status));
+    // Not every error response from the stack is JSON — axum's own
+    // extractor rejections (bad request body, missing field, etc.)
+    // come back as plain text. Try to parse; fall back to the raw
+    // text as the error message so the operator sees something
+    // useful instead of "Unexpected token 'F'".
+    let body = null;
+    if (text) {
+      try { body = JSON.parse(text); } catch { /* leave body null */ }
+    }
+    if (!r.ok) {
+      const msg = (body && (body.message || body.error)) || text || ('http ' + r.status);
+      throw new Error(msg);
+    }
     return body;
   }
 

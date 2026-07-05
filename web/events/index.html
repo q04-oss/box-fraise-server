@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Events — box fraise</title>
+  <meta name="description" content="Upcoming Box Fraise events.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 32px;
+    }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+    .event {
+      padding: 26px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .event:first-child { padding-top: 8px; }
+    .event:last-child  { border-bottom: 0; }
+    .event-name {
+      font-size: 22px;
+      font-weight: 500;
+      margin: 0 0 6px;
+      line-height: 1.25;
+    }
+    .event-host {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .event-meta {
+      font-size: 15px;
+      color: var(--muted);
+      margin: 4px 0;
+      line-height: 1.5;
+    }
+    .event-desc {
+      font-size: 16px;
+      line-height: 1.65;
+      margin: 14px 0 18px;
+      color: var(--ink);
+    }
+    .event-link {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 2px;
+      transition: opacity 120ms ease;
+    }
+    .event-link:hover { opacity: 0.7; }
+    .empty {
+      padding: 32px 0;
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+    .empty a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Events</h1>
+
+    <div id="list"><div class="status">loading…</div></div>
+  </main>
+
+  <script>
+    const list = document.getElementById('list');
+
+    (async () => {
+      try {
+        const r = await fetch('/v1/events');
+        if (!r.ok) throw new Error('http ' + r.status);
+        const events = await r.json();
+        render(events);
+      } catch (err) {
+        list.replaceChildren();
+        const s = document.createElement('div');
+        s.className = 'status';
+        s.textContent = 'unable to load events';
+        list.append(s);
+        console.error(err);
+      }
+    })();
+
+    function render(events) {
+      list.replaceChildren();
+      if (!events.length) { renderEmpty(); return; }
+      events.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+      for (const ev of events) list.append(renderEvent(ev));
+    }
+
+    function renderEmpty() {
+      const el = document.createElement('div');
+      el.className = 'empty';
+      const p = document.createElement('p');
+      p.append('First events being planned. Announcements go out on ');
+      const a = document.createElement('a');
+      a.href = 'https://www.youtube.com/@BoxFraise';
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = 'YouTube';
+      p.append(a, '.');
+      el.append(p);
+      list.append(el);
+    }
+
+    function renderEvent(ev) {
+      const wrap = document.createElement('article');
+      wrap.className = 'event';
+
+      const name = document.createElement('h2');
+      name.className = 'event-name';
+      name.textContent = ev.name;
+      wrap.append(name);
+
+      const host = document.createElement('div');
+      host.className = 'event-host';
+      host.textContent = ev.host_name;
+      wrap.append(host);
+
+      const when = document.createElement('div');
+      when.className = 'event-meta';
+      when.textContent = fmtDateRange(ev.starts_at, ev.ends_at);
+      wrap.append(when);
+
+      const where = document.createElement('div');
+      where.className = 'event-meta';
+      where.textContent = ev.address;
+      wrap.append(where);
+
+      if (ev.description) {
+        const desc = document.createElement('div');
+        desc.className = 'event-desc';
+        desc.textContent = ev.description;
+        wrap.append(desc);
+      }
+
+      const link = document.createElement('a');
+      link.className = 'event-link';
+      link.href = `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'Open in Maps →';
+      wrap.append(link);
+
+      return wrap;
+    }
+
+    function fmtDateRange(startISO, endISO) {
+      const s = new Date(startISO);
+      const e = new Date(endISO);
+      const sameDay = s.toDateString() === e.toDateString();
+      const dateOpts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+      const timeOpts = { hour: 'numeric', minute: '2-digit' };
+      if (sameDay) {
+        return `${s.toLocaleDateString(undefined, dateOpts)} · ${s.toLocaleTimeString(undefined, timeOpts)} – ${e.toLocaleTimeString(undefined, timeOpts)}`;
+      }
+      const fullOpts = { ...dateOpts, ...timeOpts };
+      return `${s.toLocaleString(undefined, fullOpts)} → ${e.toLocaleString(undefined, fullOpts)}`;
+    }
+  </script>
+</body>
+</html>
