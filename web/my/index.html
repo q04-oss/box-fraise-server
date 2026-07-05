@@ -282,6 +282,138 @@
       margin-top: 8px;
     }
     .item-sky .g { font-size: 14px; vertical-align: -2px; margin: 0 2px 0 6px; }
+
+    /* ── view tabs ─────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 24px;
+      border-bottom: 1px solid var(--rule);
+      margin: 0 0 20px;
+    }
+    .tab {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      background: transparent;
+      border: 0;
+      padding: 8px 0 12px;
+      margin-bottom: -1px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--ink);
+    }
+
+    /* ── calendar (month view) ─────────────── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-nav h2 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 22px;
+      margin: 0;
+    }
+    .cal-nav-buttons { display: flex; gap: 8px; }
+    .cal-nav-buttons button {
+      padding: 6px 12px;
+      font-size: 10px;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      border-top: 1px solid var(--rule);
+      border-left: 1px solid var(--rule);
+    }
+    .cal-head {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 8px;
+      text-align: center;
+      background: #fafafa;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    .cal-cell {
+      min-height: 96px;
+      padding: 6px;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+      cursor: pointer;
+      transition: background 100ms;
+      background: var(--bg);
+    }
+    .cal-cell:hover { background: #fafafa; }
+    .cal-cell.other-month { background: #f7f7f7; }
+    .cal-cell.other-month .cal-day { color: #bbb; }
+    .cal-cell.other-month .cal-moon { opacity: 0.35; }
+    .cal-cell.today {
+      background: #fff8f8;
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .cal-day-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    .cal-day {
+      font-family: 'Newsreader', serif;
+      font-weight: 500;
+      font-size: 15px;
+      color: var(--ink);
+      line-height: 1;
+    }
+    .cal-moon {
+      font-size: 15px;
+      line-height: 1;
+    }
+    .cal-ingress {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 2px 0 4px;
+    }
+    .cal-ingress .g { font-size: 12px; margin-right: 3px; vertical-align: -1px; }
+    .cal-items { display: flex; flex-direction: column; gap: 2px; }
+    .cal-item {
+      font-size: 11px;
+      color: var(--ink);
+      padding: 2px 4px;
+      background: #eef2f7;
+      border-radius: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    .cal-item:hover { background: #dee5ed; }
+    .cal-more {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    @media (max-width: 600px) {
+      .cal-cell { min-height: 68px; padding: 4px; }
+      .cal-day { font-size: 13px; }
+      .cal-moon { font-size: 12px; }
+      .cal-item { font-size: 10px; padding: 1px 3px; }
+    }
   </style>
 </head>
 <body>
@@ -299,6 +431,11 @@
     <div class="toolbar" id="toolbar" style="display: none;">
       <button id="add-btn">+ New item</button>
       <button class="secondary" id="refresh-btn">Refresh</button>
+    </div>
+
+    <div class="tabs" id="tabs" style="display: none;">
+      <button class="tab active" data-view="calendar">Calendar</button>
+      <button class="tab" data-view="list">List</button>
     </div>
 
     <div id="content">
@@ -352,7 +489,23 @@
   <script>
     const content    = document.getElementById('content');
     const toolbar    = document.getElementById('toolbar');
+    const tabs       = document.getElementById('tabs');
     const modal      = document.getElementById('modal');
+    let currentView  = 'calendar';
+    let cachedItems  = [];
+    // Month currently displayed in the calendar (defaults to today).
+    let calYear   = new Date().getFullYear();
+    let calMonth  = new Date().getMonth(); // 0-11
+
+    tabs.addEventListener('click', (e) => {
+      const t = e.target.closest('.tab');
+      if (!t) return;
+      const view = t.dataset.view;
+      if (view === currentView) return;
+      currentView = view;
+      for (const tab of tabs.children) tab.classList.toggle('active', tab.dataset.view === view);
+      renderCurrentView();
+    });
     const modalTitle = document.getElementById('modal-title');
     const form       = document.getElementById('item-form');
     const fId       = document.getElementById('f-id');
@@ -397,6 +550,7 @@
         return;
       }
       toolbar.style.display = 'flex';
+      tabs.style.display = 'flex';
       renderSky(); // fire and forget; not required for main flow
       await refresh();
     }
@@ -441,11 +595,17 @@
       content.innerHTML = `<div class="status">loading…</div>`;
       try {
         const items = await BoxFraise.api?.('/me/personal-items') ?? await fetchItems();
-        render(items);
+        cachedItems = items;
+        renderCurrentView();
       } catch (err) {
         content.innerHTML = `<div class="status err">${esc(err.message)}</div>`;
         console.error(err);
       }
+    }
+
+    function renderCurrentView() {
+      if (currentView === 'calendar') renderCalendar(cachedItems);
+      else render(cachedItems);
     }
 
     async function fetchItems() {
@@ -535,6 +695,152 @@
       actions.append(editBtn, delBtn);
       wrap.append(body, actions);
       return wrap;
+    }
+
+    // ── Calendar (month view) ─────────────────────────────────────
+    function renderCalendar(items) {
+      content.replaceChildren();
+
+      // Nav
+      const nav = document.createElement('div');
+      nav.className = 'cal-nav';
+      const title = document.createElement('h2');
+      const monthName = new Date(calYear, calMonth, 1).toLocaleDateString(undefined, {
+        month: 'long', year: 'numeric'
+      });
+      title.textContent = monthName;
+      const buttons = document.createElement('div');
+      buttons.className = 'cal-nav-buttons';
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'secondary';
+      prevBtn.textContent = '‹ Prev';
+      prevBtn.onclick = () => { shiftMonth(-1); renderCalendar(cachedItems); };
+      const todayBtn = document.createElement('button');
+      todayBtn.className = 'secondary';
+      todayBtn.textContent = 'Today';
+      todayBtn.onclick = () => {
+        const n = new Date();
+        calYear = n.getFullYear(); calMonth = n.getMonth();
+        renderCalendar(cachedItems);
+      };
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'secondary';
+      nextBtn.textContent = 'Next ›';
+      nextBtn.onclick = () => { shiftMonth(1); renderCalendar(cachedItems); };
+      buttons.append(prevBtn, todayBtn, nextBtn);
+      nav.append(title, buttons);
+      content.append(nav);
+
+      // Group items by ISO date string.
+      const byDate = new Map();
+      for (const it of items) {
+        const key = new Date(it.starts_at).toDateString();
+        if (!byDate.has(key)) byDate.set(key, []);
+        byDate.get(key).push(it);
+      }
+
+      // Grid
+      const grid = document.createElement('div');
+      grid.className = 'calendar';
+
+      // Header — week starts Monday.
+      const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      for (const n of dowNames) {
+        const h = document.createElement('div');
+        h.className = 'cal-head';
+        h.textContent = n;
+        grid.append(h);
+      }
+
+      // Which date fills the top-left cell? Monday-start alignment.
+      const first = new Date(calYear, calMonth, 1);
+      // JS getDay(): 0=Sun..6=Sat. Convert to Mon-start (0=Mon..6=Sun).
+      const monStartDow = (first.getDay() + 6) % 7;
+      const gridStart = new Date(first);
+      gridStart.setDate(1 - monStartDow);
+
+      // Always render 6 weeks (42 cells).
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 42; i++) {
+        const day = new Date(gridStart);
+        day.setDate(gridStart.getDate() + i);
+        const cell = renderCalCell(day, byDate.get(day.toDateString()) || [], today);
+        grid.append(cell);
+      }
+
+      content.append(grid);
+    }
+
+    function renderCalCell(day, dayItems, today) {
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      const inThisMonth = day.getMonth() === calMonth;
+      if (!inThisMonth) cell.classList.add('other-month');
+      if (day.getTime() === today.getTime()) cell.classList.add('today');
+      cell.onclick = (e) => {
+        // Only trigger day-click if the click wasn't on an item chip.
+        if (e.target.closest('.cal-item')) return;
+        openModalWithDate(day);
+      };
+
+      // Head row: day number + moon glyph
+      const head = document.createElement('div');
+      head.className = 'cal-day-row';
+      const num = document.createElement('div');
+      num.className = 'cal-day';
+      num.textContent = day.getDate();
+      const moon = document.createElement('div');
+      moon.className = 'cal-moon';
+      const noon = new Date(day); noon.setHours(12, 0, 0, 0);
+      moon.textContent = BoxFraise.moonPhaseGlyph(BoxFraise.moonPhase(noon));
+      moon.title = BoxFraise.moonPhaseName(BoxFraise.moonPhase(noon));
+      head.append(num, moon);
+      cell.append(head);
+
+      // Sun-sign ingress?
+      const ingress = BoxFraise.sunSignIngressOn(noon);
+      if (ingress) {
+        const ing = document.createElement('div');
+        ing.className = 'cal-ingress';
+        ing.innerHTML = `<span class="g">${ingress.glyph}</span>sun → ${esc(ingress.name)}`;
+        cell.append(ing);
+      }
+
+      // Items (up to 3)
+      const listEl = document.createElement('div');
+      listEl.className = 'cal-items';
+      const shown = dayItems.slice(0, 3);
+      for (const it of shown) {
+        const chip = document.createElement('div');
+        chip.className = 'cal-item';
+        chip.textContent = it.title;
+        chip.title = it.title;
+        chip.onclick = (e) => { e.stopPropagation(); openModal(it); };
+        listEl.append(chip);
+      }
+      if (dayItems.length > shown.length) {
+        const more = document.createElement('div');
+        more.className = 'cal-more';
+        more.textContent = `+ ${dayItems.length - shown.length} more`;
+        listEl.append(more);
+      }
+      cell.append(listEl);
+      return cell;
+    }
+
+    function shiftMonth(delta) {
+      calMonth += delta;
+      if (calMonth < 0)  { calMonth = 11; calYear -= 1; }
+      if (calMonth > 11) { calMonth = 0;  calYear += 1; }
+    }
+
+    function openModalWithDate(day) {
+      const s = new Date(day); s.setHours(new Date().getHours(), 0, 0, 0);
+      const e = new Date(s.getTime() + 60 * 60 * 1000);
+      openModal(null);
+      fStarts.value = toLocalInput(s.toISOString());
+      fEnds.value   = toLocalInput(e.toISOString());
     }
 
     async function deleteItem(item) {
