@@ -14,7 +14,7 @@ pub async fn list_public(pool: &Pool) -> AppResult<Vec<EventSummary>> {
     let mut tx = pool.begin().await?;
     let events = repository::list_upcoming(&mut tx).await?;
     tx.commit().await?;
-    Ok(events)
+    Ok(events.into_iter().map(EventSummary::from).collect())
 }
 
 pub async fn get_public(pool: &Pool, id: Uuid) -> AppResult<EventSummary> {
@@ -27,14 +27,14 @@ pub async fn get_public(pool: &Pool, id: Uuid) -> AppResult<EventSummary> {
     if !event.published {
         return Err(AppError::NotFound);
     }
-    Ok(event)
+    Ok(event.into())
 }
 
 pub async fn list_admin(pool: &Pool) -> AppResult<Vec<EventSummary>> {
     let mut tx = AdminRlsTransaction::begin(pool).await?;
     let events = repository::list_upcoming(tx.conn()).await?;
     tx.commit().await?;
-    Ok(events)
+    Ok(events.into_iter().map(EventSummary::from).collect())
 }
 
 pub async fn create(
@@ -85,7 +85,7 @@ pub async fn create(
     )
     .await;
 
-    Ok(event)
+    Ok(event.into())
 }
 
 pub async fn verified_count(pool: &Pool, event_id: Uuid) -> AppResult<VerifiedCountResponse> {

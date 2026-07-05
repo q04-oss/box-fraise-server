@@ -2,13 +2,13 @@ use chrono::Utc;
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::types::EventSummary;
+use super::types::EventRow;
 
 /// List upcoming events. RLS does the scoping — under an admin tx the
 /// caller sees published + unpublished; under any other tx (anonymous
 /// or user-scoped) only published rows are visible.
-pub async fn list_upcoming(conn: &mut PgConnection) -> sqlx::Result<Vec<EventSummary>> {
-    let rows = sqlx::query_as::<_, EventSummary>(
+pub async fn list_upcoming(conn: &mut PgConnection) -> sqlx::Result<Vec<EventRow>> {
+    let rows = sqlx::query_as::<_, EventRow>(
         "SELECT id, name, host_name, starts_at, ends_at,
                 latitude, longitude, address, description, published
            FROM events
@@ -21,8 +21,8 @@ pub async fn list_upcoming(conn: &mut PgConnection) -> sqlx::Result<Vec<EventSum
     Ok(rows)
 }
 
-pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<Option<EventSummary>> {
-    let row = sqlx::query_as::<_, EventSummary>(
+pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<Option<EventRow>> {
+    let row = sqlx::query_as::<_, EventRow>(
         "SELECT id, name, host_name, starts_at, ends_at,
                 latitude, longitude, address, description, published
            FROM events
@@ -47,8 +47,8 @@ pub async fn insert(
     starts_at: chrono::DateTime<chrono::Utc>,
     ends_at: chrono::DateTime<chrono::Utc>,
     published: bool,
-) -> sqlx::Result<EventSummary> {
-    let row = sqlx::query_as::<_, EventSummary>(
+) -> sqlx::Result<EventRow> {
+    let row = sqlx::query_as::<_, EventRow>(
         "INSERT INTO events
             (name, description, host_name, latitude, longitude, address,
              starts_at, ends_at, published, created_by_admin_id)

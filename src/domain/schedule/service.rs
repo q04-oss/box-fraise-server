@@ -12,9 +12,9 @@ const MAX_LOCATION_LEN: usize = 200;
 
 pub async fn list_personal(pool: &Pool, user_id: Uuid) -> AppResult<Vec<PersonalItem>> {
     let mut tx = RlsTransaction::begin(pool, user_id).await?;
-    let items = repository::list_by_user(tx.conn(), user_id).await?;
+    let rows = repository::list_by_user(tx.conn(), user_id).await?;
     tx.commit().await?;
-    Ok(items)
+    Ok(rows.into_iter().map(PersonalItem::from).collect())
 }
 
 pub async fn create_personal(
@@ -57,7 +57,7 @@ pub async fn create_personal(
         .filter(|s| !s.is_empty());
 
     let mut tx = RlsTransaction::begin(pool, user_id).await?;
-    let item = repository::insert(
+    let row = repository::insert(
         tx.conn(),
         user_id,
         title,
@@ -69,7 +69,7 @@ pub async fn create_personal(
     )
     .await?;
     tx.commit().await?;
-    Ok(item)
+    Ok(row.into())
 }
 
 pub async fn update_personal(
@@ -137,7 +137,7 @@ pub async fn update_personal(
     )
     .await?;
     tx.commit().await?;
-    updated.ok_or(AppError::NotFound)
+    updated.map(PersonalItem::from).ok_or(AppError::NotFound)
 }
 
 pub async fn delete_personal(pool: &Pool, user_id: Uuid, id: Uuid) -> AppResult<()> {

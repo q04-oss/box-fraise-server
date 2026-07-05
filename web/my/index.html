@@ -232,6 +232,56 @@
       line-height: 1.6;
     }
     .empty p { margin: 0 0 12px; }
+
+    /* ── sky today card ─────────────────────── */
+    .sky {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin: 0 0 24px;
+      background: #fafafa;
+    }
+    .sky-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .sky-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .sky-cell {
+      flex: 1 1 240px;
+    }
+    .sky-glyph {
+      font-size: 24px;
+      margin-right: 6px;
+      vertical-align: -3px;
+    }
+    .sky-secondary {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      display: block;
+    }
+    /* per-item celestial */
+    .item-sky {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .item-sky .g { font-size: 14px; vertical-align: -2px; margin: 0 2px 0 6px; }
   </style>
 </head>
 <body>
@@ -240,6 +290,11 @@
 
     <h1>My schedule</h1>
     <div class="sub" id="sub">personal calendar — private to you</div>
+
+    <div class="sky" id="sky" style="display: none;">
+      <div class="sky-label">Sky right now</div>
+      <div class="sky-row" id="sky-row"></div>
+    </div>
 
     <div class="toolbar" id="toolbar" style="display: none;">
       <button id="add-btn">+ New item</button>
@@ -342,7 +397,44 @@
         return;
       }
       toolbar.style.display = 'flex';
+      renderSky(); // fire and forget; not required for main flow
       await refresh();
+    }
+
+    async function renderSky() {
+      try {
+        const r = await fetch('/v1/sky');
+        if (!r.ok) return;
+        const sky = await r.json();
+        const skyEl  = document.getElementById('sky');
+        const rowEl  = document.getElementById('sky-row');
+        const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, {
+          weekday: 'short', month: 'short', day: 'numeric'
+        });
+        const nextNewMoon  = fmtDate(sky.moon.next_new_moon);
+        const nextFullMoon = fmtDate(sky.moon.next_full_moon);
+        rowEl.innerHTML = `
+          <div class="sky-cell">
+            <span class="sky-glyph">${sky.sun.sign.symbol}</span>
+            Sun in <strong>${esc(sky.sun.sign.name)}</strong>
+            <em>(${esc(sky.sun.sign.greek)})</em>
+            <span class="sky-secondary">
+              ${esc(sky.sun.sign.element)} · ${esc(sky.sun.sign.modality)} · ruled by ${esc(sky.sun.sign.traditional_ruler.greek)}
+            </span>
+            <span class="sky-secondary">season · ${esc(sky.sun.season)}</span>
+          </div>
+          <div class="sky-cell">
+            <span class="sky-glyph">${sky.moon.sign.symbol}</span>
+            Moon in <strong>${esc(sky.moon.sign.name)}</strong>
+            <em>(${esc(sky.moon.sign.greek)})</em>
+            <span class="sky-secondary">
+              ${esc(sky.moon.phase_name)} · ${sky.moon.illumination_pct}% illuminated
+            </span>
+            <span class="sky-secondary">next new · ${esc(nextNewMoon)} · next full · ${esc(nextFullMoon)}</span>
+          </div>
+        `;
+        skyEl.style.display = 'block';
+      } catch { /* silent */ }
     }
 
     async function refresh() {
@@ -422,6 +514,13 @@
         n.className = 'item-notes';
         n.textContent = item.notes;
         body.append(n);
+      }
+      if (item.celestial) {
+        const sky = document.createElement('div');
+        sky.className = 'item-sky';
+        const c = item.celestial;
+        sky.innerHTML = `${esc(c.moon_phase_name)}<span class="g">${c.moon_sign_symbol}</span>· sun<span class="g">${c.sun_sign_symbol}</span>· ${esc(c.season)}`;
+        body.append(sky);
       }
       const actions = document.createElement('div');
       actions.className = 'item-actions';
