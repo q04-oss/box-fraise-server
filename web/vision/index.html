@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vision — box fraise</title>
+  <meta name="description" content="What Box Fraise is trying to be.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 32px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+    p.closer {
+      color: var(--muted);
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Vision</h1>
+
+    <p>Box Fraise is building an identity network rooted in showing up.</p>
+
+    <p>Most sign-in systems accept anyone with an email address. That's cheap to fake, and it leaves every company using them treating each user as unknown by default. We think identity works better when it's earned in person — at a real event, in front of a real organiser, with a signature from a device only you hold.</p>
+
+    <p>Once a user is verified with us, that status becomes something other products can trust. We open it as a login API — one in-person moment, wider trust downstream.</p>
+
+    <p>We're seeding the community through hair. Hair events, hair salons, and eventually the software that runs them. Hair is a licensed trade with real in-person craft — the same discipline the identity system depends on. It's also how the project intends to fund itself; more on that in due course.</p>
+
+    <p class="closer">The server is live. The app is written. First events are being planned.</p>
+  </main>
+</body>
+</html>
