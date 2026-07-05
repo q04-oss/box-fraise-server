@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>iOS app — box fraise</title>
+  <meta name="description" content="Status of the Box Fraise iOS app.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 28px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.6;
+      margin: 0 0 18px;
+    }
+    .status {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 22px 24px;
+      margin: 36px 0 32px;
+    }
+    .status dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 14px 18px;
+    }
+    .status dt {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding-top: 3px;
+    }
+    .status dd {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .download-slot {
+      margin: 32px 0 8px;
+      padding: 18px 20px;
+      border: 1px dashed var(--rule);
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>iOS app</h1>
+
+    <p>The server behind box fraise is live at fraise.box — written in Rust, backed by Postgres. The iOS client is written too, in Swift and SwiftUI, code complete.</p>
+    <p>Shipping the app to the App Store needs a Mac to compile and sign it. I don't have the money for one yet, so I've held off on deploying until I do. The code sits ready.</p>
+    <p>Once the app enters beta, the download link will show up here.</p>
+
+    <div class="status">
+      <dl>
+        <dt>Server</dt>
+        <dd>Rust · Axum · Postgres with row-level security · live at fraise.box</dd>
+
+        <dt>App</dt>
+        <dd>Swift · SwiftUI · P-256 keys in the Secure Enclave · code complete</dd>
+
+        <dt>Blocker</dt>
+        <dd>Waiting on a Mac to compile the Swift side and push to TestFlight.</dd>
+      </dl>
+    </div>
+
+    <div class="download-slot">Download link appears here in beta</div>
+  </main>
+</body>
+</html>
