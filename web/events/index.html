@@ -162,13 +162,7 @@
       const el = document.createElement('div');
       el.className = 'empty';
       const p = document.createElement('p');
-      p.append('First events being planned. Announcements go out on ');
-      const a = document.createElement('a');
-      a.href = 'https://www.youtube.com/@BoxFraise';
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = 'YouTube';
-      p.append(a, '.');
+      p.textContent = 'First events being planned. They’ll appear here once scheduled.';
       el.append(p);
       list.append(el);
     }
