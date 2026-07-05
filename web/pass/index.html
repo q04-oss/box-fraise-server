@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pass — box fraise</title>
+  <meta name="description" content="Your Box Fraise verification pass. Show at an event.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --ok:     #2c6e35;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      flex: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 40px 24px 64px;
+      text-align: center;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 32px;
+      text-align: left;
+      width: 100%;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(28px, 4.5vw, 40px);
+      letter-spacing: -0.02em;
+      margin: 0 0 8px;
+    }
+    .sub {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+    #qr {
+      display: inline-block;
+      padding: 18px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      margin: 12px 0 8px;
+    }
+    #qr img,
+    #qr canvas,
+    #qr table {
+      display: block;
+      width: 240px;
+      height: 240px;
+    }
+    .countdown {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 20px 0;
+    }
+    .status.err { color: var(--accent); }
+    .status.ok  { color: var(--ok); }
+    .verified-card {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 32px 24px;
+      margin-top: 12px;
+      text-align: left;
+    }
+    .verified-mark {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--ok);
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid var(--ok);
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .verified-event {
+      font-size: 17px;
+      line-height: 1.5;
+    }
+    .verified-event-name {
+      font-weight: 500;
+      margin: 0 0 4px;
+    }
+    .verified-event-meta {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 2px 0;
+    }
+    .cta {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      background: var(--ink);
+      color: var(--bg);
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      text-decoration: none;
+    }
+    .cta.secondary {
+      background: var(--bg);
+      color: var(--ink);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Pass</h1>
+    <div class="sub" id="sub">preparing…</div>
+
+    <div id="body">
+      <div class="status">loading…</div>
+    </div>
+  </main>
+
+  <script src="/js/qrcode.min.js"></script>
+  <script src="/js/box-fraise.js"></script>
+  <script>
+    const body = document.getElementById('body');
+    const sub  = document.getElementById('sub');
+
+    let refreshTimer = null;
+    let countdownTimer = null;
+
+    function esc(s) {
+      return String(s).replace(/[<>&"']/g, c => ({
+        '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'
+      })[c]);
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, {
+        weekday: 'long', month: 'long', day: 'numeric',
+        year: 'numeric', hour: 'numeric', minute: '2-digit'
+      });
+    }
+
+    async function boot() {
+      const session = BoxFraise.loadSession();
+      if (!session.token) {
+        body.innerHTML = `
+          <div class="status">not joined yet</div>
+          <p style="font-size: 15px; color: var(--muted); margin: 8px 0 24px;">
+            This browser doesn't have a Box Fraise identity yet. Join first.
+          </p>
+          <p><a class="cta" href="/join">Join Box Fraise</a></p>
+        `;
+        sub.textContent = '';
+        return;
+      }
+
+      try {
+        const me = await BoxFraise.fetchMe();
+        if (me.status === 'verified') {
+          renderVerified(me);
+        } else {
+          renderPending();
+        }
+      } catch (err) {
+        sub.textContent = 'error';
+        body.innerHTML = `<div class="status err">${esc(err.message)}</div>`;
+        console.error(err);
+      }
+    }
+
+    function renderVerified(me) {
+      sub.textContent = 'verified';
+      const event = me.event;
+      let eventBlock = '';
+      if (event) {
+        eventBlock = `
+          <div class="verified-event">
+            <p class="verified-event-name">${esc(event.name)}</p>
+            <p class="verified-event-meta">${esc(event.host_name)}</p>
+            <p class="verified-event-meta">${esc(fmtDate(event.starts_at))}</p>
+            <p class="verified-event-meta">${esc(event.address)}</p>
+          </div>
+        `;
+      }
+      body.innerHTML = `
+        <div class="verified-card">
+          <span class="verified-mark">Verified</span>
+          <p style="font-size: 16px; line-height: 1.6; margin: 0 0 12px;">
+            You're a verified Box Fraise member.
+          </p>
+          ${eventBlock}
+        </div>
+      `;
+      // Verified state — no polling, no QR, nothing more to do.
+    }
+
+    async function renderPending() {
+      sub.textContent = 'pending — show this at an event';
+      body.innerHTML = `
+        <div id="qr"><div class="status">signing…</div></div>
+        <div class="countdown" id="countdown"></div>
+      `;
+      await refreshQR();
+    }
+
+    async function refreshQR() {
+      clearTimeout(refreshTimer);
+      clearInterval(countdownTimer);
+      try {
+        const signed = await BoxFraise.signedChallenge();
+        drawQR({
+          nonce:         signed.nonce,
+          signature_b64: signed.signature_b64,
+        });
+        scheduleNext(signed.expires_at);
+        startCountdown(signed.expires_at);
+      } catch (err) {
+        const qr = document.getElementById('qr');
+        if (qr) qr.innerHTML = `<div class="status err">${esc(err.message)}</div>`;
+        console.error(err);
+      }
+    }
+
+    function drawQR(payload) {
+      const text = JSON.stringify(payload);
+      // qrcode-generator: type=0 auto, error correction 'M'
+      const qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      const container = document.getElementById('qr');
+      // createSvgTag produces a clean vector QR that scales to the CSS box.
+      container.innerHTML = qr.createSvgTag({
+        cellSize: 6,
+        margin: 0,
+        scalable: true,
+      });
+      const svg = container.querySelector('svg');
+      if (svg) {
+        svg.style.width = '240px';
+        svg.style.height = '240px';
+        svg.setAttribute('shape-rendering', 'crispEdges');
+      }
+    }
+
+    function scheduleNext(expiresAtISO) {
+      // Refresh 5 seconds before expiry.
+      const target = new Date(expiresAtISO).getTime() - 5000;
+      const delay  = Math.max(1000, target - Date.now());
+      refreshTimer = setTimeout(refreshQR, delay);
+    }
+
+    function startCountdown(expiresAtISO) {
+      const expiresAt = new Date(expiresAtISO).getTime();
+      const el = document.getElementById('countdown');
+      const tick = () => {
+        const secs = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
+        if (el) el.textContent = `new code in ${secs}s`;
+      };
+      tick();
+      countdownTimer = setInterval(tick, 1000);
+    }
+
+    // Keep screen from sleeping while showing the QR — SwiftUI equivalent
+    // of isIdleTimerDisabled = true on the iOS Pass tab.
+    let wakeLock = null;
+    async function tryWakeLock() {
+      if (!('wakeLock' in navigator)) return;
+      try { wakeLock = await navigator.wakeLock.request('screen'); }
+      catch { /* user denied or unsupported; ignore */ }
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && !wakeLock) tryWakeLock();
+    });
+
+    boot();
+    tryWakeLock();
+  </script>
+</body>
+</html>
