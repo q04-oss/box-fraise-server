@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
   <meta name="description" content="A hair-events community. Private by default, verified in person.">
-  <meta name="theme-color" content="#fbf7f3">
+  <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,10 +13,10 @@
 
   <style>
     :root {
-      --bg:      #fbf7f3;
+      --bg:      #ffffff;
       --ink:     #1a1a1a;
-      --rule:    #d8cfc3;
-      --muted:   #6a6259;
+      --rule:    #e6e6e6;
+      --muted:   #666666;
       --accent:  #b21b1b;
     }
     * { box-sizing: border-box; }
@@ -46,9 +46,9 @@
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 400;
-      font-size: clamp(72px, 16vw, 180px);
-      letter-spacing: -0.025em;
-      line-height: 0.9;
+      font-size: clamp(44px, 7vw, 88px);
+      letter-spacing: -0.02em;
+      line-height: 0.95;
       margin: 0;
     }
 
@@ -65,8 +65,8 @@
       padding: 5px 12px 4px;
       border: 1px solid var(--rule);
       border-radius: 999px;
-      margin-top: 20px;
-      background: rgba(255,255,255,0.4);
+      margin-top: 16px;
+      background: transparent;
     }
     .beta::before {
       content: "";
@@ -125,7 +125,7 @@
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--muted);
-      background: rgba(255,255,255,0.4);
+      background: transparent;
     }
     footer a {
       color: inherit;
@@ -186,15 +186,6 @@
       text-align: center;
     }
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg:    #17140f;
-        --ink:   #f4ece2;
-        --rule:  #2e2820;
-        --muted: #8a8175;
-      }
-      .beta, footer { background: rgba(0,0,0,0.15); }
-    }
   </style>
 </head>
 <body>
@@ -289,6 +280,7 @@
     <a href="/security">Security</a>
     <a href="/privacy">Privacy</a>
     <a href="/support">Support</a>
+    <a href="https://www.youtube.com/@BoxFraise" target="_blank" rel="noopener noreferrer">YouTube</a>
   </footer>
 </body>
 </html>
