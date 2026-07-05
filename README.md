@@ -52,6 +52,7 @@ On boot, the server will:
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
+| `GET  /v1/search?q=…`                        | public    | Brave Search proxy — powers the marketing search bar |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
 | `GET  /`                                     | public    | Marketing site (`web/index.html`), and fallback for any unmatched path |
 

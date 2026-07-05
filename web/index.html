@@ -134,6 +134,58 @@
     }
     footer a:hover { color: var(--ink); }
 
+    /* ── Search results ─────────────────────────────────────────── */
+    .results {
+      width: 100%;
+      max-width: 640px;
+      margin: 24px auto 0;
+      padding: 0 4px;
+      font-family: 'Newsreader', serif;
+      text-align: left;
+    }
+    .results-status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 0;
+    }
+    .result {
+      display: block;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--rule);
+      text-decoration: none;
+      color: inherit;
+    }
+    .result:last-child { border-bottom: 0; }
+    .result-title {
+      font-size: 17px;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .result-url {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .result-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .attribution {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 16px 0 4px;
+      text-align: center;
+    }
+
     @media (prefers-color-scheme: dark) {
       :root {
         --bg:    #17140f;
@@ -150,7 +202,7 @@
     <h1 class="wordmark">box fraise</h1>
     <span class="beta">beta</span>
 
-    <form class="search" role="search" aria-label="Private search" onsubmit="return false">
+    <form class="search" role="search" aria-label="Private search" id="search-form">
       <input
         type="search"
         name="q"
@@ -159,9 +211,78 @@
         autocapitalize="off"
         placeholder="private search"
         aria-label="Search"
+        id="search-input"
       >
     </form>
+
+    <section class="results" id="results" aria-live="polite"></section>
   </main>
+
+  <script>
+    // Same-origin proxy through /v1/search — the Brave API key never
+    // touches the browser. Query text is not logged server-side.
+    const form  = document.getElementById('search-form');
+    const input = document.getElementById('search-input');
+    const box   = document.getElementById('results');
+
+    function status(text) {
+      box.replaceChildren();
+      const el = document.createElement('div');
+      el.className = 'results-status';
+      el.textContent = text;
+      box.append(el);
+    }
+
+    function attribute() {
+      const el = document.createElement('div');
+      el.className = 'attribution';
+      el.textContent = 'Search by Brave';
+      box.append(el);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (!q) { box.replaceChildren(); return; }
+      status('searching…');
+      try {
+        const r = await fetch('/v1/search?q=' + encodeURIComponent(q));
+        if (!r.ok) {
+          const body = await r.text();
+          status('search failed (' + r.status + ')');
+          console.error(body);
+          return;
+        }
+        const data = await r.json();
+        box.replaceChildren();
+        if (!data.results.length) {
+          status('no results');
+          return;
+        }
+        for (const res of data.results) {
+          const a = document.createElement('a');
+          a.href = res.url;
+          a.rel  = 'noopener noreferrer';
+          a.className = 'result';
+          const t = document.createElement('div');
+          t.className = 'result-title';
+          t.textContent = res.title;
+          const u = document.createElement('div');
+          u.className = 'result-url';
+          u.textContent = res.url;
+          const d = document.createElement('div');
+          d.className = 'result-desc';
+          d.textContent = res.description;
+          a.append(t, u, d);
+          box.append(a);
+        }
+        attribute();
+      } catch (err) {
+        status('search failed');
+        console.error(err);
+      }
+    });
+  </script>
 
   <footer>
     <a href="/working-paper">Working paper</a>
