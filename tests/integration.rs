@@ -18,6 +18,7 @@ use box_fraise::{
             service as consultations_service,
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
+        oauth::{jwt as oauth_jwt, keys as oauth_keys, service as oauth_service, types::TokenRequest as OauthTokenRequest},
         events::{service as events_service, types::CreateEventRequest},
         onboarding::{
             service as onboarding_service,
@@ -836,6 +837,65 @@ async fn seed_trained_consultant(pool: &PgPool, user_id: Uuid) {
     .await
     .unwrap();
     tx.commit().await.unwrap();
+}
+
+/// (21) OAuth: token issued for a user is a valid ES256 JWT we can
+/// verify with our own JWKS key, carrying the expected claims.
+#[tokio::test]
+async fn oauth_token_round_trips() {
+    let pool = test_pool().await;
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    let resp = oauth_service::issue_token(
+        &pool,
+        user_id,
+        OauthTokenRequest { audience: "https://partner.example".into() },
+    )
+    .await
+    .unwrap();
+
+    // Verify with our public key.
+    let vk = oauth_keys::verifying_key();
+    let claims = oauth_jwt::verify(&resp.access_token, &vk)
+        .expect("our own token must verify with our own public key");
+    assert_eq!(claims["sub"].as_str().unwrap(), user_id.to_string());
+    assert_eq!(claims["aud"].as_str().unwrap(), "https://partner.example");
+    assert_eq!(claims["iss"].as_str().unwrap(), "https://fraise.box");
+    assert_eq!(claims["tier"].as_i64().unwrap(), 1);
+    assert_eq!(claims["verified"].as_bool().unwrap(), false);
+
+    // userinfo endpoint accepts the token.
+    let info = oauth_service::userinfo(&pool, &resp.access_token).await.unwrap();
+    assert_eq!(info.sub, user_id);
+    assert_eq!(info.tier, 1);
+    assert!(!info.verified);
+}
+
+/// (22) Tampered token fails verification.
+#[tokio::test]
+async fn oauth_tampered_token_rejected() {
+    let pool = test_pool().await;
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    let resp = oauth_service::issue_token(
+        &pool,
+        user_id,
+        OauthTokenRequest { audience: "https://partner.example".into() },
+    )
+    .await
+    .unwrap();
+
+    // Flip one character in the signature (last part after final '.').
+    let mut parts: Vec<&str> = resp.access_token.split('.').collect();
+    let mut sig = parts[2].to_string();
+    let first_char = sig.chars().next().unwrap();
+    let flipped = if first_char == 'A' { 'B' } else { 'A' };
+    sig.replace_range(0..1, &flipped.to_string());
+    parts[2] = &sig;
+    let tampered = parts.join(".");
+
+    let r = oauth_service::userinfo(&pool, &tampered).await;
+    assert!(matches!(r, Err(AppError::Unauthorized)), "tampered sig should reject: {r:?}");
 }
 
 #[tokio::test]
