@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API — box fraise</title>
+  <meta name="description" content="Sign in with Box Fraise — the login API for third-party services. Experimental, unsupported.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      flex: 1;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 24px;
+    }
+    h2 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 22px;
+      margin: 36px 0 12px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 18px;
+    }
+    .warning {
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 18px 22px;
+      margin: 28px 0;
+      background: #fdf6f6;
+    }
+    .warning-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    .warning p {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+    .warning p:last-child { margin-bottom: 0; }
+    .endpoints {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 22px 24px;
+      margin: 24px 0;
+    }
+    .endpoint {
+      padding: 14px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .endpoint:first-child { padding-top: 0; }
+    .endpoint:last-child  { padding-bottom: 0; border-bottom: 0; }
+    .method-path {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .method {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--ink);
+      color: var(--bg);
+      border-radius: 3px;
+      margin-right: 8px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+    .endpoint-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    pre {
+      background: #f7f7f5;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 12px 0 24px;
+      color: var(--ink);
+    }
+    code {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      color: var(--ink);
+      background: #f2f0ec;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    pre code {
+      background: transparent;
+      padding: 0;
+      font-size: inherit;
+    }
+    p.closer {
+      color: var(--muted);
+      margin-top: 32px;
+      font-size: 15px;
+    }
+    p.closer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>API</h1>
+
+    <p>Box Fraise runs a minimal login primitive at <code>/v1/oauth</code>. It exists so third-party services can accept "Sign in with Box Fraise" — issuing an ES256 JWT signed by our key, verifiable offline via our public JWKS.</p>
+
+    <div class="warning">
+      <div class="warning-label">Experimental · Unsupported</div>
+      <p>The signing key is regenerated on every deploy. Any JWT you cache will fail to verify after our next restart. There is no client registration, no consent flow, no discovery document, no refresh tokens.</p>
+      <p><strong>Do not integrate this into a real product.</strong> When there is a real partner waiting for it, this hardens into a full OpenID Connect surface — persistent keys, key rotation, discovery, consent, all of it. Until then it exists to prove the interface shape.</p>
+    </div>
+
+    <h2>Endpoints</h2>
+
+    <div class="endpoints">
+      <div class="endpoint">
+        <div class="method-path"><span class="method">POST</span>/v1/oauth/token</div>
+        <div class="endpoint-desc">
+          Exchange a Box Fraise session (Bearer) for an ES256 JWT keyed to a caller-specified <code>audience</code>. Claims: <code>iss</code>, <code>sub</code>, <code>aud</code>, <code>iat</code>, <code>exp</code>, <code>tier</code>, <code>verified</code>. 15-minute lifetime.
+        </div>
+      </div>
+      <div class="endpoint">
+        <div class="method-path"><span class="method">GET</span>/v1/oauth/jwks</div>
+        <div class="endpoint-desc">
+          Public. Returns the current JSON Web Key Set. One entry, ES256 / P-256. <code>kid</code> matches what tokens are signed with. Regenerated every deploy.
+        </div>
+      </div>
+      <div class="endpoint">
+        <div class="method-path"><span class="method">GET</span>/v1/oauth/userinfo</div>
+        <div class="endpoint-desc">
+          Auth: a JWT from <code>/oauth/token</code>. Returns the same claims (<code>sub</code>, <code>tier</code>, <code>verified</code>) with live values from the current server state, rather than the values baked into the token when it was issued.
+        </div>
+      </div>
+    </div>
+
+    <h2>Example</h2>
+
+    <pre><code># Exchange your Box Fraise session for a partner-audience JWT.
+curl -X POST https://fraise.box/v1/oauth/token \
+  -H "Authorization: Bearer $BF_SESSION" \
+  -H "Content-Type: application/json" \
+  -d '{ "audience": "https://your-service.example" }'
+
+# The response includes access_token, expires_in, and a warning field.
+
+# Verify the JWT with the public key from JWKS.
+curl https://fraise.box/v1/oauth/jwks</code></pre>
+
+    <h2>Why unsupported</h2>
+
+    <p>The Box Fraise project is small and pre-userbase. Maintaining a production login API requires stability guarantees, security patches, and integrator responsiveness the project can't honor yet. Shipping something unmaintained as if it were production would erode trust more than not shipping it. So this exists, publicly documented, honestly labelled.</p>
+
+    <p class="closer">The plan for when this hardens lives on the <a href="/vision">vision</a> page. If you're a partner with a specific use case, this line will move — reach out.</p>
+  </main>
+</body>
+</html>
