@@ -428,6 +428,11 @@
       <div class="sky-row" id="sky-row"></div>
     </div>
 
+    <div class="sky" id="tier" style="display: none;">
+      <div class="sky-label">Verification tier</div>
+      <div id="tier-body"></div>
+    </div>
+
     <div class="toolbar" id="toolbar" style="display: none;">
       <button id="add-btn">+ New item</button>
       <button class="secondary" id="refresh-btn">Refresh</button>
@@ -551,8 +556,44 @@
       }
       toolbar.style.display = 'flex';
       tabs.style.display = 'flex';
-      renderSky(); // fire and forget; not required for main flow
+      renderSky();           // fire and forget
+      renderTier();          // fire and forget
       await refresh();
+    }
+
+    async function renderTier() {
+      try {
+        const { token } = BoxFraise.loadSession();
+        const r = await fetch('/v1/me/verification-status', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!r.ok) return;
+        const s = await r.json();
+        const tierEl = document.getElementById('tier');
+        const body   = document.getElementById('tier-body');
+        if (s.verified) {
+          body.innerHTML = `
+            <p style="font-size: 15px; line-height: 1.6; margin: 0 0 6px;">
+              <strong>Tier ${s.tier}</strong> · verified on the Box Fraise social layer.
+            </p>
+            ${s.active_card ? `
+              <div class="sky-secondary" style="margin-top: 8px;">
+                Card · <span style="font-family: 'IBM Plex Mono', monospace; color: var(--ink);">${esc(s.active_card.serial)}</span>
+              </div>
+              <div class="sky-secondary">Issued · ${esc(new Date(s.active_card.issued_at).toLocaleDateString())}</div>
+            ` : ''}
+          `;
+        } else {
+          body.innerHTML = `
+            <p style="font-size: 15px; line-height: 1.6; margin: 0;">
+              <strong>Tier ${s.tier}</strong> · cryptographic identity only.
+              To join the social layer, book a private consultation with a Box Fraise consultant.
+              Nothing to fill in — the consultant asks the questions.
+            </p>
+          `;
+        }
+        tierEl.style.display = 'block';
+      } catch { /* silent */ }
     }
 
     async function renderSky() {

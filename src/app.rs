@@ -75,6 +75,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::events::routes::router())
         .merge(crate::domain::schedule::routes::router())
         .merge(crate::domain::search::routes::router())
+        .merge(crate::domain::consultations::routes::router())
         .merge(crate::celestial::routes::router())
         // Bearer-resolution runs on every /v1 request. It's a soft pass
         // — unrecognised tokens leave no marker; extractors enforce.

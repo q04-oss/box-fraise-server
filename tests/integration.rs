@@ -14,6 +14,10 @@ use box_fraise::{
     crypto::{argon2_hash, new_nonce, verify_p256_signature},
     db::{self, AdminRlsTransaction, RlsTransaction},
     domain::{
+        consultations::{
+            service as consultations_service,
+            types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
+        },
         events::{service as events_service, types::CreateEventRequest},
         onboarding::{
             service as onboarding_service,
@@ -630,6 +634,208 @@ async fn personal_items_delete_and_missing() {
         matches!(r, Err(AppError::NotFound)),
         "second delete should 404: {r:?}"
     );
+}
+
+/// (17) Consultation lifecycle: a trained consultant completes a
+/// consultation → the verification + card are issued atomically → the
+/// public card lookup returns valid → revoke → lookup returns dead.
+#[tokio::test]
+async fn consultation_lifecycle_end_to_end() {
+    let pool = test_pool().await;
+
+    // Set up: a consultant (a user, promoted to staff with training).
+    let (consultant_user_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_user_id).await;
+
+    // A user who will be verified.
+    let (verified_user_id, _) = register_with_keypair(&pool).await;
+
+    // Complete the consultation.
+    let result = consultations_service::complete_consultation(
+        &pool,
+        consultant_user_id,
+        CompleteConsultationRequest {
+            user_id: verified_user_id,
+            salon_id: None,
+            consultation_notes: Some(
+                "Careful conversation, comfortable with public profile.".into(),
+            ),
+            consent_snapshot: serde_json::json!({
+                "advertising": true,
+                "social_feed": true,
+                "revenue_share": true,
+            }),
+            design_version: "v1".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(result.verification.user_id, verified_user_id);
+    assert_eq!(result.verification.consulted_by_user_id, consultant_user_id);
+    assert_eq!(result.card.user_id, verified_user_id);
+    assert_eq!(result.card.status, "active");
+    assert_eq!(
+        result.card.serial.len(),
+        24,
+        "serial should be 20 hex + 4 hyphens"
+    );
+
+    // Public lookup by serial.
+    let lookup = consultations_service::lookup_card(&pool, &result.card.serial)
+        .await
+        .unwrap();
+    assert!(lookup.is_valid);
+    assert_eq!(lookup.status, "active");
+
+    // Lookup with lowercase + no hyphens should canonicalise and still hit.
+    let messy = result.card.serial.replace('-', "").to_lowercase();
+    let lookup2 = consultations_service::lookup_card(&pool, &messy)
+        .await
+        .unwrap();
+    assert!(lookup2.is_valid);
+
+    // Revoke.
+    consultations_service::revoke_card(
+        &pool,
+        consultant_user_id,
+        result.card.id,
+        RevokeCardRequest {
+            reason: "test revoke".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let after = consultations_service::lookup_card(&pool, &result.card.serial)
+        .await
+        .unwrap();
+    assert!(!after.is_valid);
+    assert_eq!(after.status, "revoked");
+}
+
+/// (18) A consultant cannot self-verify.
+#[tokio::test]
+async fn consultant_cannot_verify_themselves() {
+    let pool = test_pool().await;
+    let (consultant_user_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_user_id).await;
+
+    let r = consultations_service::complete_consultation(
+        &pool,
+        consultant_user_id,
+        CompleteConsultationRequest {
+            user_id: consultant_user_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+        },
+    )
+    .await;
+    assert!(matches!(r, Err(AppError::BadRequest(_))));
+}
+
+/// (19) An untrained staff member cannot complete consultations.
+#[tokio::test]
+async fn untrained_staff_cannot_consult() {
+    let pool = test_pool().await;
+    let (untrained_id, _) = register_with_keypair(&pool).await;
+    // Insert a staff row with NO consultation_training_completed_at.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query(
+        "INSERT INTO staff (user_id, role, can_verify_others)
+         VALUES ($1, 'stylist', true)",
+    )
+    .bind(untrained_id)
+    .execute(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    let (target_id, _) = register_with_keypair(&pool).await;
+    let r = consultations_service::complete_consultation(
+        &pool,
+        untrained_id,
+        CompleteConsultationRequest {
+            user_id: target_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+        },
+    )
+    .await;
+    assert!(
+        matches!(r, Err(AppError::Forbidden)),
+        "expected Forbidden, got {r:?}"
+    );
+}
+
+/// (20) Replace an active card → new card is active, old card marks
+/// as replaced with pointer to the new id.
+#[tokio::test]
+async fn card_replacement_flow() {
+    let pool = test_pool().await;
+    let (consultant_id, _) = register_with_keypair(&pool).await;
+    seed_trained_consultant(&pool, consultant_id).await;
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    let first = consultations_service::complete_consultation(
+        &pool,
+        consultant_id,
+        CompleteConsultationRequest {
+            user_id,
+            salon_id: None,
+            consultation_notes: None,
+            consent_snapshot: serde_json::Value::Null,
+            design_version: "v1".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let replacement = consultations_service::replace_card(
+        &pool,
+        consultant_id,
+        first.card.id,
+        ReplaceCardRequest {
+            design_version: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_ne!(replacement.serial, first.card.serial);
+    assert_eq!(replacement.status, "active");
+
+    // Old card should now be 'replaced'.
+    let old = consultations_service::lookup_card(&pool, &first.card.serial)
+        .await
+        .unwrap();
+    assert_eq!(old.status, "replaced");
+    assert!(!old.is_valid);
+
+    // New card is valid.
+    let new = consultations_service::lookup_card(&pool, &replacement.serial)
+        .await
+        .unwrap();
+    assert!(new.is_valid);
+}
+
+/// Helper: promote a user to a trained stylist consultant.
+async fn seed_trained_consultant(pool: &PgPool, user_id: Uuid) {
+    let mut tx = AdminRlsTransaction::begin(pool).await.unwrap();
+    sqlx::query(
+        "INSERT INTO staff (user_id, role, can_verify_others,
+                             consultation_training_completed_at)
+         VALUES ($1, 'stylist', true, now())",
+    )
+    .bind(user_id)
+    .execute(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
 }
 
 #[tokio::test]
