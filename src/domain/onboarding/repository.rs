@@ -91,16 +91,20 @@ pub async fn mark_challenge_used(conn: &mut PgConnection, nonce: &str) -> sqlx::
     Ok(())
 }
 
-pub async fn get_device_public_key(
+/// Returns every device public key bound to `user_id`. Since migration
+/// 0002, a user can pair multiple keys (browser + phone + hardware
+/// card…) — verify tries each until one matches. Returns an empty
+/// vec if the user has no device keys.
+pub async fn get_device_public_keys(
     conn: &mut PgConnection,
     user_id: Uuid,
-) -> sqlx::Result<Option<Vec<u8>>> {
-    let row: Option<(Vec<u8>,)> =
+) -> sqlx::Result<Vec<Vec<u8>>> {
+    let rows: Vec<(Vec<u8>,)> =
         sqlx::query_as("SELECT public_key FROM device_keys WHERE user_id = $1")
             .bind(user_id)
-            .fetch_optional(conn)
+            .fetch_all(conn)
             .await?;
-    Ok(row.map(|(pk,)| pk))
+    Ok(rows.into_iter().map(|(pk,)| pk).collect())
 }
 
 /// Atomic verify. Returns Some(verified_at) iff the row was `pending`

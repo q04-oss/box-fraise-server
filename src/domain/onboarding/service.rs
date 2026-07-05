@@ -118,13 +118,21 @@ pub async fn verify(pool: &Pool, admin_id: Uuid, req: VerifyRequest) -> AppResul
         return Err(AppError::bad_request("challenge expired"));
     }
 
-    let pk_bytes = repository::get_device_public_key(tx.conn(), user_id)
-        .await?
-        .ok_or(AppError::NotFound)?;
-
-    // Apple Secure Enclave may emit high-S; verify_p256_signature
-    // normalises before checking. See crypto::verify_p256_signature.
-    verify_p256_signature(&pk_bytes, &req.nonce, &signature_der)?;
+    // A user can have multiple device keys bound (post-0002 migration):
+    // browser, phone, hardware card. Any one of them signing the nonce
+    // is proof of presence. Iterate and accept the first match.
+    let public_keys = repository::get_device_public_keys(tx.conn(), user_id).await?;
+    if public_keys.is_empty() {
+        return Err(AppError::NotFound);
+    }
+    let any_match = public_keys
+        .iter()
+        .any(|pk| verify_p256_signature(pk, &req.nonce, &signature_der).is_ok());
+    if !any_match {
+        // Apple Secure Enclave may emit high-S; verify_p256_signature
+        // normalises before checking. See crypto::verify_p256_signature.
+        return Err(AppError::InvalidSignature);
+    }
 
     let verified_at =
         repository::promote_user_to_verified(tx.conn(), user_id, req.event_id, admin_id)
