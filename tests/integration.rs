@@ -19,6 +19,10 @@ use box_fraise::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
         },
+        schedule::{
+            service as schedule_service,
+            types::{CreatePersonalItemRequest, UpdatePersonalItemRequest},
+        },
     },
     error::AppError,
 };
@@ -496,6 +500,136 @@ async fn me_embeds_verified_event_after_verify() {
     assert!(!event.name.is_empty());
     assert!(!event.host_name.is_empty());
     assert!(!event.address.is_empty());
+}
+
+/// (14) Personal items are strictly owner-scoped. User A creates one,
+/// User B queries their own list and cannot see it — RLS is the safety
+/// net even without user-level filtering.
+#[tokio::test]
+async fn personal_items_are_owner_scoped() {
+    let pool = test_pool().await;
+    let (user_a, _) = register_with_keypair(&pool).await;
+    let (user_b, _) = register_with_keypair(&pool).await;
+
+    let now = Utc::now();
+    let created = schedule_service::create_personal(
+        &pool,
+        user_a,
+        CreatePersonalItemRequest {
+            title: "Owner scope test".into(),
+            notes: Some("private".into()),
+            starts_at: now,
+            ends_at: now + ChronoDuration::hours(1),
+            is_all_day: false,
+            location: Some("everywhere".into()),
+        },
+    )
+    .await
+    .unwrap();
+
+    let a_items = schedule_service::list_personal(&pool, user_a)
+        .await
+        .unwrap();
+    assert!(a_items.iter().any(|i| i.id == created.id));
+
+    let b_items = schedule_service::list_personal(&pool, user_b)
+        .await
+        .unwrap();
+    assert!(
+        b_items.iter().all(|i| i.id != created.id),
+        "user B saw user A's private item — RLS leak"
+    );
+}
+
+/// (15) Update lifecycle: title change, all-day toggle, notes clear on
+/// empty string. Confirms COALESCE-based partial update logic.
+#[tokio::test]
+async fn personal_items_update_lifecycle() {
+    let pool = test_pool().await;
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    let now = Utc::now();
+    let item = schedule_service::create_personal(
+        &pool,
+        user_id,
+        CreatePersonalItemRequest {
+            title: "Original".into(),
+            notes: Some("initial notes".into()),
+            starts_at: now,
+            ends_at: now + ChronoDuration::hours(1),
+            is_all_day: false,
+            location: Some("here".into()),
+        },
+    )
+    .await
+    .unwrap();
+
+    // Update just the title.
+    let after_title = schedule_service::update_personal(
+        &pool,
+        user_id,
+        item.id,
+        UpdatePersonalItemRequest {
+            title: Some("Renamed".into()),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(after_title.title, "Renamed");
+    assert_eq!(after_title.notes.as_deref(), Some("initial notes"));
+    assert!(!after_title.is_all_day);
+
+    // Toggle all-day + clear notes via empty string.
+    let after_toggle = schedule_service::update_personal(
+        &pool,
+        user_id,
+        item.id,
+        UpdatePersonalItemRequest {
+            is_all_day: Some(true),
+            notes: Some(String::new()),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert!(after_toggle.is_all_day);
+    assert!(after_toggle.notes.is_none(), "empty notes should clear");
+}
+
+/// (16) Delete lifecycle: user can delete their own; a second delete
+/// returns NotFound.
+#[tokio::test]
+async fn personal_items_delete_and_missing() {
+    let pool = test_pool().await;
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    let now = Utc::now();
+    let item = schedule_service::create_personal(
+        &pool,
+        user_id,
+        CreatePersonalItemRequest {
+            title: "To delete".into(),
+            notes: None,
+            starts_at: now,
+            ends_at: now + ChronoDuration::minutes(30),
+            is_all_day: false,
+            location: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    schedule_service::delete_personal(&pool, user_id, item.id)
+        .await
+        .unwrap();
+
+    // A second delete finds nothing → NotFound.
+    let r = schedule_service::delete_personal(&pool, user_id, item.id).await;
+    assert!(
+        matches!(r, Err(AppError::NotFound)),
+        "second delete should 404: {r:?}"
+    );
 }
 
 #[tokio::test]

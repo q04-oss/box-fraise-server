@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My schedule — box fraise</title>
+  <meta name="description" content="Your Box Fraise schedule.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --ok:     #2c6e35;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+    main {
+      flex: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+      width: 100%;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 8px;
+    }
+    .sub {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 8px 0;
+    }
+    .status.ok  { color: var(--ok); }
+    .status.err { color: var(--accent); }
+
+    /* ── toolbar ──────────────────────────── */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    button, .btn {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      padding: 10px 18px;
+      border: 1px solid var(--ink);
+      border-radius: 4px;
+      background: var(--ink);
+      color: var(--bg);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: opacity 120ms ease;
+    }
+    button.secondary, .btn.secondary {
+      background: var(--bg);
+      color: var(--ink);
+    }
+    button:hover, .btn:hover { opacity: 0.85; }
+
+    /* ── item card ─────────────────────────── */
+    .item {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .item-body { flex: 1; min-width: 0; }
+    .item-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin: 0 0 6px;
+      line-height: 1.3;
+    }
+    .item-when {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 4px 0;
+    }
+    .item-notes {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 8px;
+      white-space: pre-wrap;
+    }
+    .item-location {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .item-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .item-actions button {
+      font-size: 10px;
+      padding: 6px 12px;
+    }
+
+    /* ── modal / form ──────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.28);
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--bg);
+      border-radius: 8px;
+      max-width: 480px;
+      width: 100%;
+      padding: 28px 28px 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .modal h2 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 24px;
+      margin: 0 0 20px;
+    }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .field input[type=text],
+    .field input[type=datetime-local],
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .field input:focus,
+    .field textarea:focus {
+      outline: none;
+      border-color: var(--ink);
+    }
+    .field textarea { min-height: 80px; resize: vertical; }
+    .field-inline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .empty p { margin: 0 0 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>My schedule</h1>
+    <div class="sub" id="sub">personal calendar — private to you</div>
+
+    <div class="toolbar" id="toolbar" style="display: none;">
+      <button id="add-btn">+ New item</button>
+      <button class="secondary" id="refresh-btn">Refresh</button>
+    </div>
+
+    <div id="content">
+      <div class="status">loading…</div>
+    </div>
+  </main>
+
+  <!-- Create / edit modal -->
+  <div class="modal-backdrop" id="modal" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2 id="modal-title">New item</h2>
+      <form id="item-form">
+        <input type="hidden" id="f-id">
+        <div class="field">
+          <label for="f-title">Title</label>
+          <input type="text" id="f-title" required maxlength="200">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="f-starts">Starts</label>
+            <input type="datetime-local" id="f-starts" required>
+          </div>
+          <div class="field">
+            <label for="f-ends">Ends</label>
+            <input type="datetime-local" id="f-ends" required>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-inline">
+            <input type="checkbox" id="f-all-day"> All-day
+          </label>
+        </div>
+        <div class="field">
+          <label for="f-location">Location (optional)</label>
+          <input type="text" id="f-location" maxlength="200">
+        </div>
+        <div class="field">
+          <label for="f-notes">Private notes (optional)</label>
+          <textarea id="f-notes" maxlength="4000" placeholder="Only visible to you."></textarea>
+        </div>
+        <div id="form-err" style="color: var(--accent); font-size: 13px; margin-top: 4px;"></div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="cancel-btn">Cancel</button>
+          <button type="submit" id="save-btn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/box-fraise.js"></script>
+  <script>
+    const content    = document.getElementById('content');
+    const toolbar    = document.getElementById('toolbar');
+    const modal      = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const form       = document.getElementById('item-form');
+    const fId       = document.getElementById('f-id');
+    const fTitle    = document.getElementById('f-title');
+    const fStarts   = document.getElementById('f-starts');
+    const fEnds     = document.getElementById('f-ends');
+    const fAllDay   = document.getElementById('f-all-day');
+    const fLocation = document.getElementById('f-location');
+    const fNotes    = document.getElementById('f-notes');
+    const formErr   = document.getElementById('form-err');
+
+    function esc(s) {
+      return String(s).replace(/[<>&"']/g, c => ({
+        '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'
+      })[c]);
+    }
+    function fmtWhen(item) {
+      const s = new Date(item.starts_at);
+      const e = new Date(item.ends_at);
+      const sameDay = s.toDateString() === e.toDateString();
+      const dOpts = { weekday: 'short', month: 'short', day: 'numeric' };
+      const tOpts = { hour: 'numeric', minute: '2-digit' };
+      if (item.is_all_day) {
+        return sameDay ? s.toLocaleDateString(undefined, dOpts) + ' · all day'
+                       : `${s.toLocaleDateString(undefined, dOpts)} → ${e.toLocaleDateString(undefined, dOpts)} · all days`;
+      }
+      if (sameDay) {
+        return `${s.toLocaleDateString(undefined, dOpts)} · ${s.toLocaleTimeString(undefined, tOpts)} – ${e.toLocaleTimeString(undefined, tOpts)}`;
+      }
+      return `${s.toLocaleString(undefined, { ...dOpts, ...tOpts })} → ${e.toLocaleString(undefined, { ...dOpts, ...tOpts })}`;
+    }
+
+    async function boot() {
+      const session = BoxFraise.loadSession();
+      if (!session.token) {
+        content.innerHTML = `
+          <div class="empty">
+            <p>You need a Box Fraise account to have a schedule.</p>
+            <p><a class="btn" href="/join">Join Box Fraise</a></p>
+          </div>
+        `;
+        return;
+      }
+      toolbar.style.display = 'flex';
+      await refresh();
+    }
+
+    async function refresh() {
+      content.innerHTML = `<div class="status">loading…</div>`;
+      try {
+        const items = await BoxFraise.api?.('/me/personal-items') ?? await fetchItems();
+        render(items);
+      } catch (err) {
+        content.innerHTML = `<div class="status err">${esc(err.message)}</div>`;
+        console.error(err);
+      }
+    }
+
+    async function fetchItems() {
+      const { token } = BoxFraise.loadSession();
+      const r = await fetch('/v1/me/personal-items', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const text = await r.text();
+      let body = null;
+      if (text) { try { body = JSON.parse(text); } catch {} }
+      if (!r.ok) {
+        throw new Error((body && (body.message || body.error)) || text || ('http ' + r.status));
+      }
+      return body || [];
+    }
+
+    function render(items) {
+      content.replaceChildren();
+      if (!items.length) {
+        content.innerHTML = `
+          <div class="empty">
+            <p>No items yet.</p>
+            <p>Add your first one — a haircut, a meeting, a reminder.</p>
+          </div>
+        `;
+        return;
+      }
+      // Sort: upcoming first, past below.
+      const now = Date.now();
+      items.sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+      const upcoming = items.filter(i => new Date(i.ends_at).getTime() >= now);
+      const past     = items.filter(i => new Date(i.ends_at).getTime() <  now).reverse();
+      for (const it of upcoming) content.append(renderItem(it, false));
+      if (past.length) {
+        const label = document.createElement('div');
+        label.className = 'status';
+        label.textContent = 'past';
+        label.style.marginTop = '24px';
+        content.append(label);
+        for (const it of past) content.append(renderItem(it, true));
+      }
+    }
+
+    function renderItem(item, isPast) {
+      const wrap = document.createElement('article');
+      wrap.className = 'item';
+      if (isPast) wrap.style.opacity = '0.55';
+      const body = document.createElement('div');
+      body.className = 'item-body';
+      const t = document.createElement('h3');
+      t.className = 'item-title';
+      t.textContent = item.title;
+      body.append(t);
+      const w = document.createElement('div');
+      w.className = 'item-when';
+      w.textContent = fmtWhen(item);
+      body.append(w);
+      if (item.location) {
+        const l = document.createElement('div');
+        l.className = 'item-location';
+        l.textContent = item.location;
+        body.append(l);
+      }
+      if (item.notes) {
+        const n = document.createElement('div');
+        n.className = 'item-notes';
+        n.textContent = item.notes;
+        body.append(n);
+      }
+      const actions = document.createElement('div');
+      actions.className = 'item-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'secondary';
+      editBtn.textContent = 'Edit';
+      editBtn.onclick = () => openModal(item);
+      const delBtn = document.createElement('button');
+      delBtn.className = 'secondary';
+      delBtn.textContent = 'Delete';
+      delBtn.onclick = () => deleteItem(item);
+      actions.append(editBtn, delBtn);
+      wrap.append(body, actions);
+      return wrap;
+    }
+
+    async function deleteItem(item) {
+      if (!confirm(`Delete "${item.title}"?`)) return;
+      try {
+        const { token } = BoxFraise.loadSession();
+        const r = await fetch('/v1/me/personal-items/' + item.id, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!r.ok && r.status !== 204) throw new Error('delete failed: ' + r.status);
+        await refresh();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Modal
+    function openModal(item) {
+      formErr.textContent = '';
+      if (item) {
+        modalTitle.textContent = 'Edit item';
+        fId.value       = item.id;
+        fTitle.value    = item.title;
+        fStarts.value   = toLocalInput(item.starts_at);
+        fEnds.value     = toLocalInput(item.ends_at);
+        fAllDay.checked = !!item.is_all_day;
+        fLocation.value = item.location || '';
+        fNotes.value    = item.notes || '';
+      } else {
+        modalTitle.textContent = 'New item';
+        fId.value       = '';
+        fTitle.value    = '';
+        const now = new Date();
+        const oneHr = new Date(now.getTime() + 60 * 60 * 1000);
+        fStarts.value   = toLocalInput(now.toISOString());
+        fEnds.value     = toLocalInput(oneHr.toISOString());
+        fAllDay.checked = false;
+        fLocation.value = '';
+        fNotes.value    = '';
+      }
+      modal.classList.add('open');
+      setTimeout(() => fTitle.focus(), 20);
+    }
+    function closeModal() { modal.classList.remove('open'); }
+
+    document.getElementById('add-btn').onclick     = () => openModal(null);
+    document.getElementById('cancel-btn').onclick  = closeModal;
+    document.getElementById('refresh-btn').onclick = refresh;
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      formErr.textContent = '';
+      const payload = {
+        title:      fTitle.value.trim(),
+        starts_at:  new Date(fStarts.value).toISOString(),
+        ends_at:    new Date(fEnds.value).toISOString(),
+        is_all_day: fAllDay.checked,
+        location:   fLocation.value.trim() || null,
+        notes:      fNotes.value.trim()    || null,
+      };
+      const { token } = BoxFraise.loadSession();
+      const id = fId.value;
+      const method = id ? 'PATCH' : 'POST';
+      const url    = id ? '/v1/me/personal-items/' + id : '/v1/me/personal-items';
+      try {
+        const r = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload),
+        });
+        const text = await r.text();
+        let body = null;
+        if (text) { try { body = JSON.parse(text); } catch {} }
+        if (!r.ok) {
+          formErr.textContent = (body && (body.message || body.error)) || text || ('http ' + r.status);
+          return;
+        }
+        closeModal();
+        await refresh();
+      } catch (err) {
+        formErr.textContent = err.message;
+      }
+    };
+
+    // datetime-local expects "YYYY-MM-DDTHH:MM" in *local* time.
+    function toLocalInput(isoUTC) {
+      const d = new Date(isoUTC);
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    boot();
+  </script>
+</body>
+</html>
