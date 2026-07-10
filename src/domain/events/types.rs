@@ -16,6 +16,7 @@ pub struct EventRow {
     pub longitude: f64,
     pub address: String,
     pub description: Option<String>,
+    pub questions: Vec<String>,
     pub published: bool,
 }
 
@@ -31,6 +32,7 @@ pub struct EventSummary {
     pub longitude: f64,
     pub address: String,
     pub description: Option<String>,
+    pub questions: Vec<String>,
     pub published: bool,
     /// Sky context at starts_at — the sign the sun was in, the moon
     /// phase, the season. Every event exists under a specific sky.
@@ -50,6 +52,7 @@ impl From<EventRow> for EventSummary {
             longitude: row.longitude,
             address: row.address,
             description: row.description,
+            questions: row.questions,
             published: row.published,
             celestial,
         }
@@ -60,6 +63,8 @@ impl From<EventRow> for EventSummary {
 pub struct CreateEventRequest {
     pub name: String,
     pub description: Option<String>,
+    #[serde(default)]
+    pub questions: Vec<String>,
     pub host_name: String,
     pub latitude: f64,
     pub longitude: f64,
@@ -73,4 +78,15 @@ pub struct CreateEventRequest {
 pub struct VerifiedCountResponse {
     pub event_id: Uuid,
     pub verified_count: i64,
+}
+
+/// Public archive shape. One entry per event that has any discussion
+/// questions attached — past or future, so long as it's published.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct EventQuestions {
+    pub event_id: Uuid,
+    pub event_name: String,
+    pub host_name: String,
+    pub starts_at: DateTime<Utc>,
+    pub questions: Vec<String>,
 }

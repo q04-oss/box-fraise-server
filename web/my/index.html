@@ -233,15 +233,15 @@
     }
     .empty p { margin: 0 0 12px; }
 
-    /* ── sky today card ─────────────────────── */
-    .sky {
+    /* ── generic info card (used by verification-tier panel) ───── */
+    .card {
       border: 1px solid var(--rule);
       border-radius: 6px;
       padding: 18px 20px;
       margin: 0 0 24px;
       background: #fafafa;
     }
-    .sky-label {
+    .card-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
@@ -249,39 +249,13 @@
       color: var(--muted);
       margin-bottom: 12px;
     }
-    .sky-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 15px;
-      line-height: 1.5;
-    }
-    .sky-cell {
-      flex: 1 1 240px;
-    }
-    .sky-glyph {
-      font-size: 24px;
-      margin-right: 6px;
-      vertical-align: -3px;
-    }
-    .sky-secondary {
+    .card-secondary {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px;
       color: var(--muted);
       margin-top: 4px;
       display: block;
     }
-    /* per-item celestial */
-    .item-sky {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-top: 8px;
-    }
-    .item-sky .g { font-size: 14px; vertical-align: -2px; margin: 0 2px 0 6px; }
 
     /* ── view tabs ─────────────────────────── */
     .tabs {
@@ -358,7 +332,6 @@
     .cal-cell:hover { background: #fafafa; }
     .cal-cell.other-month { background: #f7f7f7; }
     .cal-cell.other-month .cal-day { color: #bbb; }
-    .cal-cell.other-month .cal-moon { opacity: 0.35; }
     .cal-cell.today {
       background: #fff8f8;
       box-shadow: inset 0 0 0 2px var(--accent);
@@ -376,19 +349,6 @@
       color: var(--ink);
       line-height: 1;
     }
-    .cal-moon {
-      font-size: 15px;
-      line-height: 1;
-    }
-    .cal-ingress {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--accent);
-      margin: 2px 0 4px;
-    }
-    .cal-ingress .g { font-size: 12px; margin-right: 3px; vertical-align: -1px; }
     .cal-items { display: flex; flex-direction: column; gap: 2px; }
     .cal-item {
       font-size: 11px;
@@ -411,7 +371,6 @@
     @media (max-width: 600px) {
       .cal-cell { min-height: 68px; padding: 4px; }
       .cal-day { font-size: 13px; }
-      .cal-moon { font-size: 12px; }
       .cal-item { font-size: 10px; padding: 1px 3px; }
     }
 
@@ -597,13 +556,8 @@
     <h1>My schedule</h1>
     <div class="sub" id="sub">personal calendar — private to you</div>
 
-    <div class="sky" id="sky" style="display: none;">
-      <div class="sky-label">Sky right now</div>
-      <div class="sky-row" id="sky-row"></div>
-    </div>
-
-    <div class="sky" id="tier" style="display: none;">
-      <div class="sky-label">Verification tier</div>
+    <div class="card" id="tier" style="display: none;">
+      <div class="card-label">Verification tier</div>
       <div id="tier-body"></div>
     </div>
 
@@ -838,7 +792,6 @@
       }
       toolbar.style.display = 'flex';
       tabs.style.display = 'flex';
-      renderSky();           // fire and forget
       renderTier();          // fire and forget
       renderModeling();      // fire and forget
       await refresh();
@@ -860,10 +813,10 @@
               <strong>Tier ${s.tier}</strong> · verified on the Box Fraise social layer.
             </p>
             ${s.active_card ? `
-              <div class="sky-secondary" style="margin-top: 8px;">
+              <div class="card-secondary" style="margin-top: 8px;">
                 Card · <span style="font-family: 'IBM Plex Mono', monospace; color: var(--ink);">${esc(s.active_card.serial)}</span>
               </div>
-              <div class="sky-secondary">Issued · ${esc(new Date(s.active_card.issued_at).toLocaleDateString())}</div>
+              <div class="card-secondary">Issued · ${esc(new Date(s.active_card.issued_at).toLocaleDateString())}</div>
             ` : ''}
           `;
         } else {
@@ -876,42 +829,6 @@
           `;
         }
         tierEl.style.display = 'block';
-      } catch { /* silent */ }
-    }
-
-    async function renderSky() {
-      try {
-        const r = await fetch('/v1/sky');
-        if (!r.ok) return;
-        const sky = await r.json();
-        const skyEl  = document.getElementById('sky');
-        const rowEl  = document.getElementById('sky-row');
-        const fmtDate = (iso) => new Date(iso).toLocaleDateString(undefined, {
-          weekday: 'short', month: 'short', day: 'numeric'
-        });
-        const nextNewMoon  = fmtDate(sky.moon.next_new_moon);
-        const nextFullMoon = fmtDate(sky.moon.next_full_moon);
-        rowEl.innerHTML = `
-          <div class="sky-cell">
-            <span class="sky-glyph">${sky.sun.sign.symbol}</span>
-            Sun in <strong>${esc(sky.sun.sign.name)}</strong>
-            <em>(${esc(sky.sun.sign.greek)})</em>
-            <span class="sky-secondary">
-              ${esc(sky.sun.sign.element)} · ${esc(sky.sun.sign.modality)} · ruled by ${esc(sky.sun.sign.traditional_ruler.greek)}
-            </span>
-            <span class="sky-secondary">season · ${esc(sky.sun.season)}</span>
-          </div>
-          <div class="sky-cell">
-            <span class="sky-glyph">${sky.moon.sign.symbol}</span>
-            Moon in <strong>${esc(sky.moon.sign.name)}</strong>
-            <em>(${esc(sky.moon.sign.greek)})</em>
-            <span class="sky-secondary">
-              ${esc(sky.moon.phase_name)} · ${sky.moon.illumination_pct}% illuminated
-            </span>
-            <span class="sky-secondary">next new · ${esc(nextNewMoon)} · next full · ${esc(nextFullMoon)}</span>
-          </div>
-        `;
-        skyEl.style.display = 'block';
       } catch { /* silent */ }
     }
 
@@ -998,13 +915,6 @@
         n.className = 'item-notes';
         n.textContent = item.notes;
         body.append(n);
-      }
-      if (item.celestial) {
-        const sky = document.createElement('div');
-        sky.className = 'item-sky';
-        const c = item.celestial;
-        sky.innerHTML = `${esc(c.moon_phase_name)}<span class="g">${c.moon_sign_symbol}</span>· sun<span class="g">${c.sun_sign_symbol}</span>· ${esc(c.season)}`;
-        body.append(sky);
       }
       const actions = document.createElement('div');
       actions.className = 'item-actions';
@@ -1108,28 +1018,14 @@
         openModalWithDate(day);
       };
 
-      // Head row: day number + moon glyph
+      // Head row: day number
       const head = document.createElement('div');
       head.className = 'cal-day-row';
       const num = document.createElement('div');
       num.className = 'cal-day';
       num.textContent = day.getDate();
-      const moon = document.createElement('div');
-      moon.className = 'cal-moon';
-      const noon = new Date(day); noon.setHours(12, 0, 0, 0);
-      moon.textContent = BoxFraise.moonPhaseGlyph(BoxFraise.moonPhase(noon));
-      moon.title = BoxFraise.moonPhaseName(BoxFraise.moonPhase(noon));
-      head.append(num, moon);
+      head.append(num);
       cell.append(head);
-
-      // Sun-sign ingress?
-      const ingress = BoxFraise.sunSignIngressOn(noon);
-      if (ingress) {
-        const ing = document.createElement('div');
-        ing.className = 'cal-ingress';
-        ing.innerHTML = `<span class="g">${ingress.glyph}</span>sun → ${esc(ingress.name)}`;
-        cell.append(ing);
-      }
 
       // Items (up to 3)
       const listEl = document.createElement('div');

@@ -111,15 +111,32 @@
       transition: opacity 120ms ease;
     }
     .event-link:hover { opacity: 0.7; }
-    .event-sky {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--muted);
-      margin: 10px 0 4px;
+    .questions {
+      border-left: 2px solid var(--ink);
+      padding: 4px 0 4px 20px;
+      margin: 20px 0 22px;
     }
-    .event-sky .g { font-size: 14px; vertical-align: -2px; margin: 0 2px 0 6px; }
+    .questions-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .questions ol {
+      margin: 0;
+      padding-left: 22px;
+      list-style: decimal;
+    }
+    .questions li {
+      font-size: 17px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      color: var(--ink);
+      padding-left: 4px;
+    }
+    .questions li:last-child { margin-bottom: 0; }
     .empty {
       padding: 32px 0;
       font-size: 17px;
@@ -206,19 +223,28 @@
       where.textContent = ev.address;
       wrap.append(where);
 
-      if (ev.celestial) {
-        const sky = document.createElement('div');
-        sky.className = 'event-sky';
-        const c = ev.celestial;
-        sky.innerHTML = `${esc(c.moon_phase_name)}<span class="g">${c.moon_sign_symbol}</span>· sun<span class="g">${c.sun_sign_symbol}</span>· ${esc(c.season)}`;
-        wrap.append(sky);
-      }
-
       if (ev.description) {
         const desc = document.createElement('div');
         desc.className = 'event-desc';
         desc.textContent = ev.description;
         wrap.append(desc);
+      }
+
+      if (Array.isArray(ev.questions) && ev.questions.length) {
+        const box = document.createElement('div');
+        box.className = 'questions';
+        const label = document.createElement('div');
+        label.className = 'questions-label';
+        label.textContent = 'Ice-breaker · we\'ll discuss these as a group';
+        box.append(label);
+        const ol = document.createElement('ol');
+        for (const q of ev.questions) {
+          const li = document.createElement('li');
+          li.textContent = q;
+          ol.append(li);
+        }
+        box.append(ol);
+        wrap.append(box);
       }
 
       const link = document.createElement('a');

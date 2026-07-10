@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questions — box fraise</title>
+  <meta name="description" content="A running record of the discussion questions raised at Box Fraise events.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+      width: 100%;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 14px;
+    }
+    .lede {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: 0 0 40px;
+      max-width: 58ch;
+    }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+    .event-block {
+      padding: 24px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .event-block:first-child { padding-top: 8px; }
+    .event-block:last-child  { border-bottom: 0; }
+    .event-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .event-title {
+      font-size: 20px;
+      font-weight: 500;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .event-when {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .event-host {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin: 4px 0 18px;
+    }
+    ol.question-list {
+      margin: 0;
+      padding-left: 26px;
+      list-style: decimal;
+    }
+    ol.question-list li {
+      font-size: 17px;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      color: var(--ink);
+      padding-left: 4px;
+    }
+    ol.question-list li:last-child { margin-bottom: 0; }
+    .empty {
+      padding: 32px 0;
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Questions</h1>
+
+    <p class="lede">Every Box Fraise event opens with a short set of questions the group discusses together as an ice-breaker. This page is the running record — every question raised at every event, so future gatherings can see the shape of what has already been asked.</p>
+
+    <div id="list"><div class="status">loading…</div></div>
+  </main>
+
+  <script>
+    const list = document.getElementById('list');
+    function esc(s) {
+      return String(s).replace(/[<>&"']/g, c => ({
+        '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'
+      })[c]);
+    }
+
+    (async () => {
+      try {
+        const r = await fetch('/v1/questions');
+        if (!r.ok) throw new Error('http ' + r.status);
+        const events = await r.json();
+        render(events);
+      } catch (err) {
+        list.replaceChildren();
+        const s = document.createElement('div');
+        s.className = 'status';
+        s.textContent = 'unable to load questions';
+        list.append(s);
+        console.error(err);
+      }
+    })();
+
+    function render(events) {
+      list.replaceChildren();
+      if (!events.length) {
+        const el = document.createElement('div');
+        el.className = 'empty';
+        el.textContent = 'No questions in the record yet. They will appear here as events are held.';
+        list.append(el);
+        return;
+      }
+      for (const ev of events) list.append(renderEvent(ev));
+    }
+
+    function renderEvent(ev) {
+      const wrap = document.createElement('article');
+      wrap.className = 'event-block';
+
+      const head = document.createElement('div');
+      head.className = 'event-head';
+      const title = document.createElement('h2');
+      title.className = 'event-title';
+      title.textContent = ev.event_name;
+      const when = document.createElement('div');
+      when.className = 'event-when';
+      when.textContent = fmtDate(ev.starts_at);
+      head.append(title, when);
+      wrap.append(head);
+
+      const host = document.createElement('div');
+      host.className = 'event-host';
+      host.textContent = ev.host_name;
+      wrap.append(host);
+
+      const ol = document.createElement('ol');
+      ol.className = 'question-list';
+      for (const q of ev.questions) {
+        const li = document.createElement('li');
+        li.textContent = q;
+        ol.append(li);
+      }
+      wrap.append(ol);
+
+      return wrap;
+    }
+
+    function fmtDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+    }
+  </script>
+</body>
+</html>

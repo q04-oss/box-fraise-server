@@ -64,6 +64,7 @@ pub async fn create(
         admin_id,
         req.name.trim(),
         req.description.as_deref().map(str::trim),
+        &req.questions,
         req.host_name.trim(),
         req.latitude,
         req.longitude,
@@ -86,6 +87,14 @@ pub async fn create(
     .await;
 
     Ok(event.into())
+}
+
+/// Public archive of all discussion questions across events.
+pub async fn list_all_questions(pool: &Pool) -> AppResult<Vec<EventQuestions>> {
+    let mut tx = pool.begin().await?;
+    let rows = repository::list_all_questions(&mut tx).await?;
+    tx.commit().await?;
+    Ok(rows)
 }
 
 pub async fn verified_count(pool: &Pool, event_id: Uuid) -> AppResult<VerifiedCountResponse> {

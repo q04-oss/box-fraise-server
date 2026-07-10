@@ -84,6 +84,7 @@ async fn seed_test_event(pool: &PgPool, admin_id: Uuid) -> Uuid {
             name: format!("Test Event {}", random_label()),
             host_name: "Test Host".into(),
             description: None,
+            questions: vec![],
             address: "123 Test St, Montreal".into(),
             latitude: 45.5,
             longitude: -73.5,

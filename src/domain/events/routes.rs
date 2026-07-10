@@ -16,11 +16,16 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/events", get(public_list))
         .route("/events/{id}", get(public_get))
+        .route("/questions", get(public_questions))
         .route("/admin/events", get(admin_list).post(admin_create))
         .route(
             "/admin/events/{id}/verified-count",
             get(admin_verified_count),
         )
+}
+
+async fn public_questions(State(state): State<AppState>) -> AppResult<Json<Vec<EventQuestions>>> {
+    Ok(Json(service::list_all_questions(&state.pool).await?))
 }
 
 async fn public_list(State(state): State<AppState>) -> AppResult<Json<Vec<EventSummary>>> {
