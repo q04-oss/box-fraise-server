@@ -187,16 +187,17 @@
     }
 
     async function boot() {
-      const session = BoxFraise.loadSession();
-      if (!session.token) {
-        body.innerHTML = `
-          <div class="status">not joined yet</div>
-          <p style="font-size: 15px; color: var(--muted); margin: 8px 0 24px;">
-            This browser doesn't have a Box Fraise identity yet. Verification happens in person at an event.
-          </p>
-          <p><a class="cta" href="/events">See upcoming events</a></p>
-        `;
-        sub.textContent = '';
+      // First-visit path: silently generate a device keypair and
+      // register with the server so the URL alone is enough to
+      // become authenticatable. Someone opening this page for the
+      // first time at an event lands directly on their signed QR;
+      // the admin scans and they're verified. No separate signup.
+      try {
+        await BoxFraise.registerIfNeeded();
+      } catch (err) {
+        sub.textContent = 'error';
+        body.innerHTML = `<div class="status err">could not prepare identity: ${esc(err.message)}</div>`;
+        console.error(err);
         return;
       }
 
