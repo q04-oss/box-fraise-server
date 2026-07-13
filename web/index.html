@@ -26,15 +26,22 @@
       color: var(--ink);
       font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
     main {
       max-width: 520px;
-      margin: 0 auto;
-      padding: 88px 24px 140px;
+      width: 100%;
+      padding: 24px;
       text-align: left;
+      /* Slight upward bias — the composition sits at ~45% from the
+         top, not 50%. Reads more intentional than dead-centre. */
+      margin-bottom: 5vh;
     }
 
     /* Wordmark sits in the bottom-left as a signature — fixed so it
