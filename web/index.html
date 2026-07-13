@@ -26,30 +26,33 @@
       color: var(--ink);
       font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
     main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 48px 24px;
-      text-align: center;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 88px 24px 140px;
+      text-align: left;
     }
 
+    /* Wordmark sits in the bottom-left as a signature — fixed so it
+       stays visible whether the reader has scrolled or not. */
     .wordmark {
+      position: fixed;
+      bottom: 22px;
+      left: 24px;
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 400;
-      font-size: clamp(44px, 7vw, 88px);
-      letter-spacing: -0.02em;
-      line-height: 0.95;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: -0.01em;
       margin: 0;
+      z-index: 10;
+      background: linear-gradient(to right, var(--bg) 90%, rgba(255,255,255,0));
+      padding-right: 10px;
     }
     .wordmark a {
       color: inherit;
@@ -57,8 +60,8 @@
     }
 
     .search {
-      margin-top: 44px;
-      max-width: 440px;
+      margin: 0;
+      max-width: 520px;
       width: 100%;
       display: flex;
       align-items: baseline;
@@ -92,9 +95,8 @@
       font-style: normal;
     }
     .hint {
-      max-width: 440px;
       width: 100%;
-      margin: 10px auto 0;
+      margin: 10px 0 0;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
@@ -106,9 +108,8 @@
     /* ── Search results ─────────────────────────────────────────── */
     .results {
       width: 100%;
-      max-width: 640px;
-      margin: 24px auto 0;
-      padding: 0 4px;
+      margin: 24px 0 0;
+      padding: 0;
       font-family: 'Newsreader', serif;
       text-align: left;
     }
@@ -161,38 +162,44 @@
       text-align: center;
     }
 
-    /* ── For-businesses pitch ─────────────────────────── */
+    /* ── For-businesses editorial ────────────────────── */
     .pitch {
-      max-width: 560px;
       width: 100%;
-      margin: 64px auto 0;
-      padding: 32px 4px 0;
+      margin: 72px 0 0;
+      padding: 32px 0 0;
       border-top: 1px solid var(--rule);
       text-align: left;
     }
     .pitch-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 14px;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 20px;
+      letter-spacing: 0;
+      text-transform: none;
     }
     .pitch p {
       font-family: 'Newsreader', Georgia, serif;
-      font-size: 15px;
-      line-height: 1.65;
+      font-size: 16px;
+      line-height: 1.7;
       color: var(--ink);
-      margin: 0 0 12px;
+      margin: 0 0 16px;
     }
     .pitch p:last-child { margin-bottom: 0; color: var(--muted); }
+
+    @media (max-width: 600px) {
+      main { padding: 56px 22px 120px; }
+      .wordmark { font-size: 20px; bottom: 18px; left: 20px; }
+    }
 
   </style>
 </head>
 <body>
-  <main>
-    <h1 class="wordmark"><a href="/">box fraise</a></h1>
+  <h1 class="wordmark"><a href="/">box fraise</a></h1>
 
+  <main>
     <form class="search" role="search" aria-label="Private search" id="search-form">
       <input
         type="search"
@@ -211,7 +218,7 @@
     <section class="results" id="results" aria-live="polite"></section>
 
     <section class="pitch">
-      <div class="pitch-label">For businesses</div>
+      <div class="pitch-label">for businesses</div>
       <p>American Apparel used their own employees and customers in every ad for a decade. No models, no celebrities. It worked because the people were real.</p>
       <p>We do a version of that. The person in your ad is a Box Fraise client who agreed to it — not your employee, not a model, not a stock photo. They share in the fee. Because they don't work for you, nobody can accuse the ad of being staged with your own staff, which turns out to matter.</p>
       <p>We take a cut. The rest goes to them.</p>
