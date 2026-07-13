@@ -91,6 +91,17 @@
       color: var(--muted);
       font-style: normal;
     }
+    .hint {
+      max-width: 440px;
+      width: 100%;
+      margin: 10px auto 0;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-align: right;
+    }
 
     footer {
       border-top: 1px solid var(--rule);
@@ -190,6 +201,8 @@
         id="search-input"
       >
     </form>
+
+    <div class="hint">Type / for actions · anything else searches</div>
 
     <section class="results" id="results" aria-live="polite"></section>
   </main>
