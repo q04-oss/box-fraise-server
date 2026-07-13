@@ -169,6 +169,65 @@
       text-align: center;
     }
 
+    /* ── Directory ─────────────────────────────────────────── */
+    .directory {
+      width: 100%;
+      margin: 48px 0 0;
+      padding: 24px 0 0;
+      border-top: 1px solid var(--rule);
+    }
+    .directory-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .business {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .business:last-child { border-bottom: 0; }
+    .business-name {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-size: 17px;
+      color: var(--ink);
+      display: block;
+      text-decoration: none;
+      transition: color 120ms ease;
+    }
+    .business-name:hover { color: var(--accent); }
+    .business-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+    .directory-empty {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 6px 0 12px;
+    }
+    .directory-signup {
+      margin: 22px 0 0;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    .directory-signup a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 2px;
+    }
+    .directory-signup a:hover { border-bottom-color: var(--ink); }
+
     @media (max-width: 600px) {
       main { padding: 56px 22px 120px; }
       .wordmark { font-size: 20px; bottom: 18px; left: 20px; }
@@ -196,6 +255,12 @@
     <div class="hint">Type / for actions · anything else searches</div>
 
     <section class="results" id="results" aria-live="polite"></section>
+
+    <section class="directory" aria-label="Business directory">
+      <div class="directory-label">directory</div>
+      <div id="directory-list"></div>
+      <p class="directory-signup">To add your business, email <a href="mailto:hello@fraise.box">hello@fraise.box</a>.</p>
+    </section>
   </main>
 
   <script>
@@ -274,6 +339,53 @@
       el.className = 'attribution';
       el.textContent = 'Search by Brave';
       box.append(el);
+    }
+
+    // Directory: fetch on load, render in its own section.
+    (async () => {
+      try {
+        const r = await fetch('/v1/businesses');
+        if (!r.ok) return;
+        const list = await r.json();
+        renderDirectory(list);
+      } catch { /* silent — the directory simply doesn't render */ }
+    })();
+
+    function renderDirectory(list) {
+      const el = document.getElementById('directory-list');
+      el.replaceChildren();
+      if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'directory-empty';
+        empty.textContent = 'No businesses yet. Be the first.';
+        el.append(empty);
+        return;
+      }
+      for (const b of list) {
+        const row = document.createElement('div');
+        row.className = 'business';
+        if (b.website) {
+          const a = document.createElement('a');
+          a.className = 'business-name';
+          a.href = b.website;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = b.name;
+          row.append(a);
+        } else {
+          const name = document.createElement('span');
+          name.className = 'business-name';
+          name.textContent = b.name;
+          row.append(name);
+        }
+        if (b.description) {
+          const desc = document.createElement('div');
+          desc.className = 'business-desc';
+          desc.textContent = b.description;
+          row.append(desc);
+        }
+        el.append(row);
+      }
     }
 
     // Live menu: as the user types "/..." reveal matching actions.
