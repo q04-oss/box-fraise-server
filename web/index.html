@@ -156,6 +156,12 @@
       color: var(--muted);
       line-height: 1.45;
     }
+    .action-key {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 15px;
+      color: var(--ink);
+      letter-spacing: 0.02em;
+    }
     .attribution {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
@@ -189,11 +195,59 @@
   </main>
 
   <script>
-    // Same-origin proxy through /v1/search — the Brave API key never
-    // touches the browser. Query text is not logged server-side.
+    // Search bar behaviour:
+    //   - Typing a known action word (with or without leading `/`) and
+    //     pressing Enter navigates to the action URL.
+    //   - Typing `/` alone (or `/` + partial match) reveals the action
+    //     menu inline; users can click a row to jump.
+    //   - Anything else falls through to the Brave search — the
+    //     same-origin /v1/search proxy keeps the API key server-side
+    //     and query text unlogged.
     const form  = document.getElementById('search-form');
     const input = document.getElementById('search-input');
     const box   = document.getElementById('results');
+
+    const ACTIONS = [
+      { keys: ['pass', 'join', 'auth', 'verify'], url: '/pass',       label: 'Authenticate at an event' },
+      { keys: ['events', 'event'],                url: '/events',     label: 'Upcoming events' },
+      { keys: ['vision', 'about'],                url: '/vision',     label: 'What Box Fraise is' },
+      { keys: ['questions'],                      url: '/questions',  label: 'The record of questions raised' },
+      { keys: ['donations', 'donate', 'fund'],    url: '/donations',  label: 'The Legal Justice Fund' },
+    ];
+
+    function normalize(q) {
+      return q.trim().toLowerCase().replace(/^\//, '');
+    }
+
+    function resolveAction(q) {
+      const key = normalize(q);
+      if (!key) return null;
+      return ACTIONS.find(a => a.keys.includes(key)) || null;
+    }
+
+    function renderActionMenu(rawFilter) {
+      box.replaceChildren();
+      const wanted = (rawFilter || '').toLowerCase().replace(/^\//, '');
+      const shown = ACTIONS.filter(a =>
+        !wanted || a.keys.some(k => k.startsWith(wanted))
+      );
+      for (const a of shown) {
+        const el = document.createElement('a');
+        el.href = a.url;
+        el.className = 'result';
+        const t = document.createElement('div');
+        t.className = 'result-title';
+        const k = document.createElement('span');
+        k.className = 'action-key';
+        k.textContent = '/' + a.keys[0];
+        t.append(k);
+        const d = document.createElement('div');
+        d.className = 'result-desc';
+        d.textContent = a.label;
+        el.append(t, d);
+        box.append(el);
+      }
+    }
 
     function status(text) {
       box.replaceChildren();
@@ -210,10 +264,28 @@
       box.append(el);
     }
 
+    // Live menu: as the user types "/..." reveal matching actions.
+    input.addEventListener('input', () => {
+      const v = input.value;
+      if (v.startsWith('/')) {
+        renderActionMenu(v.slice(1));
+      } else if (!v.trim()) {
+        box.replaceChildren();
+      }
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const q = input.value.trim();
       if (!q) { box.replaceChildren(); return; }
+
+      // Action match beats search.
+      const action = resolveAction(q);
+      if (action) {
+        window.location.assign(action.url);
+        return;
+      }
+
       status('searching…');
       try {
         const r = await fetch('/v1/search?q=' + encodeURIComponent(q));
