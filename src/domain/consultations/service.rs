@@ -95,10 +95,6 @@ pub async fn complete_consultation(
         &req.design_version,
     )
     .await?;
-    if let Some(ref hair) = req.hair_profile {
-        crate::domain::modeling::repository::upsert_hair_profile(tx.conn(), req.user_id, hair)
-            .await?;
-    }
     tx.commit().await?;
 
     // Audit outside the tx, as always.

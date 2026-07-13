@@ -2,8 +2,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::celestial::ItemCelestial;
-
 /// Raw DB row for an event. Used internally.
 #[derive(Debug, sqlx::FromRow)]
 pub struct EventRow {
@@ -20,7 +18,6 @@ pub struct EventRow {
     pub published: bool,
 }
 
-/// API response: DB row + celestial context at starts_at.
 #[derive(Debug, Serialize)]
 pub struct EventSummary {
     pub id: Uuid,
@@ -34,14 +31,10 @@ pub struct EventSummary {
     pub description: Option<String>,
     pub questions: Vec<String>,
     pub published: bool,
-    /// Sky context at starts_at — the sign the sun was in, the moon
-    /// phase, the season. Every event exists under a specific sky.
-    pub celestial: ItemCelestial,
 }
 
 impl From<EventRow> for EventSummary {
     fn from(row: EventRow) -> Self {
-        let celestial = ItemCelestial::compute(row.starts_at);
         Self {
             id: row.id,
             name: row.name,
@@ -54,7 +47,6 @@ impl From<EventRow> for EventSummary {
             description: row.description,
             questions: row.questions,
             published: row.published,
-            celestial,
         }
     }
 }

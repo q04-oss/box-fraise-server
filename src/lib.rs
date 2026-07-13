@@ -4,7 +4,6 @@
 
 pub mod app;
 pub mod audit;
-pub mod celestial;
 pub mod config;
 pub mod crypto;
 pub mod db;

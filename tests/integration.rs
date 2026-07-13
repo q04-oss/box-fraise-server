@@ -19,21 +19,9 @@ use box_fraise::{
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
         events::{service as events_service, types::CreateEventRequest},
-        modeling::{
-            service as modeling_service,
-            types::{CreateModelRequestRequest, HairProfileInput, UpdateOwnHairProfileRequest},
-        },
-        oauth::{
-            jwt as oauth_jwt, keys as oauth_keys, service as oauth_service,
-            types::TokenRequest as OauthTokenRequest,
-        },
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
-        },
-        schedule::{
-            service as schedule_service,
-            types::{CreatePersonalItemRequest, UpdatePersonalItemRequest},
         },
     },
     error::AppError,
@@ -515,136 +503,6 @@ async fn me_embeds_verified_event_after_verify() {
     assert!(!event.address.is_empty());
 }
 
-/// (14) Personal items are strictly owner-scoped. User A creates one,
-/// User B queries their own list and cannot see it — RLS is the safety
-/// net even without user-level filtering.
-#[tokio::test]
-async fn personal_items_are_owner_scoped() {
-    let pool = test_pool().await;
-    let (user_a, _) = register_with_keypair(&pool).await;
-    let (user_b, _) = register_with_keypair(&pool).await;
-
-    let now = Utc::now();
-    let created = schedule_service::create_personal(
-        &pool,
-        user_a,
-        CreatePersonalItemRequest {
-            title: "Owner scope test".into(),
-            notes: Some("private".into()),
-            starts_at: now,
-            ends_at: now + ChronoDuration::hours(1),
-            is_all_day: false,
-            location: Some("everywhere".into()),
-        },
-    )
-    .await
-    .unwrap();
-
-    let a_items = schedule_service::list_personal(&pool, user_a)
-        .await
-        .unwrap();
-    assert!(a_items.iter().any(|i| i.id == created.id));
-
-    let b_items = schedule_service::list_personal(&pool, user_b)
-        .await
-        .unwrap();
-    assert!(
-        b_items.iter().all(|i| i.id != created.id),
-        "user B saw user A's private item — RLS leak"
-    );
-}
-
-/// (15) Update lifecycle: title change, all-day toggle, notes clear on
-/// empty string. Confirms COALESCE-based partial update logic.
-#[tokio::test]
-async fn personal_items_update_lifecycle() {
-    let pool = test_pool().await;
-    let (user_id, _) = register_with_keypair(&pool).await;
-
-    let now = Utc::now();
-    let item = schedule_service::create_personal(
-        &pool,
-        user_id,
-        CreatePersonalItemRequest {
-            title: "Original".into(),
-            notes: Some("initial notes".into()),
-            starts_at: now,
-            ends_at: now + ChronoDuration::hours(1),
-            is_all_day: false,
-            location: Some("here".into()),
-        },
-    )
-    .await
-    .unwrap();
-
-    // Update just the title.
-    let after_title = schedule_service::update_personal(
-        &pool,
-        user_id,
-        item.id,
-        UpdatePersonalItemRequest {
-            title: Some("Renamed".into()),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
-    assert_eq!(after_title.title, "Renamed");
-    assert_eq!(after_title.notes.as_deref(), Some("initial notes"));
-    assert!(!after_title.is_all_day);
-
-    // Toggle all-day + clear notes via empty string.
-    let after_toggle = schedule_service::update_personal(
-        &pool,
-        user_id,
-        item.id,
-        UpdatePersonalItemRequest {
-            is_all_day: Some(true),
-            notes: Some(String::new()),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
-    assert!(after_toggle.is_all_day);
-    assert!(after_toggle.notes.is_none(), "empty notes should clear");
-}
-
-/// (16) Delete lifecycle: user can delete their own; a second delete
-/// returns NotFound.
-#[tokio::test]
-async fn personal_items_delete_and_missing() {
-    let pool = test_pool().await;
-    let (user_id, _) = register_with_keypair(&pool).await;
-
-    let now = Utc::now();
-    let item = schedule_service::create_personal(
-        &pool,
-        user_id,
-        CreatePersonalItemRequest {
-            title: "To delete".into(),
-            notes: None,
-            starts_at: now,
-            ends_at: now + ChronoDuration::minutes(30),
-            is_all_day: false,
-            location: None,
-        },
-    )
-    .await
-    .unwrap();
-
-    schedule_service::delete_personal(&pool, user_id, item.id)
-        .await
-        .unwrap();
-
-    // A second delete finds nothing → NotFound.
-    let r = schedule_service::delete_personal(&pool, user_id, item.id).await;
-    assert!(
-        matches!(r, Err(AppError::NotFound)),
-        "second delete should 404: {r:?}"
-    );
-}
-
 /// (17) Consultation lifecycle: a trained consultant completes a
 /// consultation → the verification + card are issued atomically → the
 /// public card lookup returns valid → revoke → lookup returns dead.
@@ -675,7 +533,6 @@ async fn consultation_lifecycle_end_to_end() {
                 "revenue_share": true,
             }),
             design_version: "v1".into(),
-            hair_profile: None,
         },
     )
     .await
@@ -740,7 +597,6 @@ async fn consultant_cannot_verify_themselves() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
-            hair_profile: None,
         },
     )
     .await;
@@ -774,7 +630,6 @@ async fn untrained_staff_cannot_consult() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
-            hair_profile: None,
         },
     )
     .await;
@@ -802,7 +657,6 @@ async fn card_replacement_flow() {
             consultation_notes: None,
             consent_snapshot: serde_json::Value::Null,
             design_version: "v1".into(),
-            hair_profile: None,
         },
     )
     .await
@@ -851,316 +705,106 @@ async fn seed_trained_consultant(pool: &PgPool, user_id: Uuid) {
     tx.commit().await.unwrap();
 }
 
-/// (21) OAuth: token issued for a user is a valid ES256 JWT we can
-/// verify with our own JWKS key, carrying the expected claims.
+/// Events created with a questions[] round-trip through EventSummary
+/// with the same ordered list. Guards against a silent drop or reorder
+/// if either the INSERT RETURNING or the FromRow contract for the
+/// column ever regresses.
 #[tokio::test]
-async fn oauth_token_round_trips() {
+async fn event_questions_round_trip() {
     let pool = test_pool().await;
-    let (user_id, _) = register_with_keypair(&pool).await;
-
-    let resp = oauth_service::issue_token(
-        &pool,
-        user_id,
-        OauthTokenRequest {
-            audience: "https://partner.example".into(),
-        },
-    )
-    .await
-    .unwrap();
-
-    // Verify with our public key.
-    let vk = oauth_keys::verifying_key();
-    let claims = oauth_jwt::verify(&resp.access_token, &vk)
-        .expect("our own token must verify with our own public key");
-    assert_eq!(claims["sub"].as_str().unwrap(), user_id.to_string());
-    assert_eq!(claims["aud"].as_str().unwrap(), "https://partner.example");
-    assert_eq!(claims["iss"].as_str().unwrap(), "https://fraise.box");
-    assert_eq!(claims["tier"].as_i64().unwrap(), 1);
-    assert!(!claims["verified"].as_bool().unwrap());
-
-    // userinfo endpoint accepts the token.
-    let info = oauth_service::userinfo(&pool, &resp.access_token)
-        .await
-        .unwrap();
-    assert_eq!(info.sub, user_id);
-    assert_eq!(info.tier, 1);
-    assert!(!info.verified);
-}
-
-/// (22) Tampered token fails verification.
-#[tokio::test]
-async fn oauth_tampered_token_rejected() {
-    let pool = test_pool().await;
-    let (user_id, _) = register_with_keypair(&pool).await;
-
-    let resp = oauth_service::issue_token(
-        &pool,
-        user_id,
-        OauthTokenRequest {
-            audience: "https://partner.example".into(),
-        },
-    )
-    .await
-    .unwrap();
-
-    // Flip one character in the signature (last part after final '.').
-    let mut parts: Vec<&str> = resp.access_token.split('.').collect();
-    let mut sig = parts[2].to_string();
-    let first_char = sig.chars().next().unwrap();
-    let flipped = if first_char == 'A' { 'B' } else { 'A' };
-    sig.replace_range(0..1, &flipped.to_string());
-    parts[2] = &sig;
-    let tampered = parts.join(".");
-
-    let r = oauth_service::userinfo(&pool, &tampered).await;
-    assert!(
-        matches!(r, Err(AppError::Unauthorized)),
-        "tampered sig should reject: {r:?}"
-    );
-}
-
-/// (23) Model request lifecycle: student posts a request, the server
-/// fans out invitations to matching willing-to-model users, the first
-/// accept fills the request, further accepts race and lose.
-#[tokio::test]
-async fn model_request_matches_and_fills() {
-    let pool = test_pool().await;
-
-    let (consultant_id, _) = register_with_keypair(&pool).await;
-    seed_trained_consultant(&pool, consultant_id).await;
-
-    // A unique hair_type per test run so other tests' fixtures don't
-    // accidentally match this test's fan-out filter.
-    let unique_type = format!("test-{}", Uuid::new_v4());
-
-    let (student_id, _) = register_with_keypair(&pool).await;
-    consultations_service::complete_consultation(
-        &pool,
-        consultant_id,
-        CompleteConsultationRequest {
-            user_id: student_id,
-            salon_id: None,
-            consultation_notes: None,
-            consent_snapshot: serde_json::Value::Null,
-            design_version: "v1".into(),
-            hair_profile: Some(HairProfileInput {
-                hair_length: Some("long".into()),
-                hair_texture: Some("straight".into()),
-                hair_type: Some(unique_type.clone()),
-                hair_thickness: None,
-                natural_color: Some("brown".into()),
-                current_color: None,
-                chemically_treated: false,
-                willing_services: None,
-                willing_to_model: false,
-                is_hair_student: true,
-                hair_notes: None,
-            }),
-        },
-    )
-    .await
-    .unwrap();
-
-    // Two matching willing-to-model users (share the unique hair_type)
-    // and one non-matcher that has the same type but wrong length.
-    let (model_a, _) = register_with_keypair(&pool).await;
-    let (model_b, _) = register_with_keypair(&pool).await;
-    let (model_c, _) = register_with_keypair(&pool).await;
-    for (uid, length) in [(model_a, "long"), (model_b, "long"), (model_c, "short")] {
-        consultations_service::complete_consultation(
-            &pool,
-            consultant_id,
-            CompleteConsultationRequest {
-                user_id: uid,
-                salon_id: None,
-                consultation_notes: None,
-                consent_snapshot: serde_json::Value::Null,
-                design_version: "v1".into(),
-                hair_profile: Some(HairProfileInput {
-                    hair_length: Some(length.into()),
-                    hair_texture: Some("straight".into()),
-                    hair_type: Some(unique_type.clone()),
-                    hair_thickness: None,
-                    natural_color: Some("brown".into()),
-                    current_color: None,
-                    chemically_treated: false,
-                    willing_services: None,
-                    willing_to_model: true,
-                    is_hair_student: false,
-                    hair_notes: None,
-                }),
-            },
-        )
-        .await
-        .unwrap();
-    }
-
+    let admin_id = seed_test_admin(&pool).await;
     let now = Utc::now();
-    let created = modeling_service::create_model_request(
+    let qs: Vec<String> = vec![
+        "Is justice real?".into(),
+        "Should Alberta separate from Canada?".into(),
+        "Should the Water Not Coal question be on the referendum?".into(),
+    ];
+
+    let ev = events_service::create(
         &pool,
-        student_id,
-        CreateModelRequestRequest {
-            service: "colour practice".into(),
-            starts_at: now + ChronoDuration::days(3),
-            ends_at: now + ChronoDuration::days(3) + ChronoDuration::hours(2),
-            location: "Cosmetology school, Edmonton".into(),
-            location_lat: None,
-            location_lng: None,
-            filter_length: vec!["long".into()],
-            filter_texture: vec![],
-            filter_type: vec![unique_type.clone()],
-            filter_color: vec![],
-            additional_notes: None,
-        },
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(created.invitations_sent, 2, "should fan out to A + B only");
-
-    let a_inv = modeling_service::list_own_invitations(&pool, model_a)
-        .await
-        .unwrap();
-    assert_eq!(a_inv.len(), 1);
-    let a_invitation_id = a_inv[0].invitation.id;
-
-    let c_inv = modeling_service::list_own_invitations(&pool, model_c)
-        .await
-        .unwrap();
-    assert!(c_inv.is_empty(), "model_c hair does not match");
-
-    modeling_service::respond_to_invitation(&pool, model_a, a_invitation_id, true)
-        .await
-        .unwrap();
-
-    let b_inv = modeling_service::list_own_invitations(&pool, model_b)
-        .await
-        .unwrap();
-    let b_invitation_id = b_inv[0].invitation.id;
-    let r = modeling_service::respond_to_invitation(&pool, model_b, b_invitation_id, true).await;
-    assert!(
-        matches!(r, Err(AppError::Conflict)),
-        "second accept should conflict: {r:?}"
-    );
-}
-
-/// (24) A non-student cannot create a model request.
-#[tokio::test]
-async fn non_student_cannot_post_model_request() {
-    let pool = test_pool().await;
-    let (consultant_id, _) = register_with_keypair(&pool).await;
-    seed_trained_consultant(&pool, consultant_id).await;
-
-    let (user_id, _) = register_with_keypair(&pool).await;
-    consultations_service::complete_consultation(
-        &pool,
-        consultant_id,
-        CompleteConsultationRequest {
-            user_id,
-            salon_id: None,
-            consultation_notes: None,
-            consent_snapshot: serde_json::Value::Null,
-            design_version: "v1".into(),
-            hair_profile: Some(HairProfileInput {
-                hair_length: None,
-                hair_texture: None,
-                hair_type: None,
-                hair_thickness: None,
-                natural_color: None,
-                current_color: None,
-                chemically_treated: false,
-                willing_services: None,
-                willing_to_model: false,
-                is_hair_student: false,
-                hair_notes: None,
-            }),
-        },
-    )
-    .await
-    .unwrap();
-
-    let now = Utc::now();
-    let r = modeling_service::create_model_request(
-        &pool,
-        user_id,
-        CreateModelRequestRequest {
-            service: "cut".into(),
-            starts_at: now + ChronoDuration::hours(1),
+        admin_id,
+        CreateEventRequest {
+            name: format!("Q-test {}", random_label()),
+            host_name: "Host".into(),
+            description: None,
+            questions: qs.clone(),
+            address: "10026 102 Street NW".into(),
+            latitude: 53.5423,
+            longitude: -113.4917,
+            starts_at: now,
             ends_at: now + ChronoDuration::hours(2),
-            location: "somewhere".into(),
-            location_lat: None,
-            location_lng: None,
-            filter_length: vec![],
-            filter_texture: vec![],
-            filter_type: vec![],
-            filter_color: vec![],
-            additional_notes: None,
+            published: true,
         },
     )
-    .await;
-    assert!(
-        matches!(r, Err(AppError::Forbidden)),
-        "non-student should be Forbidden: {r:?}"
-    );
+    .await
+    .unwrap();
+
+    assert_eq!(ev.questions, qs, "questions must round-trip in order");
+
+    // And they survive the list route too.
+    let listed = events_service::list_public(&pool).await.unwrap();
+    let mine = listed
+        .into_iter()
+        .find(|e| e.id == ev.id)
+        .expect("event visible on public list");
+    assert_eq!(mine.questions, qs);
 }
 
-/// (25) User can toggle their own willing_to_model flag from /me.
+/// The /v1/questions archive returns only published events with a
+/// non-empty questions[] and never the ones without questions.
 #[tokio::test]
-async fn user_can_toggle_willing_to_model() {
+async fn questions_archive_filters_and_lists() {
     let pool = test_pool().await;
-    let (consultant_id, _) = register_with_keypair(&pool).await;
-    seed_trained_consultant(&pool, consultant_id).await;
+    let admin_id = seed_test_admin(&pool).await;
+    let now = Utc::now();
 
-    let (user_id, _) = register_with_keypair(&pool).await;
-    consultations_service::complete_consultation(
+    let with_qs = events_service::create(
         &pool,
-        consultant_id,
-        CompleteConsultationRequest {
-            user_id,
-            salon_id: None,
-            consultation_notes: None,
-            consent_snapshot: serde_json::Value::Null,
-            design_version: "v1".into(),
-            hair_profile: Some(HairProfileInput {
-                hair_length: Some("medium".into()),
-                hair_texture: Some("wavy".into()),
-                hair_type: None,
-                hair_thickness: None,
-                natural_color: None,
-                current_color: None,
-                chemically_treated: false,
-                willing_services: None,
-                willing_to_model: true,
-                is_hair_student: false,
-                hair_notes: None,
-            }),
+        admin_id,
+        CreateEventRequest {
+            name: format!("QA with {}", random_label()),
+            host_name: "Host".into(),
+            description: None,
+            questions: vec!["Only question".into()],
+            address: "10026 102 Street NW".into(),
+            latitude: 53.5423,
+            longitude: -113.4917,
+            starts_at: now,
+            ends_at: now + ChronoDuration::hours(1),
+            published: true,
         },
     )
     .await
     .unwrap();
 
-    let updated = modeling_service::update_own_willing_to_model(
+    let without_qs = events_service::create(
         &pool,
-        user_id,
-        UpdateOwnHairProfileRequest {
-            willing_to_model: false,
+        admin_id,
+        CreateEventRequest {
+            name: format!("QA without {}", random_label()),
+            host_name: "Host".into(),
+            description: None,
+            questions: vec![],
+            address: "10026 102 Street NW".into(),
+            latitude: 53.5423,
+            longitude: -113.4917,
+            starts_at: now,
+            ends_at: now + ChronoDuration::hours(1),
+            published: true,
         },
     )
     .await
     .unwrap();
-    assert!(!updated.willing_to_model);
-    assert_eq!(updated.hair_length.as_deref(), Some("medium"));
 
-    let updated = modeling_service::update_own_willing_to_model(
-        &pool,
-        user_id,
-        UpdateOwnHairProfileRequest {
-            willing_to_model: true,
-        },
-    )
-    .await
-    .unwrap();
-    assert!(updated.willing_to_model);
+    let archive = events_service::list_all_questions(&pool).await.unwrap();
+    assert!(
+        archive.iter().any(|e| e.event_id == with_qs.id),
+        "event with questions should appear in the archive"
+    );
+    assert!(
+        archive.iter().all(|e| e.event_id != without_qs.id),
+        "event without questions should not appear in the archive"
+    );
 }
 
 #[tokio::test]

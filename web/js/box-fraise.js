@@ -237,72 +237,6 @@ async function fetchMe() {
   return await api('/me');
 }
 
-// ── Celestial (mirrors src/celestial/calc.rs, minimally) ────────────
-//
-// So the calendar can compute moon phase / sun sign for 30+ days
-// without 30+ API round-trips. Same formulas, same reference points
-// as the Rust server. Accuracy: hours for moon phase, arcminutes for
-// sun. Fine for a calendar-cell glyph.
-
-const JD_UNIX_EPOCH  = 2440587.5;
-const J2000_JD       = 2451545.0;
-const SYNODIC_MONTH  = 29.53058867;
-const REF_NEW_MOON_JD = 2451550.09765;
-
-function julianDate(date) {
-  return JD_UNIX_EPOCH + date.getTime() / 86400000;
-}
-
-function moonPhase(date) {
-  const jd = julianDate(date);
-  const m  = ((jd - REF_NEW_MOON_JD) / SYNODIC_MONTH) % 1;
-  return m < 0 ? m + 1 : m;
-}
-
-const MOON_GLYPHS = ['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
-const MOON_NAMES  = ['new','waxing crescent','first quarter','waxing gibbous',
-                     'full','waning gibbous','last quarter','waning crescent'];
-function moonPhaseGlyph(phase) { return MOON_GLYPHS[Math.round(phase * 8) % 8]; }
-function moonPhaseName(phase)  { return MOON_NAMES[Math.round(phase * 8) % 8]; }
-
-function sunLongitudeDeg(date) {
-  const jd = julianDate(date);
-  const n  = jd - J2000_JD;
-  const L  = 280.460 + 0.9856474 * n;
-  const g  = (357.528 + 0.9856003 * n) * Math.PI / 180;
-  let lambda = L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g);
-  lambda = ((lambda % 360) + 360) % 360;
-  return lambda;
-}
-
-const ZODIAC = [
-  { id: 'aries',       name: 'Aries',       greek: 'Κριός',      glyph: '♈' },
-  { id: 'taurus',      name: 'Taurus',      greek: 'Ταῦρος',      glyph: '♉' },
-  { id: 'gemini',      name: 'Gemini',      greek: 'Δίδυμοι',     glyph: '♊' },
-  { id: 'cancer',      name: 'Cancer',      greek: 'Καρκίνος',    glyph: '♋' },
-  { id: 'leo',         name: 'Leo',         greek: 'Λέων',        glyph: '♌' },
-  { id: 'virgo',       name: 'Virgo',       greek: 'Παρθένος',    glyph: '♍' },
-  { id: 'libra',       name: 'Libra',       greek: 'Ζυγός',       glyph: '♎' },
-  { id: 'scorpio',     name: 'Scorpio',     greek: 'Σκορπιός',    glyph: '♏' },
-  { id: 'sagittarius', name: 'Sagittarius', greek: 'Τοξότης',     glyph: '♐' },
-  { id: 'capricorn',   name: 'Capricorn',   greek: 'Αἰγόκερως',   glyph: '♑' },
-  { id: 'aquarius',    name: 'Aquarius',    greek: 'Ὑδροχόος',    glyph: '♒' },
-  { id: 'pisces',      name: 'Pisces',      greek: 'Ἰχθύες',      glyph: '♓' },
-];
-
-function sunSign(date) {
-  return ZODIAC[Math.floor(sunLongitudeDeg(date) / 30)];
-}
-
-/** Returns the sun sign for `today` if it differs from `yesterday`, else null. */
-function sunSignIngressOn(date) {
-  const prev = new Date(date);
-  prev.setDate(prev.getDate() - 1);
-  const today = sunSign(date);
-  const before = sunSign(prev);
-  return today.id !== before.id ? today : null;
-}
-
 // ── Export ───────────────────────────────────────────────────────────
 
 window.BoxFraise = {
@@ -311,12 +245,4 @@ window.BoxFraise = {
   fetchMe,
   loadSession,
   clearSession,
-  // Celestial
-  moonPhase,
-  moonPhaseGlyph,
-  moonPhaseName,
-  sunLongitudeDeg,
-  sunSign,
-  sunSignIngressOn,
-  ZODIAC,
 };
