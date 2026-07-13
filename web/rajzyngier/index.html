@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rajzyngier Research — box fraise</title>
+  <meta name="description" content="A private legal research lab. The lab asks what justice is, and what it would take to change society from one where parents can disown their kids into one where kids can disown their parents.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 32px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+    p.closer {
+      color: var(--muted);
+      margin-top: 32px;
+      font-size: 15px;
+    }
+    .questions {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      padding: 40px 4px;
+      margin: 36px 0;
+    }
+    .question {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1.4;
+      margin: 0 0 22px;
+      color: var(--ink);
+      display: flex;
+      gap: 14px;
+    }
+    .question:last-child { margin-bottom: 0; }
+    .q-num {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-style: normal;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.16em;
+      padding-top: 8px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Rajzyngier Research</h1>
+
+    <p>Rajzyngier Research is a private legal research lab. It studies legal infrastructure — identity, consent, trust, and the physical systems those depend on — with a working preference for research that lands as apparatus rather than pure theory.</p>
+
+    <p>Two questions organise the lab's work.</p>
+
+    <div class="questions">
+      <p class="question"><span class="q-num">01</span><span>What is justice?</span></p>
+      <p class="question"><span class="q-num">02</span><span>What would it take to change society from one where parents can disown their kids into one where kids can disown their parents?</span></p>
+    </div>
+
+    <p>The lab's current working project is <a href="/vision">Box Fraise</a> — a hair salon and the software that runs it. Every part of Box Fraise is the lab's attempt to answer those two questions in physical form: the salon, the events, the Legal Justice Fund, the portrait program, the software.</p>
+
+    <p class="closer">Research notes and further publications will appear here as they're completed.</p>
+  </main>
+</body>
+</html>
