@@ -341,27 +341,49 @@
       box.append(el);
     }
 
-    // Directory: fetch on load, render in its own section.
+    // Directory: fetch on load, cache the full list, render.
+    // Text typed into the search bar filters the directory live —
+    // matches on name or description, case-insensitive.
+    let allBusinesses = [];
+
     (async () => {
       try {
         const r = await fetch('/v1/businesses');
         if (!r.ok) return;
-        const list = await r.json();
-        renderDirectory(list);
+        allBusinesses = await r.json();
+        renderDirectory('');
       } catch { /* silent — the directory simply doesn't render */ }
     })();
 
-    function renderDirectory(list) {
+    function renderDirectory(rawFilter) {
       const el = document.getElementById('directory-list');
       el.replaceChildren();
-      if (!list.length) {
+
+      if (!allBusinesses.length) {
         const empty = document.createElement('div');
         empty.className = 'directory-empty';
         empty.textContent = 'No businesses yet. Be the first.';
         el.append(empty);
         return;
       }
-      for (const b of list) {
+
+      const filter = (rawFilter || '').trim().toLowerCase();
+      const shown = filter
+        ? allBusinesses.filter(b =>
+            b.name.toLowerCase().includes(filter) ||
+            (b.description && b.description.toLowerCase().includes(filter))
+          )
+        : allBusinesses;
+
+      if (!shown.length) {
+        const empty = document.createElement('div');
+        empty.className = 'directory-empty';
+        empty.textContent = 'No businesses match. Press Enter to search the web.';
+        el.append(empty);
+        return;
+      }
+
+      for (const b of shown) {
         const row = document.createElement('div');
         row.className = 'business';
         if (b.website) {
@@ -389,13 +411,19 @@
     }
 
     // Live menu: as the user types "/..." reveal matching actions.
+    // Everything else filters the directory live.
     input.addEventListener('input', () => {
       const v = input.value;
       if (v.startsWith('/')) {
         renderActionMenu(v.slice(1));
-      } else if (!v.trim()) {
+        return;
+      }
+      // Non-slash typing clears any active results and filters the
+      // directory to matching rows. Empty input restores the full list.
+      if (!v.trim()) {
         box.replaceChildren();
       }
+      renderDirectory(v);
     });
 
     form.addEventListener('submit', async (e) => {
