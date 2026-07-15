@@ -183,6 +183,43 @@
       color: var(--ink);
       letter-spacing: 0.02em;
     }
+
+    /* ── Next event line (sits above the search bar) ─────── */
+    .next-event {
+      display: none;
+      margin: 0 0 24px;
+      text-decoration: none;
+      color: inherit;
+      line-height: 1.4;
+    }
+    .next-event.visible { display: block; }
+    .next-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 4px;
+      transition: color 120ms ease;
+    }
+    .next-name {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 17px;
+      color: var(--ink);
+    }
+    .next-arrow {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 6px;
+      transition: color 120ms ease;
+    }
+    .next-event:hover .next-label,
+    .next-event:hover .next-arrow { color: var(--ink); }
+    .next-event:hover .next-name { color: var(--accent); }
     .attribution {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
@@ -288,6 +325,11 @@
 
   <main>
     <div class="col-search">
+      <a class="next-event" id="next-event" href="/events">
+        <span class="next-label">Next · <span id="next-date"></span></span>
+        <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
+      </a>
+
       <form class="search" role="search" aria-label="Private search" id="search-form">
         <input
           type="search"
@@ -391,6 +433,27 @@
       el.textContent = 'Search by Brave';
       box.append(el);
     }
+
+    // Next event: fetch the upcoming list, surface the soonest one
+    // above the search bar. /v1/events returns published events with
+    // ends_at >= now, ORDER BY starts_at ASC, so events[0] is the
+    // one we want. Silent no-op if the list is empty or the request
+    // fails — the line just stays hidden.
+    (async () => {
+      try {
+        const r = await fetch('/v1/events');
+        if (!r.ok) return;
+        const events = await r.json();
+        if (!events.length) return;
+        const next = events[0];
+        const date = new Date(next.starts_at).toLocaleDateString(undefined, {
+          weekday: 'short', month: 'short', day: 'numeric',
+        });
+        document.getElementById('next-date').textContent = date;
+        document.getElementById('next-name').textContent = next.name;
+        document.getElementById('next-event').classList.add('visible');
+      } catch { /* silent — the line simply doesn't appear */ }
+    })();
 
     // Directory: fetch on load, cache the full list, render.
     // Text typed into the search bar filters the directory live —
