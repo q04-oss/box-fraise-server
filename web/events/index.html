@@ -111,6 +111,13 @@
       transition: opacity 120ms ease;
     }
     .event-link:hover { opacity: 0.7; }
+    .event-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 22px;
+      align-items: baseline;
+      margin-top: 4px;
+    }
     .questions {
       border-left: 2px solid var(--ink);
       padding: 4px 0 4px 20px;
@@ -247,13 +254,28 @@
         wrap.append(box);
       }
 
-      const link = document.createElement('a');
-      link.className = 'event-link';
-      link.href = `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = 'Open in Maps →';
-      wrap.append(link);
+      const links = document.createElement('div');
+      links.className = 'event-links';
+
+      const map = document.createElement('a');
+      map.className = 'event-link';
+      map.href = `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
+      map.target = '_blank';
+      map.rel = 'noopener noreferrer';
+      map.textContent = 'Open in Maps →';
+      links.append(map);
+
+      if (ev.poster_url) {
+        const poster = document.createElement('a');
+        poster.className = 'event-link';
+        poster.href = ev.poster_url;
+        poster.target = '_blank';
+        poster.rel = 'noopener noreferrer';
+        poster.textContent = 'Poster (PDF) →';
+        links.append(poster);
+      }
+
+      wrap.append(links);
 
       return wrap;
     }

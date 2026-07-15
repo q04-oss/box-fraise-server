@@ -65,6 +65,7 @@ pub async fn create(
         req.name.trim(),
         req.description.as_deref().map(str::trim),
         &req.questions,
+        req.poster_url.as_deref().map(str::trim),
         req.host_name.trim(),
         req.latitude,
         req.longitude,

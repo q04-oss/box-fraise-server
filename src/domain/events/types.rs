@@ -15,6 +15,7 @@ pub struct EventRow {
     pub address: String,
     pub description: Option<String>,
     pub questions: Vec<String>,
+    pub poster_url: Option<String>,
     pub published: bool,
 }
 
@@ -30,6 +31,7 @@ pub struct EventSummary {
     pub address: String,
     pub description: Option<String>,
     pub questions: Vec<String>,
+    pub poster_url: Option<String>,
     pub published: bool,
 }
 
@@ -46,6 +48,7 @@ impl From<EventRow> for EventSummary {
             address: row.address,
             description: row.description,
             questions: row.questions,
+            poster_url: row.poster_url,
             published: row.published,
         }
     }
@@ -57,6 +60,7 @@ pub struct CreateEventRequest {
     pub description: Option<String>,
     #[serde(default)]
     pub questions: Vec<String>,
+    pub poster_url: Option<String>,
     pub host_name: String,
     pub latitude: f64,
     pub longitude: f64,

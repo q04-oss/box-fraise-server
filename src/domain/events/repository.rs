@@ -10,7 +10,7 @@ use super::types::{EventQuestions, EventRow};
 pub async fn list_upcoming(conn: &mut PgConnection) -> sqlx::Result<Vec<EventRow>> {
     let rows = sqlx::query_as::<_, EventRow>(
         "SELECT id, name, host_name, starts_at, ends_at,
-                latitude, longitude, address, description, questions, published
+                latitude, longitude, address, description, questions, poster_url, published
            FROM events
           WHERE ends_at >= $1
           ORDER BY starts_at ASC",
@@ -24,7 +24,7 @@ pub async fn list_upcoming(conn: &mut PgConnection) -> sqlx::Result<Vec<EventRow
 pub async fn get_by_id(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<Option<EventRow>> {
     let row = sqlx::query_as::<_, EventRow>(
         "SELECT id, name, host_name, starts_at, ends_at,
-                latitude, longitude, address, description, questions, published
+                latitude, longitude, address, description, questions, poster_url, published
            FROM events
           WHERE id = $1",
     )
@@ -41,6 +41,7 @@ pub async fn insert(
     name: &str,
     description: Option<&str>,
     questions: &[String],
+    poster_url: Option<&str>,
     host_name: &str,
     latitude: f64,
     longitude: f64,
@@ -51,15 +52,16 @@ pub async fn insert(
 ) -> sqlx::Result<EventRow> {
     let row = sqlx::query_as::<_, EventRow>(
         "INSERT INTO events
-            (name, description, questions, host_name, latitude, longitude, address,
+            (name, description, questions, poster_url, host_name, latitude, longitude, address,
              starts_at, ends_at, published, created_by_admin_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          RETURNING id, name, host_name, starts_at, ends_at,
-                   latitude, longitude, address, description, questions, published",
+                   latitude, longitude, address, description, questions, poster_url, published",
     )
     .bind(name)
     .bind(description)
     .bind(questions)
+    .bind(poster_url)
     .bind(host_name)
     .bind(latitude)
     .bind(longitude)
