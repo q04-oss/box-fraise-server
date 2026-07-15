@@ -35,7 +35,7 @@
     }
 
     main {
-      max-width: 900px;
+      max-width: 940px;
       width: 100%;
       padding: 24px;
       text-align: left;
@@ -43,7 +43,7 @@
          top, not 50%. Reads more intentional than dead-centre. */
       margin-bottom: 5vh;
       display: flex;
-      gap: 56px;
+      gap: 48px;
       align-items: flex-start;
     }
     /* Column ordering: directory on the LEFT as a compact reference
@@ -87,17 +87,17 @@
       width: 100%;
       display: flex;
       align-items: baseline;
-      border-bottom: 1px solid var(--rule);
-      padding: 8px 4px 8px 0;
+      border-bottom: 2px solid var(--rule);
+      padding: 14px 4px 14px 0;
       transition: border-color 140ms ease;
     }
     .search:focus-within { border-color: var(--ink); }
     .search::before {
       content: "›";
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 14px;
+      font-size: 18px;
       color: var(--muted);
-      margin-right: 12px;
+      margin-right: 14px;
       line-height: 1;
     }
     .search input {
@@ -107,7 +107,7 @@
       outline: 0;
       background: transparent;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 14px;
+      font-size: 18px;
       color: var(--ink);
       caret-color: var(--accent);
       padding: 0;
@@ -128,7 +128,7 @@
     }
     .directory {
       order: 1;
-      flex: 0 0 280px;
+      flex: 0 0 220px;
       min-width: 0;
     }
 
@@ -218,7 +218,7 @@
     .business-name {
       font-family: 'Newsreader', serif;
       font-style: italic;
-      font-size: 17px;
+      font-size: 15px;
       color: var(--ink);
       display: block;
       text-decoration: none;
@@ -226,7 +226,7 @@
     }
     .business-name:hover { color: var(--accent); }
     .business-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--muted);
       line-height: 1.5;
       margin-top: 4px;
