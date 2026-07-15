@@ -58,12 +58,14 @@
       min-width: 0;
     }
 
-    /* Wordmark sits in the bottom-left as a signature — fixed so it
-       stays visible whether the reader has scrolled or not. */
+    /* Wordmark sits in the bottom-right as a signature — fixed so it
+       stays visible whether the reader has scrolled or not.
+       Positioned opposite the directory column so the composition
+       carries weight on both sides of the page. */
     .wordmark {
       position: fixed;
       bottom: 22px;
-      left: 24px;
+      right: 24px;
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 400;
@@ -72,8 +74,8 @@
       letter-spacing: -0.01em;
       margin: 0;
       z-index: 10;
-      background: linear-gradient(to right, var(--bg) 90%, rgba(255,255,255,0));
-      padding-right: 10px;
+      background: linear-gradient(to left, var(--bg) 90%, rgba(255,255,255,0));
+      padding-left: 10px;
     }
     .wordmark a {
       color: inherit;
@@ -276,7 +278,7 @@
     }
     @media (max-width: 600px) {
       main { padding: 56px 22px 120px; }
-      .wordmark { font-size: 20px; bottom: 18px; left: 20px; }
+      .wordmark { font-size: 20px; bottom: 18px; right: 20px; }
     }
 
   </style>
