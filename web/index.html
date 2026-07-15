@@ -35,13 +35,20 @@
     }
 
     main {
-      max-width: 520px;
+      max-width: 900px;
       width: 100%;
       padding: 24px;
       text-align: left;
       /* Slight upward bias — the composition sits at ~45% from the
          top, not 50%. Reads more intentional than dead-centre. */
       margin-bottom: 5vh;
+      display: flex;
+      gap: 56px;
+      align-items: flex-start;
+    }
+    .col-search {
+      flex: 0 0 300px;
+      min-width: 0;
     }
 
     /* Wordmark sits in the bottom-left as a signature — fixed so it
@@ -68,7 +75,6 @@
 
     .search {
       margin: 0;
-      max-width: 520px;
       width: 100%;
       display: flex;
       align-items: baseline;
@@ -110,6 +116,13 @@
       letter-spacing: 0.14em;
       color: var(--muted);
       text-align: right;
+    }
+    /* Vertical rule visually anchors the split between the search
+       column and the directory. Only present when the two columns
+       are side by side (i.e. above the mobile stack breakpoint). */
+    .directory {
+      flex: 1;
+      min-width: 0;
     }
 
     /* ── Search results ─────────────────────────────────────────── */
@@ -174,12 +187,7 @@
     }
 
     /* ── Directory ─────────────────────────────────────────── */
-    .directory {
-      width: 100%;
-      margin: 36px 0 0;
-      padding: 22px 0 0;
-      border-top: 1px solid var(--rule);
-    }
+    /* Base padding/margin — mobile stack re-adds a top rule below. */
     .directory-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
@@ -239,6 +247,23 @@
     }
     .directory-signup a:hover { border-bottom-color: var(--ink); }
 
+    /* Stack the two columns vertically on narrow viewports. Below
+       720px there isn't horizontal room for 300px + 56px gap + a
+       readable directory column, so we fall back to the vertical
+       rhythm that predated the split layout. */
+    @media (max-width: 720px) {
+      main {
+        flex-direction: column;
+        gap: 0;
+        max-width: 520px;
+      }
+      .col-search { flex: 1 1 auto; width: 100%; }
+      .directory {
+        margin-top: 36px;
+        padding-top: 22px;
+        border-top: 1px solid var(--rule);
+      }
+    }
     @media (max-width: 600px) {
       main { padding: 56px 22px 120px; }
       .wordmark { font-size: 20px; bottom: 18px; left: 20px; }
@@ -250,22 +275,24 @@
   <h1 class="wordmark"><a href="/">box fraise</a></h1>
 
   <main>
-    <form class="search" role="search" aria-label="Private search" id="search-form">
-      <input
-        type="search"
-        name="q"
-        autocomplete="off"
-        spellcheck="false"
-        autocapitalize="off"
-        placeholder="for better taste"
-        aria-label="Search"
-        id="search-input"
-      >
-    </form>
+    <div class="col-search">
+      <form class="search" role="search" aria-label="Private search" id="search-form">
+        <input
+          type="search"
+          name="q"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+          placeholder="for better taste"
+          aria-label="Search"
+          id="search-input"
+        >
+      </form>
 
-    <div class="hint">Type / for actions · anything else searches</div>
+      <div class="hint">type / for actions</div>
 
-    <section class="results" id="results" aria-live="polite"></section>
+      <section class="results" id="results" aria-live="polite"></section>
+    </div>
 
     <section class="directory" aria-label="Business directory">
       <div class="directory-label">directory · <a href="/portraits">how this works →</a> · <a href="https://www.youtube.com/watch?v=Br2Gn60RYmA" target="_blank" rel="noopener noreferrer">watch me explain →</a></div>
