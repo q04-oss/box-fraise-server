@@ -61,7 +61,7 @@ impl AppState {
 
 pub fn build_router(state: AppState) -> Router {
     use axum::routing::get;
-    use tower_http::services::ServeDir;
+    use tower_http::services::{ServeDir, ServeFile};
     use tower_http::trace::TraceLayer;
 
     let cors = build_cors(&state.cfg.cors_allowed_origins);
@@ -93,6 +93,13 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/v1", v1)
         .route("/health", get(health))
         .merge(crate::http::admin_assets::router())
+        // Per-business page: any /business/{slug} URL serves the same
+        // static template, which reads the slug from window.location
+        // and fetches /v1/businesses/{slug} to populate the page.
+        .route_service(
+            "/business/{slug}",
+            ServeFile::new("web/business/index.html"),
+        )
         .fallback_service(ServeDir::new("web").append_index_html_on_directories(true))
         .layer(cors)
         .layer(TraceLayer::new_for_http())

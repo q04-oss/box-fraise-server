@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>— box fraise</title>
+  <meta name="description" content="A business in the Box Fraise directory.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 16px;
+    }
+    .description {
+      font-size: 18px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 0 0 32px;
+      max-width: 520px;
+    }
+    .facts {
+      border-top: 1px solid var(--rule);
+      padding-top: 24px;
+      margin-top: 12px;
+    }
+    .fact {
+      padding: 10px 0;
+      display: flex;
+      gap: 20px;
+      align-items: baseline;
+    }
+    .fact-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      flex: 0 0 88px;
+    }
+    .fact-value {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--ink);
+      flex: 1;
+    }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+    .not-found {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.6;
+    }
+    .not-found a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+    <div id="body"><div class="status">loading…</div></div>
+  </main>
+
+  <script>
+    const body = document.getElementById('body');
+
+    function esc(s) {
+      return String(s).replace(/[<>&"']/g, c => ({
+        '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'
+      })[c]);
+    }
+
+    function slugFromPath() {
+      // URL shape: /business/{slug}
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      return parts[1] || '';
+    }
+
+    (async () => {
+      const slug = slugFromPath();
+      if (!slug) return renderNotFound('No business specified.');
+      try {
+        const r = await fetch('/v1/businesses/' + encodeURIComponent(slug));
+        if (r.status === 404) return renderNotFound('No business found under that name.');
+        if (!r.ok) throw new Error('http ' + r.status);
+        render(await r.json());
+      } catch (err) {
+        body.innerHTML = '<div class="status">unable to load</div>';
+        console.error(err);
+      }
+    })();
+
+    function render(b) {
+      document.title = b.name + ' — box fraise';
+      const facts = [];
+      if (b.location) facts.push(['Location', b.location]);
+      // Note: business's own website is intentionally not rendered
+      // here. The directory is a signal of participation in the Box
+      // Fraise ecosystem, not a portal off the platform.
+
+      const factsHtml = facts.length
+        ? '<div class="facts">' + facts.map(([label, value]) => `
+            <div class="fact">
+              <div class="fact-label">${esc(label)}</div>
+              <div class="fact-value">${esc(value)}</div>
+            </div>
+          `).join('') + '</div>'
+        : '';
+
+      body.innerHTML = `
+        <h1>${esc(b.name)}</h1>
+        ${b.description ? `<p class="description">${esc(b.description)}</p>` : ''}
+        ${factsHtml}
+      `;
+    }
+
+    function renderNotFound(msg) {
+      document.title = 'Not found — box fraise';
+      body.innerHTML = `
+        <h1>Not found</h1>
+        <p class="not-found">${esc(msg)} <a href="/">Return to the directory</a>.</p>
+      `;
+    }
+  </script>
+</body>
+</html>

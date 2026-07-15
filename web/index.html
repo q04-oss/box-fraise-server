@@ -394,12 +394,13 @@
       for (const b of shown) {
         const row = document.createElement('div');
         row.className = 'business';
-        if (b.website) {
+        if (b.slug) {
+          // Internal business page. Deliberately not linking to the
+          // business's own website: the directory is a signal of
+          // participation, not a portal off the platform.
           const a = document.createElement('a');
           a.className = 'business-name';
-          a.href = b.website;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
+          a.href = '/business/' + encodeURIComponent(b.slug);
           a.textContent = b.name;
           row.append(a);
         } else {
