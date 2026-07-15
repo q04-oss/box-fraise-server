@@ -46,8 +46,15 @@
       gap: 56px;
       align-items: flex-start;
     }
+    /* Column ordering: directory on the LEFT as a compact reference
+       list; search on the RIGHT, wider, as the primary interactive
+       surface. Source order keeps search first (it's the primary UI
+       for tab/screen-reader users); CSS `order` handles the visual
+       flip. On mobile the stack reverts to search-first (top) via
+       the media query below. */
     .col-search {
-      flex: 0 0 300px;
+      order: 2;
+      flex: 1;
       min-width: 0;
     }
 
@@ -117,11 +124,9 @@
       color: var(--muted);
       text-align: right;
     }
-    /* Vertical rule visually anchors the split between the search
-       column and the directory. Only present when the two columns
-       are side by side (i.e. above the mobile stack breakpoint). */
     .directory {
-      flex: 1;
+      order: 1;
+      flex: 0 0 280px;
       min-width: 0;
     }
 
@@ -257,8 +262,13 @@
         gap: 0;
         max-width: 520px;
       }
-      .col-search { flex: 1 1 auto; width: 100%; }
+      /* Stacked: search on top (primary), directory below. Overrides
+         the desktop `order` values so mobile matches the source
+         order and the search-first ethos. */
+      .col-search { order: 0; flex: 1 1 auto; width: 100%; }
       .directory {
+        order: 1;
+        flex: 1 1 auto;
         margin-top: 36px;
         padding-top: 22px;
         border-top: 1px solid var(--rule);
