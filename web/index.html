@@ -483,7 +483,7 @@
       const q = input.value.trim();
       if (!q) { box.replaceChildren(); return; }
 
-      // Action match beats search.
+      // Action match beats everything.
       const action = resolveAction(q);
       if (action) {
         if (isExternal(action.url)) {
@@ -491,6 +491,20 @@
         } else {
           window.location.assign(action.url);
         }
+        return;
+      }
+
+      // Directory match: if the query narrows to exactly one
+      // business (name or description) and that business has a slug,
+      // Enter navigates to its business page. Zero matches or more
+      // than one falls through to Brave search.
+      const filter = q.toLowerCase();
+      const matches = allBusinesses.filter(b =>
+        b.name.toLowerCase().includes(filter) ||
+        (b.description && b.description.toLowerCase().includes(filter))
+      );
+      if (matches.length === 1 && matches[0].slug) {
+        window.location.assign('/business/' + encodeURIComponent(matches[0].slug));
         return;
       }
 
