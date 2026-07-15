@@ -120,6 +120,10 @@
       font-family: 'Newsreader', serif;
       text-align: left;
     }
+    /* When no results are showing, the section collapses so it
+       doesn't add an empty gap between the hint and the directory
+       — search area sits directly against the directory's rule. */
+    .results:empty { margin: 0; }
     .results-status {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px;
@@ -172,8 +176,8 @@
     /* ── Directory ─────────────────────────────────────────── */
     .directory {
       width: 100%;
-      margin: 48px 0 0;
-      padding: 24px 0 0;
+      margin: 36px 0 0;
+      padding: 22px 0 0;
       border-top: 1px solid var(--rule);
     }
     .directory-label {
