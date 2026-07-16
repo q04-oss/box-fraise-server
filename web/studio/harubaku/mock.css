@@ -3,15 +3,16 @@
    would appear hosted on the Box Fraise platform: sleek, typography-
    first, data-forward. No product photography, no maintained ad copy,
    no elaborate marketing structure. Just the essential facts of the
-   business, presented in Box Fraise's aesthetic (white ground, ink,
-   mono accents) with a coffee-brown identity colour for Harubaku. */
+   business, in the platform's standardized palette — no per-business
+   accent, because every business hosted on Box Fraise wears the same
+   type system and the same red. */
 
 :root {
   --bg:      #ffffff;
   --ink:     #1a1a1a;
   --muted:   #666666;
   --rule:    #e6e6e6;
-  --accent:  #7a3a20;
+  --accent:  #b21b1b;
 }
 
 * { box-sizing: border-box; }
