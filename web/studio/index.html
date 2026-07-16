@@ -120,31 +120,47 @@
       padding-bottom: 2px;
     }
     .case-link:hover { opacity: 0.7; }
-    /* Break out of main's 640px column so the 'before' image reads
-       at full editorial scale — bleeds toward the viewport edges,
-       centred against the viewport rather than the column. Capped
-       at 1200px on wide screens so it doesn't lose composition. */
-    .before {
-      position: relative;
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100vw - 48px);
-      max-width: 1200px;
-      margin: 40px auto;
+    /* Before/after comparison — two-column grid, both artifacts
+       constrained to the content column so they read as a pair
+       rather than as evidence dominating the page. */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 32px 0;
+      align-items: start;
     }
-    .before img {
-      display: block;
-      width: 100%;
-      height: auto;
-      border-radius: 4px;
+    .comparison-item {
+      display: flex;
+      flex-direction: column;
     }
-    .before-caption {
+    .comparison-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--muted);
-      margin-top: 12px;
+      margin-bottom: 10px;
+    }
+    .comparison-item img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .comparison-pdf {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1.414;
+      border: 0;
+      border-radius: 4px;
+      background: #e8e0d0;
+    }
+    @media (max-width: 600px) {
+      .comparison {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
     }
   </style>
 </head>
@@ -162,9 +178,17 @@
       <div class="case-kicker">Case study · design</div>
       <h2 class="case-title">Harubaku Coffee Roasters</h2>
       <p class="case-body">A specialty coffee roaster in Edson, Alberta, specialising in small-batch, woodfire-roasted coffee using Japanese charcoal techniques. The craft is real; the marketing hasn't caught up to it. The storefront currently carries a coming-soon poster that reads as AI-generated composite art — the kind of default a small business reaches for when there's no one whose job it is to make something better.</p>
-      <div class="before">
-        <img src="/studio/harubaku/before-poster.jpg" alt="Coming-soon poster in the Harubaku storefront window, Edson, Alberta." loading="lazy">
-        <div class="before-caption">Storefront window · Harubaku Coffee Roasters, Edson</div>
+      <div class="comparison">
+        <div class="comparison-item">
+          <div class="comparison-label">Before · storefront window</div>
+          <img src="/studio/harubaku/before-poster.jpg" alt="AI-generated coming-soon poster in the Harubaku storefront window, Edson, Alberta." loading="lazy">
+        </div>
+        <div class="comparison-item">
+          <div class="comparison-label">After · redesigned</div>
+          <object class="comparison-pdf" data="/studio/harubaku/poster/harubaku-poster.pdf#toolbar=0&navpanes=0&scrollbar=0&view=Fit" type="application/pdf" aria-label="Redesigned Harubaku coming-soon poster">
+            <a href="/studio/harubaku/poster/">See the poster →</a>
+          </object>
+        </div>
       </div>
       <p class="case-body">This is a design study reimagining both the storefront poster and the website in Box Fraise's editorial aesthetic — Newsreader italic display, mono accents, generous whitespace, product photography given the room to speak. Four artifacts: home, coffee, story, and a redesigned coming-soon poster to sit in the window in place of the one above.</p>
       <p class="case-meta">Current site · <a href="https://harubakucoffee.com/" target="_blank" rel="noopener noreferrer">harubakucoffee.com</a></p>
