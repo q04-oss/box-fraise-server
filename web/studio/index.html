@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Studio — box fraise</title>
+  <meta name="description" content="The design work Box Fraise does for the businesses in its network. Posters, photography, cards, menus, signage, websites — one person, one aesthetic.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 32px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+    p.closer {
+      color: var(--muted);
+      margin-top: 32px;
+      font-size: 15px;
+    }
+    .case {
+      border-top: 1px solid var(--rule);
+      padding-top: 32px;
+      margin-top: 40px;
+    }
+    .case-kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .case-title {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 26px;
+      letter-spacing: -0.01em;
+      line-height: 1.15;
+      margin: 0 0 16px;
+    }
+    .case-body {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 16px;
+    }
+    .case-meta {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 4px 0;
+    }
+    .case-meta a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 1px;
+    }
+    .case-meta a:hover { border-bottom-color: var(--ink); }
+    .case-link {
+      display: inline-block;
+      margin-top: 8px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--ink);
+      padding-bottom: 2px;
+    }
+    .case-link:hover { opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Studio</h1>
+
+    <p>Businesses in the directory bring their marketing to Box Fraise. Every artifact — posters, photography, cards, menus, signage, websites — goes through the studio, because doing marketing outside the network you belong to would be strange.</p>
+
+    <p>Fees are standardized across the network. The designer is employed by Box Fraise, not contracted or freelanced — one person who knows the businesses in the network and does their work well.</p>
+
+    <div class="case">
+      <div class="case-kicker">Case study · design</div>
+      <h2 class="case-title">Harubaku Coffee Roasters</h2>
+      <p class="case-body">A specialty coffee roaster in Edson, Alberta, specialising in small-batch, woodfire-roasted coffee using Japanese charcoal techniques. Their current site does the transactional work, but the design carries the weight of a Shopify template rather than the weight of the craft it's selling. This is a design study reimagining the storefront in Box Fraise's editorial aesthetic — Newsreader italic display, mono accents, generous whitespace, product photography given the room to speak.</p>
+      <p class="case-meta">Current site · <a href="https://harubakucoffee.com/" target="_blank" rel="noopener noreferrer">harubakucoffee.com</a></p>
+      <p class="case-meta">Design study · unaffiliated with the business</p>
+      <a class="case-link" href="/studio/harubaku/">See the study →</a>
+    </div>
+
+    <p class="closer">If your business could use a redesign of something, email <a href="mailto:hello@fraise.box" style="color: var(--ink); text-decoration: underline; text-underline-offset: 3px;">hello@fraise.box</a>.</p>
+  </main>
+</body>
+</html>

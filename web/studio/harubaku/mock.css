@@ -1,0 +1,366 @@
+/* Harubaku Coffee Roasters — Box Fraise design study.
+   Warm-white ground, Newsreader italic display, IBM Plex Mono
+   accents. Deep coffee-brown accent instead of Box Fraise's red so
+   the study reads as a distinct brand while sharing the aesthetic
+   vocabulary. */
+
+:root {
+  --bg:      #fbf8f2;
+  --card:    #ffffff;
+  --ink:     #1a1512;
+  --muted:   #7a6f6a;
+  --rule:    #e8e0d4;
+  --accent:  #7a3a20;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Newsreader', Georgia, serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Site chrome ─────────────────────────────────────── */
+
+.study-strip {
+  background: var(--ink);
+  color: var(--bg);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  text-align: center;
+  padding: 8px 20px;
+}
+.study-strip a {
+  color: var(--bg);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,0.35);
+  padding-bottom: 1px;
+}
+
+.nav {
+  border-bottom: 1px solid var(--rule);
+  padding: 22px 32px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.wordmark {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  line-height: 1;
+}
+.nav-links {
+  display: flex;
+  gap: 26px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+.nav-links a:hover, .nav-links a.current { color: var(--ink); }
+
+main {
+  flex: 1;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 56px 32px 80px;
+}
+
+/* ── Hero ────────────────────────────────────────────── */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-bottom: 88px;
+}
+.hero-image {
+  aspect-ratio: 4 / 5;
+  background: linear-gradient(135deg, #2a1a10, #543024 60%, #7a3a20);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-image::after {
+  content: "image · woodfire roasting";
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  right: 16px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(251,248,242,0.55);
+}
+.hero-copy h1 {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(38px, 4vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+}
+.hero-copy p {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 0 0 24px;
+  max-width: 44ch;
+}
+.hero-copy .place {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 20px;
+  display: block;
+}
+
+/* ── Featured products ───────────────────────────────── */
+
+.section-label {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.products {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+.product {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.product-image {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(160deg, #543024, #7a3a20 70%, #a45938);
+  border-radius: 4px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.product-image.medium { background: linear-gradient(160deg, #7a3a20, #a45938 70%, #c07750); }
+.product-image.pink   { background: linear-gradient(160deg, #b06045, #d68870 70%, #e6ada0); }
+.product-image.card   { background: linear-gradient(160deg, #322319, #543024 70%, #7a4f38); }
+.product-image::after {
+  content: "product photograph";
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(251,248,242,0.55);
+}
+.product-name {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  color: var(--ink);
+}
+.product-note {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.product-price {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* ── Brand block (home page) ─────────────────────────── */
+
+.brand-block {
+  margin-top: 88px;
+  padding: 56px 0 0;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 40px;
+}
+.brand-block .lede {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  padding-top: 8px;
+}
+.brand-block p {
+  font-size: 18px;
+  line-height: 1.65;
+  margin: 0 0 18px;
+  color: var(--ink);
+}
+.brand-block .accent {
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* ── Coffee (listing) page ───────────────────────────── */
+
+.page-head {
+  margin-bottom: 56px;
+}
+.page-head .kicker {
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.page-head h1 {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+}
+.page-head p {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0;
+  max-width: 56ch;
+}
+
+.coffee-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px 40px;
+}
+
+/* ── Story page ──────────────────────────────────────── */
+
+.story {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.story p {
+  font-size: 19px;
+  line-height: 1.75;
+  margin: 0 0 24px;
+  color: var(--ink);
+}
+.story .drop::first-letter {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 5em;
+  float: left;
+  line-height: 0.85;
+  margin: 8px 12px 0 -2px;
+  color: var(--accent);
+}
+.pull-quote {
+  font-family: 'Newsreader', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.35;
+  color: var(--accent);
+  margin: 48px 0;
+  padding: 24px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+.story-image {
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(120deg, #2a1a10, #543024 55%, #7a3a20);
+  border-radius: 4px;
+  margin: 48px 0;
+  position: relative;
+}
+.story-image::after {
+  content: "image · charcoal roasting";
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(251,248,242,0.55);
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 32px;
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--ink); }
+
+/* ── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 800px) {
+  .hero,
+  .brand-block { grid-template-columns: 1fr; gap: 32px; }
+  .products,
+  .coffee-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+  main { padding: 40px 22px 60px; }
+  .nav { padding: 18px 22px; }
+  .nav-links { gap: 18px; }
+  .story p { font-size: 17px; }
+  .pull-quote { font-size: 22px; }
+}
+@media (max-width: 480px) {
+  .products,
+  .coffee-grid { grid-template-columns: 1fr; }
+}
