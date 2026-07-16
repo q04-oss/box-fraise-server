@@ -116,7 +116,7 @@
       flex-wrap: wrap;
       gap: 22px;
       align-items: baseline;
-      margin-top: 4px;
+      margin-top: 14px;
     }
     .questions {
       border-left: 2px solid var(--ink);
@@ -230,6 +230,29 @@
       where.textContent = ev.address;
       wrap.append(where);
 
+      const links = document.createElement('div');
+      links.className = 'event-links';
+
+      const map = document.createElement('a');
+      map.className = 'event-link';
+      map.href = `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
+      map.target = '_blank';
+      map.rel = 'noopener noreferrer';
+      map.textContent = 'Open in Maps →';
+      links.append(map);
+
+      if (ev.poster_url) {
+        const poster = document.createElement('a');
+        poster.className = 'event-link';
+        poster.href = ev.poster_url;
+        poster.target = '_blank';
+        poster.rel = 'noopener noreferrer';
+        poster.textContent = 'Poster (PDF) →';
+        links.append(poster);
+      }
+
+      wrap.append(links);
+
       if (ev.description) {
         const desc = document.createElement('div');
         desc.className = 'event-desc';
@@ -253,29 +276,6 @@
         box.append(ol);
         wrap.append(box);
       }
-
-      const links = document.createElement('div');
-      links.className = 'event-links';
-
-      const map = document.createElement('a');
-      map.className = 'event-link';
-      map.href = `https://www.google.com/maps/search/?api=1&query=${ev.latitude},${ev.longitude}`;
-      map.target = '_blank';
-      map.rel = 'noopener noreferrer';
-      map.textContent = 'Open in Maps →';
-      links.append(map);
-
-      if (ev.poster_url) {
-        const poster = document.createElement('a');
-        poster.className = 'event-link';
-        poster.href = ev.poster_url;
-        poster.target = '_blank';
-        poster.rel = 'noopener noreferrer';
-        poster.textContent = 'Poster (PDF) →';
-        links.append(poster);
-      }
-
-      wrap.append(links);
 
       return wrap;
     }
