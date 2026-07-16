@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Poster — Harubaku · design study by Box Fraise</title>
+  <meta name="description" content="A redesigned coming-soon poster for Harubaku Coffee Roasters. A Box Fraise design study, unaffiliated with the business.">
+  <meta name="theme-color" content="#f2eee5">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/studio/harubaku/mock.css">
+
+  <style>
+    /* Poster-specific: the viewport is a gallery, the poster is a
+       framed artifact sitting on a warm neutral ground. Portrait
+       aspect ratio, printable proportions (roughly 2:3, close to
+       A3 / tabloid). */
+    body {
+      background: #ece5d7;
+    }
+    main.poster-stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+    .poster {
+      background: var(--bg);
+      aspect-ratio: 2 / 3;
+      width: 100%;
+      box-shadow: 0 30px 60px -20px rgba(30, 20, 12, 0.35),
+                  0 12px 24px -8px rgba(30, 20, 12, 0.18);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 48px 44px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Top: small mono kicker + the H mark */
+    .poster-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .poster-kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--muted);
+    }
+    .poster-mark {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: 22px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    /* Middle: the announcement */
+    .poster-middle {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 24px 0;
+    }
+    .poster-tag {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .poster-name {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(56px, 9vw, 88px);
+      line-height: 0.94;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin: 0 0 24px;
+    }
+    .poster-lede {
+      font-family: 'Newsreader', serif;
+      font-weight: 400;
+      font-size: 20px;
+      line-height: 1.45;
+      color: var(--ink);
+      max-width: 22ch;
+      margin: 0 0 6px;
+    }
+    .poster-place {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      margin-top: 24px;
+    }
+
+    /* Bottom: fine rule + metadata block with QR */
+    .poster-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 20px;
+      border-top: 1px solid var(--rule);
+    }
+    .poster-copy {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .poster-copy .accent {
+      color: var(--ink);
+    }
+    .poster-qr {
+      width: 84px;
+      height: 84px;
+      background-image:
+        linear-gradient(var(--ink) 1px, transparent 1px),
+        linear-gradient(90deg, var(--ink) 1px, transparent 1px);
+      background-size: 12px 12px;
+      background-position: 0 0;
+      background-color: var(--bg);
+      border: 4px solid var(--bg);
+      outline: 1px solid var(--ink);
+      position: relative;
+    }
+    .poster-qr::before,
+    .poster-qr::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      background: var(--bg);
+      border: 4px solid var(--ink);
+    }
+    .poster-qr::before { top: 6px; left: 6px; }
+    .poster-qr::after  { top: 6px; right: 6px; }
+    .qr-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .poster-caption {
+      text-align: center;
+      margin-top: 24px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    @media (max-width: 520px) {
+      main.poster-stage { padding: 24px 16px 60px; }
+      .poster { padding: 32px 28px; }
+      .poster-name { font-size: clamp(44px, 12vw, 64px); }
+      .poster-qr { width: 68px; height: 68px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="study-strip">
+    A Box Fraise design study · unaffiliated with Harubaku Coffee Roasters · <a href="/studio/">back to studio</a>
+  </div>
+
+  <nav class="nav">
+    <a class="wordmark" href="/studio/harubaku/">Harubaku</a>
+    <div class="nav-links">
+      <a href="/studio/harubaku/">Home</a>
+      <a href="/studio/harubaku/coffee/">Coffee</a>
+      <a href="/studio/harubaku/story/">Story</a>
+      <a href="/studio/harubaku/poster/" class="current">Poster</a>
+    </div>
+  </nav>
+
+  <main class="poster-stage">
+    <div class="poster" role="img" aria-label="Redesigned Harubaku coming-soon poster">
+      <div class="poster-top">
+        <div class="poster-kicker">Coming soon · Edson, AB</div>
+        <div class="poster-mark">H</div>
+      </div>
+
+      <div class="poster-middle">
+        <div class="poster-tag">Woodfire · Small-batch · Japanese method</div>
+        <h1 class="poster-name">Harubaku Coffee Roasters</h1>
+        <p class="poster-lede">Coffee darkened over real fire — one small batch at a time.</p>
+        <div class="poster-place">Opening this season · 10026 102 Street NW</div>
+      </div>
+
+      <div class="poster-bottom">
+        <div class="poster-copy">
+          <div class="accent">@harubakucoffee</div>
+          <div>harubakucoffee.com</div>
+        </div>
+        <div>
+          <div class="poster-qr" aria-hidden="true"></div>
+          <div class="qr-label">Scan · follow</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="poster-caption">The redesign · portrait, tabloid-scale, print-ready</div>
+  </main>
+</body>
+</html>
