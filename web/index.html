@@ -4,20 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
-  <meta name="description" content="A hair-events community. Private by default, verified in person.">
+  <meta name="description" content="Find the strawberry stickers around the city, photograph them, put them on the map.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+  <!-- Leaflet is vendored in web/js rather than pulled from a CDN,
+       matching how qrcode.min.js is handled. Map tiles still come from
+       openstreetmap.org — unavoidable for a map. -->
+  <link rel="stylesheet" href="/js/leaflet.css">
+
   <style>
     :root {
-      --bg:      #ffffff;
-      --ink:     #1a1a1a;
-      --rule:    #e6e6e6;
-      --muted:   #666666;
-      --accent:  #b21b1b;
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
@@ -26,46 +31,27 @@
       color: var(--ink);
       font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
-    main {
+    /* ── Masthead ────────────────────────────────────────────────────
+       The wordmark used to be fixed to the bottom-right. It can't stay
+       there now: Leaflet renders its required OpenStreetMap
+       attribution in that exact corner, and the two would sit on top
+       of each other. Moving it into a real masthead also gives the
+       three links somewhere to live. */
+    .masthead {
       max-width: 940px;
-      width: 100%;
-      padding: 24px;
-      text-align: left;
-      /* Slight upward bias — the composition sits at ~45% from the
-         top, not 50%. Reads more intentional than dead-centre. */
-      margin-bottom: 5vh;
+      margin: 0 auto;
+      padding: 26px 24px 0;
       display: flex;
-      gap: 48px;
-      align-items: flex-start;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
     }
-    /* Column ordering: directory on the LEFT as a compact reference
-       list; search on the RIGHT, wider, as the primary interactive
-       surface. Source order keeps search first (it's the primary UI
-       for tab/screen-reader users); CSS `order` handles the visual
-       flip. On mobile the stack reverts to search-first (top) via
-       the media query below. */
-    .col-search {
-      order: 2;
-      flex: 1;
-      min-width: 0;
-    }
-
-    /* Wordmark sits in the bottom-right as a signature — fixed so it
-       stays visible whether the reader has scrolled or not.
-       Positioned opposite the directory column so the composition
-       carries weight on both sides of the page. */
     .wordmark {
-      position: fixed;
-      bottom: 22px;
-      right: 24px;
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 400;
@@ -73,124 +59,36 @@
       line-height: 1;
       letter-spacing: -0.01em;
       margin: 0;
-      z-index: 10;
-      background: linear-gradient(to left, var(--bg) 90%, rgba(255,255,255,0));
-      padding-left: 10px;
     }
-    .wordmark a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    .search {
-      margin: 0;
-      width: 100%;
+    .wordmark a { color: var(--ink); text-decoration: none; }
+    .links {
       display: flex;
+      gap: 22px;
       align-items: baseline;
-      border-bottom: 2px solid var(--rule);
-      padding: 14px 4px 14px 0;
-      transition: border-color 140ms ease;
+      flex-wrap: wrap;
     }
-    .search:focus-within { border-color: var(--ink); }
-    .search::before {
-      content: "›";
+    .links a {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 18px;
-      color: var(--muted);
-      margin-right: 14px;
-      line-height: 1;
-    }
-    .search input {
-      flex: 1;
-      min-width: 0;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 18px;
-      color: var(--ink);
-      caret-color: var(--accent);
-      padding: 0;
-    }
-    .search input::placeholder {
-      color: var(--muted);
-      font-style: normal;
-    }
-    .hint {
-      width: 100%;
-      margin: 10px 0 0;
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--muted);
-      text-align: right;
-    }
-    .directory {
-      order: 1;
-      flex: 0 0 220px;
-      min-width: 0;
-    }
-
-    /* ── Search results ─────────────────────────────────────────── */
-    .results {
-      width: 100%;
-      margin: 24px 0 0;
-      padding: 0;
-      font-family: 'Newsreader', serif;
-      text-align: left;
-    }
-    /* When no results are showing, the section collapses so it
-       doesn't add an empty gap between the hint and the directory
-       — search area sits directly against the directory's rule. */
-    .results:empty { margin: 0; }
-    .results-status {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      color: var(--muted);
-      padding: 6px 0;
-    }
-    .result {
-      display: block;
-      padding: 14px 4px;
-      border-bottom: 1px solid var(--rule);
       text-decoration: none;
-      color: inherit;
+      transition: color 120ms ease;
     }
-    .result:last-child { border-bottom: 0; }
-    .result-title {
-      font-size: 17px;
-      font-weight: 500;
-      line-height: 1.3;
-      color: var(--ink);
-      margin-bottom: 4px;
-    }
-    .result-url {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      color: var(--muted);
-      margin-bottom: 4px;
-      word-break: break-all;
-    }
-    .result-desc {
-      font-size: 14px;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-    .action-key {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 15px;
-      color: var(--ink);
-      letter-spacing: 0.02em;
+    .links a:hover { color: var(--ink); }
+
+    main {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 34px 24px 80px;
     }
 
-    /* ── Next event line (sits above the search bar) ─────── */
+    /* ── Next event teaser ───────────────────────────────────────── */
     .next-event {
       display: none;
-      margin: 0 0 24px;
       text-decoration: none;
-      color: inherit;
-      line-height: 1.4;
+      margin-bottom: 30px;
     }
     .next-event.visible { display: block; }
     .next-label {
@@ -200,418 +98,633 @@
       letter-spacing: 0.16em;
       color: var(--muted);
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       transition: color 120ms ease;
     }
     .next-name {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 17px;
+      font-size: 19px;
       color: var(--ink);
+      transition: color 120ms ease;
     }
     .next-arrow {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--muted);
-      margin-left: 6px;
+      margin-left: 8px;
       transition: color 120ms ease;
     }
-    .next-event:hover .next-label,
-    .next-event:hover .next-arrow { color: var(--ink); }
     .next-event:hover .next-name { color: var(--accent); }
-    .attribution {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--muted);
-      padding: 16px 0 4px;
-      text-align: center;
+    .next-event:hover .next-arrow { color: var(--ink); }
+
+    .rules {
+      font-size: 19px;
+      line-height: 1.6;
+      margin: 0 0 34px;
+      max-width: 46ch;
     }
 
-    /* ── Directory ─────────────────────────────────────────── */
-    /* Base padding/margin — mobile stack re-adds a top rule below. */
-    .directory-label {
+    /* ── Map ─────────────────────────────────────────────────────── */
+    #map {
+      height: 460px;
+      width: 100%;
+      border: 1px solid var(--rule);
+      background: #f4f4f4;
+      z-index: 0;
+    }
+    .leaflet-container {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      background: #f4f4f4;
+    }
+    /* Custom marker, so Leaflet's default icon PNGs are never
+       requested. Every pin looks the same — there is no found/unfound
+       state to signal. */
+    .pin {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.28);
+      transition: transform 120ms ease;
+    }
+    .pin.active { transform: scale(1.45); }
+
+    /* ── Pin list ────────────────────────────────────────────────── */
+    #pins { margin-top: 40px; max-width: 640px; }
+    .label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.16em;
       color: var(--muted);
-      margin-bottom: 20px;
     }
-    .directory-label a {
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
       color: var(--muted);
-      text-decoration: none;
-      margin-left: 8px;
-      transition: color 120ms ease;
-    }
-    .directory-label a:hover { color: var(--ink); }
-    .business {
       padding: 12px 0;
-      border-bottom: 1px solid var(--rule);
     }
-    .business:last-child { border-bottom: 0; }
-    .business-name {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-size: 15px;
-      color: var(--ink);
+    .status.err { color: var(--accent); }
+    .pin-row {
       display: block;
-      text-decoration: none;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 0;
+      border-top: 1px solid var(--rule);
+      padding: 18px 0;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+    .pin-row:last-of-type { border-bottom: 1px solid var(--rule); }
+    .pin-row[aria-current="true"] { background: #fafafa; }
+    .pin-row:hover .pin-label { color: var(--accent); }
+    .pin-label {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.3;
       transition: color 120ms ease;
     }
-    .business-name:hover { color: var(--accent); }
-    .business-desc {
-      font-size: 12px;
+    .pin-hint {
+      font-size: 15px;
       color: var(--muted);
-      line-height: 1.5;
-      margin-top: 4px;
+      line-height: 1.55;
+      margin-top: 5px;
     }
-    .directory-empty {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      color: var(--muted);
-      font-size: 14px;
-      padding: 6px 0 12px;
-    }
-    .directory-signup {
-      margin: 22px 0 0;
+    .pin-count {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--muted);
+      margin-top: 9px;
     }
-    .directory-signup a {
+
+    /* ── Detail panel ────────────────────────────────────────────── */
+    #detail {
+      margin-top: 44px;
+      padding-top: 32px;
+      border-top: 2px solid var(--ink);
+      max-width: 640px;
+    }
+    #detail.hidden { display: none; }
+    #detail h2 {
+      font-size: 26px;
+      font-weight: 500;
+      margin: 10px 0 6px;
+      line-height: 1.2;
+    }
+    .detail-hint {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px;
+      margin: 26px 0 0;
+    }
+    .shot { margin: 0; }
+    .shot img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      background: #f0f0f0;
+      border: 1px solid var(--rule);
+    }
+    .shot figcaption {
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--muted);
+      margin-top: 7px;
+      word-break: break-word;
+    }
+    .shot .by {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 4px;
+      word-break: break-word;
+    }
+    .no-shots {
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: 24px 0 0;
+    }
+
+    /* ── Upload form ─────────────────────────────────────────────── */
+    form {
+      margin-top: 36px;
+      padding-top: 28px;
+      border-top: 1px solid var(--rule);
+    }
+    form .label { display: block; margin-bottom: 12px; }
+    input[type="file"] {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    input[type="text"] {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 16px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--rule);
+      border-radius: 0;
+      background: #fff;
       color: var(--ink);
-      text-decoration: none;
-      border-bottom: 1px solid var(--rule);
-      padding-bottom: 2px;
+      margin-bottom: 12px;
     }
-    .directory-signup a:hover { border-bottom-color: var(--ink); }
+    input[type="text"]:focus { outline: none; border-color: var(--ink); }
+    button.submit {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      background: var(--ink);
+      color: #fff;
+      border: 0;
+      padding: 13px 22px;
+      cursor: pointer;
+      transition: opacity 120ms ease;
+    }
+    button.submit:hover:not(:disabled) { opacity: 0.8; }
+    button.submit:disabled { opacity: 0.4; cursor: default; }
+    .form-msg {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+    .form-msg.ok  { color: var(--ink); }
+    .form-msg.err { color: var(--accent); }
+    .fineprint {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+    .empty {
+      padding: 32px 0;
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
 
-    /* Stack the two columns vertically on narrow viewports. Below
-       720px there isn't horizontal room for 300px + 56px gap + a
-       readable directory column, so we fall back to the vertical
-       rhythm that predated the split layout. */
-    @media (max-width: 720px) {
-      main {
-        flex-direction: column;
-        gap: 0;
-        max-width: 520px;
-      }
-      /* Stacked: search on top (primary), directory below. Overrides
-         the desktop `order` values so mobile matches the source
-         order and the search-first ethos. */
-      .col-search { order: 0; flex: 1 1 auto; width: 100%; }
-      .directory {
-        order: 1;
-        flex: 1 1 auto;
-        margin-top: 36px;
-        padding-top: 22px;
-        border-top: 1px solid var(--rule);
-      }
-    }
     @media (max-width: 600px) {
-      main { padding: 56px 22px 120px; }
-      .wordmark { font-size: 20px; bottom: 18px; right: 20px; }
+      .masthead { padding: 22px 22px 0; }
+      main { padding: 28px 22px 80px; }
+      #map { height: 380px; }
     }
-
   </style>
 </head>
 <body>
-  <h1 class="wordmark"><a href="/">box fraise</a></h1>
+  <header class="masthead">
+    <h1 class="wordmark"><a href="/">box fraise</a></h1>
+    <nav class="links" aria-label="Elsewhere">
+      <a href="/events">Events</a>
+      <a href="/donations">Donations</a>
+      <a href="https://www.youtube.com/@BoxFraise" target="_blank" rel="noopener noreferrer">YouTube</a>
+    </nav>
+  </header>
 
   <main>
-    <div class="col-search">
-      <a class="next-event" id="next-event" href="/events">
-        <span class="next-label">Next · <span id="next-date"></span></span>
-        <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
-      </a>
+    <a class="next-event" id="next-event" href="/events">
+      <span class="next-label">Next · <span id="next-date"></span></span>
+      <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
+    </a>
 
-      <form class="search" role="search" aria-label="Private search" id="search-form">
-        <input
-          type="search"
-          name="q"
-          autocomplete="off"
-          spellcheck="false"
-          autocapitalize="off"
-          placeholder="for better taste"
-          aria-label="Search"
-          id="search-input"
-        >
-      </form>
+    <p class="rules">
+      There are small strawberry stickers stuck to things around the city.
+      Every dot is one of them. Click a dot to see the photos people have
+      taken of it, or add your own.
+    </p>
 
-      <div class="hint">type / for actions</div>
+    <div id="map" role="application" aria-label="Map of sticker locations"></div>
 
-      <section class="results" id="results" aria-live="polite"></section>
-    </div>
+    <div id="pins"><div class="status">loading…</div></div>
 
-    <section class="directory" aria-label="Business directory">
-      <div class="directory-label">directory · <a href="/portraits">how this works →</a> · <a href="/stickers">sticker map →</a> · <a href="https://www.youtube.com/watch?v=Br2Gn60RYmA" target="_blank" rel="noopener noreferrer">watch me explain →</a></div>
-      <div id="directory-list"></div>
-      <p class="directory-signup">To add your business, email <a href="mailto:hello@fraise.box">hello@fraise.box</a>.</p>
-    </section>
+    <section id="detail" class="hidden" aria-live="polite"></section>
   </main>
 
+  <script src="/js/leaflet.js"></script>
   <script>
-    // Search bar behaviour:
-    //   - Typing a known action word (with or without leading `/`) and
-    //     pressing Enter navigates to the action URL.
-    //   - Typing `/` alone (or `/` + partial match) reveals the action
-    //     menu inline; users can click a row to jump.
-    //   - Anything else falls through to the Brave search — the
-    //     same-origin /v1/search proxy keeps the API key server-side
-    //     and query text unlogged.
-    const form  = document.getElementById('search-form');
-    const input = document.getElementById('search-input');
-    const box   = document.getElementById('results');
+  (() => {
+    'use strict';
 
-    const ACTIONS = [
-      { keys: ['pass'],      url: '/pass',      label: 'Authenticate at an event' },
-      { keys: ['events'],    url: '/events',    label: 'Upcoming events' },
-      { keys: ['stickers'],  url: '/stickers',  label: 'Sticker map — find them, photograph them' },
-      { keys: ['vision'],    url: '/vision',    label: 'What Box Fraise is' },
-      { keys: ['questions'], url: '/questions', label: 'The record of questions raised' },
-      { keys: ['donations'], url: '/donations', label: 'The Legal Justice Fund' },
-      { keys: ['portraits'],  url: '/portraits',  label: 'Licensing portraits — for businesses' },
-      { keys: ['studio'],     url: '/studio',     label: 'Studio — design work for the businesses in the network' },
-      { keys: ['rajzyngier'], url: '/rajzyngier', label: 'Rajzyngier Research — the lab behind Box Fraise' },
-      { keys: ['youtube'],    url: 'https://www.youtube.com/@BoxFraise', label: 'YouTube channel' },
-    ];
+    // Longest edge of an uploaded photo after downscaling, and the
+    // JPEG quality used for the re-encode. Between them these put a
+    // typical phone photo around 200–400 KB, well under the server's
+    // 8 MB cap.
+    const MAX_EDGE = 1600;
+    const JPEG_QUALITY = 0.82;
 
-    function isExternal(url) { return /^https?:\/\//i.test(url); }
+    // Fallback view when there are no pins to fit — central Montreal.
+    const DEFAULT_CENTER = [45.5019, -73.5674];
+    const DEFAULT_ZOOM = 12;
 
-    function normalize(q) {
-      return q.trim().toLowerCase().replace(/^\//, '');
+    const mapEl    = document.getElementById('map');
+    const pinsEl   = document.getElementById('pins');
+    const detailEl = document.getElementById('detail');
+
+    let map = null;
+    let stickers = [];
+    const markers = new Map();   // slug -> L.Marker
+    let activeSlug = null;
+
+    // ── Boot ──────────────────────────────────────────────
+
+    initMap();
+    load();
+    loadNextEvent();
+
+    function initMap() {
+      map = L.map(mapEl, { scrollWheelZoom: false })
+             .setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        // Attribution is a requirement of the OSM tile usage policy,
+        // not decoration. Do not remove it.
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+      }).addTo(map);
     }
 
-    function resolveAction(q) {
-      const key = normalize(q);
-      if (!key) return null;
-      return ACTIONS.find(a => a.keys.includes(key)) || null;
-    }
-
-    function renderActionMenu(rawFilter) {
-      box.replaceChildren();
-      const wanted = (rawFilter || '').toLowerCase().replace(/^\//, '');
-      const shown = ACTIONS.filter(a =>
-        !wanted || a.keys.some(k => k.startsWith(wanted))
-      );
-      for (const a of shown) {
-        const el = document.createElement('a');
-        el.href = a.url;
-        el.className = 'result';
-        if (isExternal(a.url)) {
-          el.target = '_blank';
-          el.rel = 'noopener noreferrer';
-        }
-        const t = document.createElement('div');
-        t.className = 'result-title';
-        const k = document.createElement('span');
-        k.className = 'action-key';
-        k.textContent = '/' + a.keys[0];
-        t.append(k);
-        const d = document.createElement('div');
-        d.className = 'result-desc';
-        d.textContent = a.label;
-        el.append(t, d);
-        box.append(el);
+    async function load() {
+      try {
+        const r = await fetch('/v1/stickers');
+        if (!r.ok) throw new Error('http ' + r.status);
+        stickers = await r.json();
+      } catch (err) {
+        console.error(err);
+        pinsEl.replaceChildren(el('div', 'status err', 'unable to load the sticker map'));
+        return;
       }
+      renderPins();
+      renderMarkers();
     }
 
-    function status(text) {
-      box.replaceChildren();
-      const el = document.createElement('div');
-      el.className = 'results-status';
-      el.textContent = text;
-      box.append(el);
-    }
-
-    function attribute() {
-      const el = document.createElement('div');
-      el.className = 'attribution';
-      el.textContent = 'Search by Brave';
-      box.append(el);
-    }
-
-    // Next event: fetch the upcoming list, surface the soonest one
-    // above the search bar. /v1/events returns published events with
-    // ends_at >= now, ORDER BY starts_at ASC, so events[0] is the
-    // one we want. Silent no-op if the list is empty or the request
-    // fails — the line just stays hidden.
-    (async () => {
+    // The "Next · date · name →" teaser. /v1/events returns published
+    // events with ends_at >= now ordered by starts_at, so events[0] is
+    // the one we want. Silent no-op if the list is empty or the
+    // request fails — the line just stays hidden.
+    async function loadNextEvent() {
       try {
         const r = await fetch('/v1/events');
         if (!r.ok) return;
         const events = await r.json();
         if (!events.length) return;
         const next = events[0];
-        const date = new Date(next.starts_at).toLocaleDateString(undefined, {
-          weekday: 'short', month: 'short', day: 'numeric',
-        });
-        document.getElementById('next-date').textContent = date;
+        document.getElementById('next-date').textContent =
+          new Date(next.starts_at).toLocaleDateString(undefined, {
+            weekday: 'short', month: 'short', day: 'numeric',
+          });
         document.getElementById('next-name').textContent = next.name;
         document.getElementById('next-event').classList.add('visible');
       } catch { /* silent — the line simply doesn't appear */ }
-    })();
+    }
 
-    // Directory: fetch on load, cache the full list, render.
-    // Text typed into the search bar filters the directory live —
-    // matches on name or description, case-insensitive.
-    let allBusinesses = [];
+    // ── Rendering ─────────────────────────────────────────
+    //
+    // Everything below builds DOM nodes and assigns textContent.
+    // Captions and submitter names are anonymous free text, so they
+    // must never touch innerHTML.
 
-    (async () => {
-      try {
-        const r = await fetch('/v1/businesses');
-        if (!r.ok) return;
-        allBusinesses = await r.json();
-        renderDirectory('');
-      } catch { /* silent — the directory simply doesn't render */ }
-    })();
+    function el(tag, className, text) {
+      const n = document.createElement(tag);
+      if (className) n.className = className;
+      if (text !== undefined && text !== null) n.textContent = text;
+      return n;
+    }
 
-    function renderDirectory(rawFilter) {
-      const el = document.getElementById('directory-list');
-      el.replaceChildren();
+    function foundLabel(n) {
+      if (n === 0) return 'no photos yet';
+      return n === 1 ? '1 photo' : `${n} photos`;
+    }
 
-      if (!allBusinesses.length) {
-        const empty = document.createElement('div');
-        empty.className = 'directory-empty';
-        empty.textContent = 'No businesses yet. Be the first.';
-        el.append(empty);
+    function renderPins() {
+      pinsEl.replaceChildren();
+      if (!stickers.length) {
+        const wrap = el('div', 'empty');
+        wrap.append(el('p', null,
+          'No stickers on the map yet. The first ones are going up soon — check back.'));
+        pinsEl.replaceChildren(wrap);
         return;
       }
 
-      const filter = (rawFilter || '').trim().toLowerCase();
-      const shown = filter
-        ? allBusinesses.filter(b =>
-            b.name.toLowerCase().includes(filter) ||
-            (b.description && b.description.toLowerCase().includes(filter))
-          )
-        : allBusinesses;
+      pinsEl.append(el('div', 'label',
+        `${stickers.length} sticker${stickers.length === 1 ? '' : 's'} placed`));
 
-      if (!shown.length) {
-        const empty = document.createElement('div');
-        empty.className = 'directory-empty';
-        empty.textContent = 'No businesses match. Press Enter to search the web.';
-        el.append(empty);
-        return;
-      }
-
-      for (const b of shown) {
-        const row = document.createElement('div');
-        row.className = 'business';
-        if (b.slug) {
-          // Internal business page. Deliberately not linking to the
-          // business's own website: the directory is a signal of
-          // participation, not a portal off the platform.
-          const a = document.createElement('a');
-          a.className = 'business-name';
-          a.href = '/business/' + encodeURIComponent(b.slug);
-          a.textContent = b.name;
-          row.append(a);
-        } else {
-          const name = document.createElement('span');
-          name.className = 'business-name';
-          name.textContent = b.name;
-          row.append(name);
-        }
-        if (b.description) {
-          const desc = document.createElement('div');
-          desc.className = 'business-desc';
-          desc.textContent = b.description;
-          row.append(desc);
-        }
-        el.append(row);
+      for (const s of stickers) {
+        const row = el('button', 'pin-row');
+        row.type = 'button';
+        row.append(el('div', 'pin-label', s.label));
+        if (s.hint) row.append(el('div', 'pin-hint', s.hint));
+        row.append(el('div', 'pin-count', foundLabel(s.photo_count)));
+        row.addEventListener('click', () => select(s.slug, { pan: true }));
+        row.dataset.slug = s.slug;
+        pinsEl.append(row);
       }
     }
 
-    // Live menu: as the user types "/..." reveal matching actions.
-    // Everything else filters the directory live.
-    input.addEventListener('input', () => {
-      const v = input.value;
-      if (v.startsWith('/')) {
-        renderActionMenu(v.slice(1));
-        return;
-      }
-      // Non-slash typing clears any active results and filters the
-      // directory to matching rows. Empty input restores the full list.
-      if (!v.trim()) {
-        box.replaceChildren();
-      }
-      renderDirectory(v);
-    });
+    function renderMarkers() {
+      markers.clear();
+      const points = [];
+      for (const s of stickers) {
+        const icon = L.divIcon({
+          className: '',
+          html: '',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+        const m = L.marker([s.latitude, s.longitude], {
+          icon: icon,
+          title: s.label,
+          alt: s.label,
+          keyboard: true
+        }).addTo(map);
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const q = input.value.trim();
-      if (!q) { box.replaceChildren(); return; }
+        // Build the marker's inner node directly rather than passing an
+        // HTML string to divIcon, so the label never goes through
+        // innerHTML.
+        m.getElement().replaceChildren(el('div', 'pin'));
 
-      // Action match beats everything.
-      const action = resolveAction(q);
-      if (action) {
-        if (isExternal(action.url)) {
-          window.open(action.url, '_blank', 'noopener,noreferrer');
-        } else {
-          window.location.assign(action.url);
-        }
-        return;
+        m.on('click', () => select(s.slug, { pan: false }));
+        markers.set(s.slug, m);
+        points.push([s.latitude, s.longitude]);
       }
-
-      // Directory match: if the query narrows to exactly one
-      // business (name or description) and that business has a slug,
-      // Enter navigates to its business page. Zero matches or more
-      // than one falls through to Brave search.
-      const filter = q.toLowerCase();
-      const matches = allBusinesses.filter(b =>
-        b.name.toLowerCase().includes(filter) ||
-        (b.description && b.description.toLowerCase().includes(filter))
-      );
-      if (matches.length === 1 && matches[0].slug) {
-        window.location.assign('/business/' + encodeURIComponent(matches[0].slug));
-        return;
+      if (points.length === 1) {
+        map.setView(points[0], 16);
+      } else if (points.length > 1) {
+        map.fitBounds(points, { padding: [36, 36], maxZoom: 16 });
       }
+    }
 
-      status('searching…');
+    function markMarkerActive(slug) {
+      for (const [s, m] of markers) {
+        const dot = m.getElement() && m.getElement().firstElementChild;
+        if (dot) dot.classList.toggle('active', s === slug);
+      }
+      for (const row of pinsEl.querySelectorAll('.pin-row')) {
+        row.setAttribute('aria-current', String(row.dataset.slug === slug));
+      }
+    }
+
+    // ── Selection + detail ────────────────────────────────
+
+    async function select(slug, opts) {
+      const s = stickers.find(x => x.slug === slug);
+      if (!s) return;
+      activeSlug = slug;
+      markMarkerActive(slug);
+      if (opts && opts.pan) map.panTo([s.latitude, s.longitude]);
+
+      renderDetail(s, null);
+      detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
       try {
-        const r = await fetch('/v1/search?q=' + encodeURIComponent(q));
-        if (!r.ok) {
-          const body = await r.text();
-          status('search failed (' + r.status + ')');
-          console.error(body);
-          return;
-        }
-        const data = await r.json();
-        box.replaceChildren();
-        if (!data.results.length) {
-          status('no results');
-          return;
-        }
-        for (const res of data.results) {
-          const a = document.createElement('a');
-          a.href = res.url;
-          a.rel  = 'noopener noreferrer';
-          a.className = 'result';
-          const t = document.createElement('div');
-          t.className = 'result-title';
-          t.textContent = res.title;
-          const u = document.createElement('div');
-          u.className = 'result-url';
-          u.textContent = res.url;
-          const d = document.createElement('div');
-          d.className = 'result-desc';
-          d.textContent = res.description;
-          a.append(t, u, d);
-          box.append(a);
-        }
-        attribute();
+        const r = await fetch(`/v1/stickers/${encodeURIComponent(slug)}/photos`);
+        if (!r.ok) throw new Error('http ' + r.status);
+        const photos = await r.json();
+        // Ignore a response that landed after the user moved on.
+        if (activeSlug === slug) renderDetail(s, photos);
       } catch (err) {
-        status('search failed');
         console.error(err);
+        if (activeSlug === slug) renderDetail(s, []);
       }
-    });
-  </script>
+    }
 
+    function renderDetail(s, photos) {
+      detailEl.classList.remove('hidden');
+      detailEl.replaceChildren();
+
+      detailEl.append(el('div', 'label', foundLabel(s.photo_count)));
+      detailEl.append(el('h2', null, s.label));
+      if (s.hint) detailEl.append(el('p', 'detail-hint', s.hint));
+
+      const coords = el('p', 'detail-hint');
+      const link = el('a', null, 'Open in Maps →');
+      link.href = `https://www.google.com/maps/search/?api=1&query=${s.latitude},${s.longitude}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.color = 'var(--ink)';
+      coords.append(link);
+      detailEl.append(coords);
+
+      if (photos === null) {
+        detailEl.append(el('div', 'status', 'loading photos…'));
+      } else if (!photos.length) {
+        detailEl.append(el('p', 'no-shots',
+          'Nobody has photographed this one yet. You could be first.'));
+      } else {
+        const grid = el('div', 'gallery');
+        for (const p of photos) grid.append(renderShot(p, s));
+        detailEl.append(grid);
+      }
+
+      detailEl.append(buildForm(s));
+    }
+
+    function renderShot(p, s) {
+      const fig = el('figure', 'shot');
+      const img = document.createElement('img');
+      img.src = `/v1/sticker-photos/${encodeURIComponent(p.id)}/image`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = p.caption ? p.caption : `Sticker at ${s.label}`;
+      fig.append(img);
+      if (p.caption) fig.append(el('figcaption', null, p.caption));
+      if (p.submitter_name) fig.append(el('div', 'by', `— ${p.submitter_name}`));
+      return fig;
+    }
+
+    // ── Upload ────────────────────────────────────────────
+
+    function buildForm(s) {
+      const form = document.createElement('form');
+      form.append(el('span', 'label', 'Add your photo'));
+
+      const file = document.createElement('input');
+      file.type = 'file';
+      file.accept = 'image/*';
+      // Hints mobile browsers toward the rear camera. Harmless on
+      // desktop, where it falls back to a normal file picker.
+      file.setAttribute('capture', 'environment');
+      file.required = true;
+      form.append(file);
+
+      const caption = document.createElement('input');
+      caption.type = 'text';
+      caption.placeholder = 'Caption (optional)';
+      caption.maxLength = 280;
+      form.append(caption);
+
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.placeholder = 'Your name or handle (optional)';
+      name.maxLength = 60;
+      form.append(name);
+
+      const btn = el('button', 'submit', 'Send photo');
+      btn.type = 'submit';
+      form.append(btn);
+
+      const msg = el('div', 'form-msg');
+      form.append(msg);
+
+      form.append(el('p', 'fineprint',
+        'Photos are reviewed before they appear on the map, so yours will not show up straight away. Location data is stripped from the image before it is sent.'));
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (!file.files || !file.files[0]) {
+          setMsg(msg, 'err', 'Pick a photo first.');
+          return;
+        }
+        btn.disabled = true;
+        setMsg(msg, 'ok', 'preparing…');
+        try {
+          const blob = await downscale(file.files[0]);
+          setMsg(msg, 'ok', 'uploading…');
+
+          const fd = new FormData();
+          fd.append('image', blob, 'sticker.jpg');
+          if (caption.value.trim()) fd.append('caption', caption.value.trim());
+          if (name.value.trim()) fd.append('submitter_name', name.value.trim());
+
+          const r = await fetch(`/v1/stickers/${encodeURIComponent(s.slug)}/photos`, {
+            method: 'POST',
+            body: fd
+          });
+          if (!r.ok) {
+            let detail = 'http ' + r.status;
+            try {
+              const body = await r.json();
+              detail = body.message || body.error || detail;
+            } catch (_) { /* non-JSON error body; keep the status */ }
+            throw new Error(detail);
+          }
+          form.reset();
+          setMsg(msg, 'ok', 'Got it — thanks. It will appear here once reviewed.');
+        } catch (err) {
+          console.error(err);
+          setMsg(msg, 'err', String(err.message || err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      return form;
+    }
+
+    function setMsg(node, kind, text) {
+      node.className = 'form-msg ' + kind;
+      node.textContent = text;
+    }
+
+    // Draw the picked file to a canvas and re-encode as JPEG.
+    //
+    // This does three jobs at once:
+    //   1. Shrinks a 4 MB phone photo to a few hundred KB.
+    //   2. Converts HEIC/HEIF — which Safari can decode but most
+    //      browsers cannot display — into JPEG, which is why the
+    //      server's allowlist does not need to include it.
+    //   3. Drops EXIF, including the GPS tag recording where the
+    //      photographer was standing. A canvas re-encode carries no
+    //      metadata across.
+    //
+    // The server re-derives the content type from magic bytes and
+    // enforces the size cap regardless, so none of this is trusted —
+    // it is a courtesy to the uploader's data plan and privacy.
+    async function downscale(file) {
+      const bitmap = await loadBitmap(file);
+      const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (bitmap.close) bitmap.close();
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
+      if (!blob) throw new Error('could not read that image');
+      return blob;
+    }
+
+    // createImageBitmap honours EXIF orientation with the option below
+    // and handles HEIC where the platform decoder does. The <img> path
+    // is the fallback for older browsers.
+    async function loadBitmap(file) {
+      if (window.createImageBitmap) {
+        try {
+          return await createImageBitmap(file, { imageOrientation: 'from-image' });
+        } catch (_) { /* fall through to the <img> decoder */ }
+      }
+      const url = URL.createObjectURL(file);
+      try {
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+        return img;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+  })();
+  </script>
 </body>
 </html>

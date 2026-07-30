@@ -60,6 +60,7 @@ impl AppState {
 }
 
 pub fn build_router(state: AppState) -> Router {
+    use axum::response::Redirect;
     use axum::routing::get;
     use tower_http::services::{ServeDir, ServeFile};
     use tower_http::trace::TraceLayer;
@@ -74,7 +75,6 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::onboarding::routes::router())
         .merge(crate::domain::events::routes::router())
         .merge(crate::domain::businesses::routes::router())
-        .merge(crate::domain::search::routes::router())
         .merge(crate::domain::consultations::routes::router())
         .merge(crate::domain::stickers::routes::router())
         // Bearer-resolution runs on every /v1 request. It's a soft pass
@@ -97,10 +97,19 @@ pub fn build_router(state: AppState) -> Router {
         // Per-business page: any /business/{slug} URL serves the same
         // static template, which reads the slug from window.location
         // and fetches /v1/businesses/{slug} to populate the page.
+        //
+        // These pages are no longer linked from anywhere on the site —
+        // the homepage directory was removed when the site refocused on
+        // the sticker map. A business can still be sent its own URL.
         .route_service(
             "/business/{slug}",
             ServeFile::new("web/business/index.html"),
         )
+        // The sticker map used to live at /stickers; it is now the
+        // homepage. Kept as a permanent redirect because the physical
+        // stickers may carry the old path in print, where it cannot be
+        // corrected.
+        .route("/stickers", get(|| async { Redirect::permanent("/") }))
         .fallback_service(ServeDir::new("web").append_index_html_on_directories(true))
         .layer(cors)
         .layer(TraceLayer::new_for_http())

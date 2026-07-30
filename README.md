@@ -65,9 +65,9 @@ On boot, the server will:
 | `POST /v1/admin/sticker-photos/{id}/approve` | admin     | Publish it → 204, 409 if already reviewed          |
 | `POST /v1/admin/sticker-photos/{id}/reject`  | admin     | Delete it (bytes included) → 204                   |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
-| `GET  /v1/search?q=…`                        | public    | Brave Search proxy — powers the marketing search bar |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
-| `GET  /`                                     | public    | Marketing site (`web/index.html`), and fallback for any unmatched path |
+| `GET  /`                                     | public    | The sticker map — homepage (`web/index.html`), and fallback for unmatched paths |
+| `GET  /stickers`                             | public    | 308 → `/` (the map used to live here; printed stickers may carry the old path) |
 
 Auth is `Authorization: Bearer <token>`. Only `sha256(token)` is
 persisted server-side.
@@ -152,7 +152,8 @@ src/
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
   0012_stickers.sql    — stickers + sticker_photos, public-insert policy
-web/stickers/          — the map page (Leaflet, vendored in web/js)
+web/index.html         — the homepage: sticker map + scoreboard (Leaflet
+                         vendored in web/js)
 admin/index.html       — single-file admin tool
 docker-compose.yml     — Postgres (init script creates bf_app)
 docker/init/01-roles.sql

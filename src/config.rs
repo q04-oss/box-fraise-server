@@ -9,11 +9,6 @@ pub struct Config {
     pub challenge_ttl: chrono::Duration,
     pub seed_admin_email: Option<String>,
     pub seed_admin_password: Option<String>,
-    /// Server-side key for the Brave Search API. Kept out of any
-    /// client (marketing page fetches /v1/search on same-origin, we
-    /// forward with this header). When unset, /v1/search returns 503
-    /// so the app still boots without search configured.
-    pub brave_search_api_key: Option<String>,
 }
 
 impl Config {
@@ -40,9 +35,6 @@ impl Config {
         let seed_admin_password = env::var("SEED_ADMIN_PASSWORD")
             .ok()
             .filter(|s| !s.is_empty());
-        let brave_search_api_key = env::var("BRAVE_SEARCH_API_KEY")
-            .ok()
-            .filter(|s| !s.is_empty());
         Ok(Self {
             database_url,
             bind_addr,
@@ -51,7 +43,6 @@ impl Config {
             challenge_ttl,
             seed_admin_email,
             seed_admin_password,
-            brave_search_api_key,
         })
     }
 }

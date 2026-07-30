@@ -12,7 +12,7 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::search` (Brave proxy), `domain::stickers` (sticker map).
+  `domain::stickers` (sticker map).
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
 - **One endpoint accepts unauthenticated writes:**
