@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About — box fraise</title>
+  <meta name="description" content="Box Fraise is a project about solving the username and password problem, in person.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 32px;
+    }
+    p {
+      font-size: 17px;
+      line-height: 1.65;
+      margin: 0 0 20px;
+    }
+    p strong {
+      font-weight: 500;
+    }
+    /* The opening claim, set larger than the body so the page states
+       its thesis before it argues it. */
+    p.thesis {
+      font-size: 21px;
+      line-height: 1.5;
+      margin: 0 0 30px;
+      max-width: 44ch;
+    }
+    p.closer {
+      color: var(--muted);
+      margin-top: 32px;
+    }
+    a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-thickness: 1px;
+      text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a:hover { text-decoration-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>About</h1>
+
+    <p class="thesis">Box Fraise is a project about solving the username and password problem.</p>
+
+    <p><strong>The problem.</strong> A username and a password are what you use when there is nobody there to recognise you. They stand in for being known. Every account is a small act of proving yourself to a machine, repeated forever, and the whole apparatus exists because the digital world has no equivalent of walking into a room where people already know your face.</p>
+
+    <p><strong>The approach.</strong> Box Fraise solves it in person, and it does it playfully. Verification happens face to face, at events, between people — an in-person design structure rather than a login screen. The playfulness is not decoration. A structure people enjoy taking part in is one they will actually turn up to, and turning up is the entire mechanism.</p>
+
+    <p><strong>A friendship network.</strong> Because that in-person element is community-oriented, the accurate name for what it produces is not a social network but a friendship network. Membership is not a form you fill in. It is people meeting other people, with the software keeping faithful track of the fact that it happened.</p>
+
+    <p><strong>Consent and accountability.</strong> As a platform, its behaviour is to create an environment where it is possible to consensually call people out — accountability that people have opted into, rather than accountability imposed by an anonymous crowd. That is what lets the physical world and the digital one sit in harmony instead of in tension. The consequence is physical communities reinforced by being online rather than hollowed out by it.</p>
+
+    <p><strong>On it seeming new.</strong> The world we live in now has not been through an update like this one, so parts of it will read as unfamiliar. Nothing here is exotic, though. It is the obvious next thing, and someone was going to arrive at it eventually.</p>
+
+    <p class="closer">For the wider argument the project is making — the salon, the fund, the events, the network — see <a href="/vision">Vision</a>.</p>
+  </main>
+</body>
+</html>
