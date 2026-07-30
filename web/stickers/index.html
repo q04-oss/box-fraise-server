@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sticker map — box fraise</title>
+  <meta name="description" content="Find the strawberry stickers around the city, photograph them, and add them to the map.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Leaflet is vendored in web/js rather than pulled from a CDN,
+       matching how qrcode.min.js is handled. No third-party origin,
+       no SRI to keep in sync, and the page still works if unpkg is
+       down. Map *tiles* are still fetched from openstreetmap.org —
+       that part is unavoidable for a map. -->
+  <link rel="stylesheet" href="/js/leaflet.css">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main {
+      flex: 1;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 56px 24px 64px;
+      width: 100%;
+    }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin: 0 0 20px;
+    }
+    .lede {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: 0 0 32px;
+      max-width: 52ch;
+    }
+    .label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+    .status.err { color: var(--accent); }
+
+    /* ── Map ─────────────────────────────────────────────── */
+    #map {
+      height: 420px;
+      width: 100%;
+      border: 1px solid var(--rule);
+      background: #f4f4f4;
+      /* Leaflet's panes stack above normal content; keep the map
+         from painting over the detail panel on small screens. */
+      z-index: 0;
+    }
+    .leaflet-container {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      background: #f4f4f4;
+    }
+    /* Custom marker: no image sprite, so Leaflet's default icon
+       PNGs are never requested. */
+    .pin {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.28);
+      transition: transform 120ms ease;
+    }
+    .pin.found { background: var(--ink); }
+    .pin.active { transform: scale(1.45); }
+    .map-note {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-top: 10px;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .key { display: inline-flex; align-items: center; gap: 7px; }
+    .key i {
+      width: 9px; height: 9px; border-radius: 50%;
+      display: inline-block;
+    }
+    .key i.unfound { background: var(--accent); }
+    .key i.found   { background: var(--ink); }
+
+    /* ── Pin list ────────────────────────────────────────── */
+    #pins { margin-top: 40px; }
+    .pin-row {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 0;
+      border-top: 1px solid var(--rule);
+      padding: 18px 0;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+    .pin-row:last-of-type { border-bottom: 1px solid var(--rule); }
+    .pin-row[aria-current="true"] { background: #fafafa; }
+    .pin-row:hover .pin-label { color: var(--accent); }
+    .pin-label {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.3;
+      transition: color 120ms ease;
+    }
+    .pin-hint {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-top: 5px;
+    }
+    .pin-count {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-top: 9px;
+    }
+
+    /* ── Detail panel ────────────────────────────────────── */
+    #detail {
+      margin-top: 44px;
+      padding-top: 32px;
+      border-top: 2px solid var(--ink);
+    }
+    #detail.hidden { display: none; }
+    #detail h2 {
+      font-size: 26px;
+      font-weight: 500;
+      margin: 10px 0 6px;
+      line-height: 1.2;
+    }
+    .detail-hint {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0 0 6px;
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px;
+      margin: 26px 0 0;
+    }
+    .shot { margin: 0; }
+    .shot img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      background: #f0f0f0;
+      border: 1px solid var(--rule);
+    }
+    .shot figcaption {
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--muted);
+      margin-top: 7px;
+      word-break: break-word;
+    }
+    .shot .by {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-top: 4px;
+      word-break: break-word;
+    }
+    .no-shots {
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: 24px 0 0;
+    }
+
+    /* ── Upload form ─────────────────────────────────────── */
+    form {
+      margin-top: 36px;
+      padding-top: 28px;
+      border-top: 1px solid var(--rule);
+    }
+    form .label { display: block; margin-bottom: 12px; }
+    input[type="file"] {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    input[type="text"] {
+      font-family: 'Newsreader', Georgia, serif;
+      font-size: 16px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--rule);
+      border-radius: 0;
+      background: #fff;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--ink);
+    }
+    button.submit {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      background: var(--ink);
+      color: #fff;
+      border: 0;
+      padding: 13px 22px;
+      cursor: pointer;
+      transition: opacity 120ms ease;
+    }
+    button.submit:hover:not(:disabled) { opacity: 0.8; }
+    button.submit:disabled { opacity: 0.4; cursor: default; }
+    .form-msg {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      line-height: 1.6;
+      margin-top: 14px;
+    }
+    .form-msg.ok  { color: var(--ink); }
+    .form-msg.err { color: var(--accent); }
+    .fineprint {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+    .empty {
+      padding: 32px 0;
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Sticker map</h1>
+
+    <p class="lede">
+      There are small strawberry stickers out there, stuck to things around the
+      city. Every red dot below is one of them. Go find it, take a photo, and
+      add it to the pile — the dot turns black once someone has.
+    </p>
+
+    <div id="map" role="application" aria-label="Map of sticker locations"></div>
+    <div class="map-note">
+      <span class="key"><i class="unfound"></i> not yet photographed</span>
+      <span class="key"><i class="found"></i> found</span>
+    </div>
+
+    <div id="pins"><div class="status">loading…</div></div>
+
+    <section id="detail" class="hidden" aria-live="polite"></section>
+  </main>
+
+  <script src="/js/leaflet.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    // Longest edge of an uploaded photo after downscaling, and the
+    // JPEG quality used for the re-encode. Between them these put a
+    // typical phone photo around 200–400 KB, comfortably under the
+    // server's 8 MB cap.
+    const MAX_EDGE = 1600;
+    const JPEG_QUALITY = 0.82;
+
+    // Fallback view when there are no pins to fit — central Montreal.
+    const DEFAULT_CENTER = [45.5019, -73.5674];
+    const DEFAULT_ZOOM = 12;
+
+    const mapEl    = document.getElementById('map');
+    const pinsEl   = document.getElementById('pins');
+    const detailEl = document.getElementById('detail');
+
+    let map = null;
+    let stickers = [];
+    const markers = new Map();   // slug -> L.Marker
+    let activeSlug = null;
+
+    // ── Boot ──────────────────────────────────────────────
+
+    initMap();
+    load();
+
+    function initMap() {
+      map = L.map(mapEl, { scrollWheelZoom: false })
+             .setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        // Attribution is a requirement of the OSM tile usage policy,
+        // not decoration. Do not remove it.
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+      }).addTo(map);
+    }
+
+    async function load() {
+      try {
+        const r = await fetch('/v1/stickers');
+        if (!r.ok) throw new Error('http ' + r.status);
+        stickers = await r.json();
+      } catch (err) {
+        console.error(err);
+        pinsEl.replaceChildren(el('div', 'status err', 'unable to load the sticker map'));
+        return;
+      }
+      renderPins();
+      renderMarkers();
+    }
+
+    // ── Rendering ─────────────────────────────────────────
+    //
+    // Everything below builds DOM nodes and assigns textContent.
+    // Captions and submitter names are anonymous free text, so they
+    // must never touch innerHTML.
+
+    function el(tag, className, text) {
+      const n = document.createElement(tag);
+      if (className) n.className = className;
+      if (text !== undefined && text !== null) n.textContent = text;
+      return n;
+    }
+
+    function foundLabel(n) {
+      if (n === 0) return 'no photos yet';
+      return n === 1 ? '1 photo' : `${n} photos`;
+    }
+
+    function renderPins() {
+      pinsEl.replaceChildren();
+      if (!stickers.length) {
+        const wrap = el('div', 'empty');
+        wrap.append(el('p', null,
+          'No stickers on the map yet. The first ones are going up soon — check back.'));
+        pinsEl.replaceChildren(wrap);
+        return;
+      }
+
+      pinsEl.append(el('div', 'label', `${stickers.length} sticker${stickers.length === 1 ? '' : 's'} placed`));
+
+      for (const s of stickers) {
+        const row = el('button', 'pin-row');
+        row.type = 'button';
+        row.append(el('div', 'pin-label', s.label));
+        if (s.hint) row.append(el('div', 'pin-hint', s.hint));
+        row.append(el('div', 'pin-count', foundLabel(s.photo_count)));
+        row.addEventListener('click', () => select(s.slug, { pan: true }));
+        row.dataset.slug = s.slug;
+        pinsEl.append(row);
+      }
+    }
+
+    function renderMarkers() {
+      markers.clear();
+      const points = [];
+      for (const s of stickers) {
+        const icon = L.divIcon({
+          className: '',
+          html: '',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+        const m = L.marker([s.latitude, s.longitude], {
+          icon: icon,
+          title: s.label,
+          alt: s.label,
+          keyboard: true
+        }).addTo(map);
+
+        // Build the marker's inner node directly rather than passing
+        // an HTML string to divIcon, so the label never goes through
+        // innerHTML.
+        const dot = el('div', 'pin' + (s.photo_count > 0 ? ' found' : ''));
+        m.getElement().replaceChildren(dot);
+
+        m.on('click', () => select(s.slug, { pan: false }));
+        markers.set(s.slug, m);
+        points.push([s.latitude, s.longitude]);
+      }
+      if (points.length === 1) {
+        map.setView(points[0], 16);
+      } else if (points.length > 1) {
+        map.fitBounds(points, { padding: [36, 36], maxZoom: 16 });
+      }
+    }
+
+    function markMarkerActive(slug) {
+      for (const [s, m] of markers) {
+        const dot = m.getElement() && m.getElement().firstElementChild;
+        if (dot) dot.classList.toggle('active', s === slug);
+      }
+      for (const row of pinsEl.querySelectorAll('.pin-row')) {
+        row.setAttribute('aria-current', String(row.dataset.slug === slug));
+      }
+    }
+
+    // ── Selection + detail ────────────────────────────────
+
+    async function select(slug, opts) {
+      const s = stickers.find(x => x.slug === slug);
+      if (!s) return;
+      activeSlug = slug;
+      markMarkerActive(slug);
+      if (opts && opts.pan) map.panTo([s.latitude, s.longitude]);
+
+      renderDetail(s, null);
+      detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      try {
+        const r = await fetch(`/v1/stickers/${encodeURIComponent(slug)}/photos`);
+        if (!r.ok) throw new Error('http ' + r.status);
+        const photos = await r.json();
+        // Ignore a response that landed after the user moved on.
+        if (activeSlug === slug) renderDetail(s, photos);
+      } catch (err) {
+        console.error(err);
+        if (activeSlug === slug) renderDetail(s, []);
+      }
+    }
+
+    function renderDetail(s, photos) {
+      detailEl.classList.remove('hidden');
+      detailEl.replaceChildren();
+
+      detailEl.append(el('div', 'label', foundLabel(s.photo_count)));
+      detailEl.append(el('h2', null, s.label));
+      if (s.hint) detailEl.append(el('p', 'detail-hint', s.hint));
+
+      const coords = el('p', 'detail-hint');
+      const link = el('a', null, 'Open in Maps →');
+      link.href = `https://www.google.com/maps/search/?api=1&query=${s.latitude},${s.longitude}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.style.color = 'var(--ink)';
+      coords.append(link);
+      detailEl.append(coords);
+
+      if (photos === null) {
+        detailEl.append(el('div', 'status', 'loading photos…'));
+      } else if (!photos.length) {
+        detailEl.append(el('p', 'no-shots',
+          'Nobody has photographed this one yet. You could be first.'));
+      } else {
+        const grid = el('div', 'gallery');
+        for (const p of photos) grid.append(renderShot(p, s));
+        detailEl.append(grid);
+      }
+
+      detailEl.append(buildForm(s));
+    }
+
+    function renderShot(p, s) {
+      const fig = el('figure', 'shot');
+      const img = document.createElement('img');
+      img.src = `/v1/sticker-photos/${encodeURIComponent(p.id)}/image`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.alt = p.caption ? p.caption : `Sticker at ${s.label}`;
+      fig.append(img);
+      if (p.caption) fig.append(el('figcaption', null, p.caption));
+      if (p.submitter_name) fig.append(el('div', 'by', `— ${p.submitter_name}`));
+      return fig;
+    }
+
+    // ── Upload ────────────────────────────────────────────
+
+    function buildForm(s) {
+      const form = document.createElement('form');
+      form.append(el('span', 'label', 'Add your photo'));
+
+      const file = document.createElement('input');
+      file.type = 'file';
+      file.accept = 'image/*';
+      // Hints mobile browsers toward the rear camera. Harmless on
+      // desktop, where it falls back to a normal file picker.
+      file.setAttribute('capture', 'environment');
+      file.required = true;
+      form.append(file);
+
+      const caption = document.createElement('input');
+      caption.type = 'text';
+      caption.placeholder = 'Caption (optional)';
+      caption.maxLength = 280;
+      form.append(caption);
+
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.placeholder = 'Your name or handle (optional)';
+      name.maxLength = 60;
+      form.append(name);
+
+      const btn = el('button', 'submit', 'Send photo');
+      btn.type = 'submit';
+      form.append(btn);
+
+      const msg = el('div', 'form-msg');
+      form.append(msg);
+
+      form.append(el('p', 'fineprint',
+        'Photos are reviewed before they appear on the map, so yours will not show up straight away. Location data is stripped from the image before it is sent.'));
+
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        if (!file.files || !file.files[0]) {
+          setMsg(msg, 'err', 'Pick a photo first.');
+          return;
+        }
+        btn.disabled = true;
+        setMsg(msg, 'ok', 'preparing…');
+        try {
+          const blob = await downscale(file.files[0]);
+          setMsg(msg, 'ok', 'uploading…');
+
+          const fd = new FormData();
+          fd.append('image', blob, 'sticker.jpg');
+          if (caption.value.trim()) fd.append('caption', caption.value.trim());
+          if (name.value.trim()) fd.append('submitter_name', name.value.trim());
+
+          const r = await fetch(`/v1/stickers/${encodeURIComponent(s.slug)}/photos`, {
+            method: 'POST',
+            body: fd
+          });
+          if (!r.ok) {
+            let detail = 'http ' + r.status;
+            try {
+              const body = await r.json();
+              detail = body.message || body.error || detail;
+            } catch (_) { /* non-JSON error body; keep the status */ }
+            throw new Error(detail);
+          }
+          form.reset();
+          setMsg(msg, 'ok', 'Got it — thanks. It will appear here once reviewed.');
+        } catch (err) {
+          console.error(err);
+          setMsg(msg, 'err', String(err.message || err));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      return form;
+    }
+
+    function setMsg(node, kind, text) {
+      node.className = 'form-msg ' + kind;
+      node.textContent = text;
+    }
+
+    // Draw the picked file to a canvas and re-encode as JPEG.
+    //
+    // This does three jobs at once:
+    //   1. Shrinks a 4 MB phone photo to a few hundred KB.
+    //   2. Converts HEIC/HEIF — which Safari can decode but most
+    //      browsers cannot display — into JPEG, which is why the
+    //      server's allowlist does not need to include it.
+    //   3. Drops EXIF, including the GPS tag recording where the
+    //      photographer was standing. A canvas re-encode carries no
+    //      metadata across.
+    //
+    // The server re-derives the content type from magic bytes and
+    // enforces the size cap regardless, so none of this is trusted —
+    // it is a courtesy to the uploader's data plan and privacy.
+    async function downscale(file) {
+      const bitmap = await loadBitmap(file);
+      const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (bitmap.close) bitmap.close();
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
+      if (!blob) throw new Error('could not read that image');
+      return blob;
+    }
+
+    // createImageBitmap honours EXIF orientation with the option
+    // below and handles HEIC where the platform decoder does. The
+    // <img> path is the fallback for older browsers.
+    async function loadBitmap(file) {
+      if (window.createImageBitmap) {
+        try {
+          return await createImageBitmap(file, { imageOrientation: 'from-image' });
+        } catch (_) { /* fall through to the <img> decoder */ }
+      }
+      const url = URL.createObjectURL(file);
+      try {
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+        return img;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+  })();
+  </script>
+</body>
+</html>

@@ -76,6 +76,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::businesses::routes::router())
         .merge(crate::domain::search::routes::router())
         .merge(crate::domain::consultations::routes::router())
+        .merge(crate::domain::stickers::routes::router())
         // Bearer-resolution runs on every /v1 request. It's a soft pass
         // — unrecognised tokens leave no marker; extractors enforce.
         .layer(axum::middleware::from_fn_with_state(

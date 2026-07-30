@@ -13,10 +13,12 @@ The architecture, RLS model, and verify flow are documented in
 # 1. Start Postgres (creates the `bf_app` runtime role via init script)
 docker compose up -d
 
-# 2. Wait for it, then apply migrations.
-#    `sqlx-cli` or any psql will do; the migration runs as the owner.
-docker exec -i box-fraise-postgres-1 \
-  psql -U postgres -d box_fraise < migrations/0001_init.sql
+# 2. Wait for it, then apply migrations IN ORDER — there are several
+#    now, and each assumes the ones before it. They run as the owner.
+for m in migrations/*.sql; do
+  docker exec -i box-fraise-postgres-1 \
+    psql -U postgres -d box_fraise -v ON_ERROR_STOP=1 < "$m" || break
+done
 
 # 3. Set env (see .env.example for the full list)
 cp .env.example .env
@@ -51,6 +53,17 @@ On boot, the server will:
 | `POST /v1/admin/events`                      | admin     | Create an event                                    |
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
+| `GET  /v1/stickers`                          | public    | Sticker map pins + approved-photo counts           |
+| `GET  /v1/stickers/{slug}`                   | public    | One pin; 404 unless published                      |
+| `GET  /v1/stickers/{slug}/photos`            | public    | Approved photos for a pin                          |
+| `POST /v1/stickers/{slug}/photos`            | **none**  | Multipart photo submission → 202 pending           |
+| `GET  /v1/sticker-photos/{id}/image`         | public    | Image bytes; approved only                         |
+| `GET  /v1/admin/stickers`                    | admin     | Includes unpublished pins                          |
+| `POST /v1/admin/stickers`                    | admin     | Place a sticker                                    |
+| `GET  /v1/admin/sticker-photos/pending`      | admin     | Moderation queue                                   |
+| `GET  /v1/admin/sticker-photos/{id}/image`   | admin     | Preview an unapproved photo                        |
+| `POST /v1/admin/sticker-photos/{id}/approve` | admin     | Publish it → 204, 409 if already reviewed          |
+| `POST /v1/admin/sticker-photos/{id}/reject`  | admin     | Delete it (bytes included) → 204                   |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
 | `GET  /v1/search?q=…`                        | public    | Brave Search proxy — powers the marketing search bar |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
@@ -85,6 +98,14 @@ to grant camera permission.
 - **Verification is in-person.** Pending users sit on a 30-day TTL
   unless an admin scans their QR at a real event. No remote
   self-verification path exists.
+- **Exactly one unauthenticated write.** `POST
+  /v1/stickers/{slug}/photos` accepts a photo from anyone. RLS pins
+  the inserted row to `status = 'pending'` and hides it from every
+  public read until an admin approves it, the content type is derived
+  from magic bytes rather than the client's claim (JPEG/PNG/WebP only
+  — no SVG), and the size is capped at the route, in the service, and
+  by a CHECK constraint. See "The public write boundary" in
+  CLAUDE.md before touching it.
 - **P-256 ECDSA**, Apple Secure Enclave compatible: SEC1 uncompressed
   keys, DER signatures, SHA-256 prehash, low-S normalised on verify.
 - **Audit out of transaction.** The audit trail survives a rollback,
@@ -98,10 +119,17 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-12 tests, one ignored (the iOS-fixture slot — swap in a real
+29 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
-tampered signatures, audit append-only, and the two-role enforcement.
+tampered signatures, audit append-only, the two-role enforcement, the
+consultation lifecycle, and the sticker-photo moderation boundary
+(pending rows invisible, self-approval refused, approve race,
+non-image bytes rejected).
+
+Note the default `DATABASE_URL` in the test file points at port 5432;
+this project's Postgres is on **5434**, so pass it explicitly as
+above or the suite will run against whatever else is on 5432.
 
 ## Layout
 
@@ -120,8 +148,11 @@ src/
   domain/admin/        — admin login
   domain/onboarding/   — register, challenge, verify, me
   domain/events/       — public list/get + admin list/create/count
+  domain/stickers/     — sticker map, public photo submit, moderation
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
+  0012_stickers.sql    — stickers + sticker_photos, public-insert policy
+web/stickers/          — the map page (Leaflet, vendored in web/js)
 admin/index.html       — single-file admin tool
 docker-compose.yml     — Postgres (init script creates bf_app)
 docker/init/01-roles.sql

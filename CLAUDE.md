@@ -9,10 +9,16 @@ this rewrite was designed to avoid show up.
 
 - All API routes are versioned under `/v1`. The only exception is
   `GET /admin`, which serves the static admin tool — not an API.
-- Three modules own routes: `domain::admin` (login), `domain::events`
-  (public + admin events), `domain::onboarding` (register, challenge,
-  verify, me). The `/admin/...` route prefixes inside onboarding and
-  events are admin-authed but still business logic of those domains.
+- Route-owning modules: `domain::admin` (login), `domain::onboarding`
+  (register, challenge, verify, me), `domain::events` (public + admin
+  events), `domain::businesses` (directory), `domain::consultations`,
+  `domain::search` (Brave proxy), `domain::stickers` (sticker map).
+  The `/admin/...` route prefixes inside those modules are
+  admin-authed but still business logic of that domain.
+- **One endpoint accepts unauthenticated writes:**
+  `POST /v1/stickers/{slug}/photos`. Everything about the
+  `sticker_photos` policies exists to bound it — see "The public write
+  boundary" below before changing anything in `domain::stickers`.
 
 ## Architecture in three layers
 
@@ -77,6 +83,22 @@ must do the same.
 **Never set `app.user_id` to an empty string from Rust.** Always pass
 a real UUID or skip the call.
 
+**`INSERT ... RETURNING` is subject to the SELECT policy.** Postgres
+applies the table's SELECT policies to the row an INSERT returns, so
+on a table where the writer cannot read back what it just wrote, a
+`RETURNING` clause fails with 42501 — *"new row violates row-level
+security policy"* — even though the insert itself is permitted. The
+message points at WITH CHECK and sends you looking in the wrong
+place.
+
+This bites exactly where a write path is deliberately blind:
+`sticker_photos`. The public submit inserts a `pending` row that
+`sticker_photos_public_select` hides, so
+`repository::insert_photo` generates the UUID in Rust and inserts it
+explicitly instead of reading one back. If you add another
+write-without-read path, do the same — do not "fix" it by widening
+the SELECT policy.
+
 **Sessions-table SELECT is intentionally wide.** The auth middleware
 has to resolve `Bearer <token>` → identity before any user context
 exists. `user_sessions` and `admin_sessions` therefore have a
@@ -127,6 +149,45 @@ filters by `token_hash`. Do not add other read paths there.
   `VerifyingKey::verify` still hash the message with SHA-256 by
   default (they do as of 0.13).
 
+## The public write boundary (sticker photos)
+
+`POST /v1/stickers/{slug}/photos` takes a photo from anyone, with no
+token. The containment is four independent layers, and the feature is
+only safe while all four hold:
+
+1. **RLS pins the status.** `sticker_photos_public_insert` has
+   `WITH CHECK (status = 'pending' AND reviewed_at IS NULL AND
+   reviewed_by_admin_id IS NULL AND EXISTS (published parent))`. A
+   submitter cannot self-publish or forge a review trail. The service
+   also hardcodes `'pending'` rather than reading it from the request,
+   so there are two independent barriers, not one.
+2. **RLS hides the row.** `sticker_photos_public_select` admits
+   `status = 'approved'` only. A pending photo is invisible to every
+   public read path including the byte-serving endpoint, so guessing a
+   UUID gains nothing.
+3. **The content type comes from the bytes.** `sniff_content_type`
+   reads magic bytes and ignores what the client declared. The
+   allowlist is JPEG/PNG/WebP. **SVG is excluded on purpose** — it is
+   a script container, and serving one from our origin would be stored
+   XSS. Do not add it.
+4. **Size is capped three times** — `DefaultBodyLimit` on the route,
+   `MAX_IMAGE_BYTES` in the service, and the `sticker_photos_size_cap`
+   CHECK. Change one, change all three.
+
+Two things this does *not* do, deliberately: it never decodes the
+image (magic bytes + length only, so a well-headed garbage file is
+storable and the moderation queue is what catches it), and it does not
+strip EXIF server-side. The map page re-encodes through a canvas
+before upload, which drops GPS tags for every normal browser
+submission, but a crafted client can still post EXIF-bearing JPEG.
+If that matters, re-encode server-side with the `image` crate.
+
+The only rate limiting is `MAX_PENDING_PER_STICKER`, enforced through
+the `bf_sticker_pending_photo_count` SECURITY DEFINER function —
+needed because a public transaction cannot see pending rows to count
+them. Do not replace it by opening an `AdminRlsTransaction` on a
+public request.
+
 ## Audit
 
 `audit::write` always takes the pool, never a transaction. This is
@@ -137,7 +198,18 @@ grant for `bf_app`, plus a trigger that raises on either op.
 Whenever you add a new mutating endpoint, add a matching `audit::write`
 call on the success path. Use the actor_type / action conventions
 that already exist (`user.register`, `challenge.issued`, `user.verify`,
-`event.create`, `admin.login`, `maintenance.prune`).
+`event.create`, `admin.login`, `maintenance.prune`, `sticker.create`,
+`sticker_photo.submit`, `sticker_photo.approve`,
+`sticker_photo.reject`).
+
+`actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
+was added in migration 0012 for anonymous photo submissions — an
+actor that is none of the other three. Use it rather than mislabelling
+an anonymous action as `'system'`.
+
+Note `sticker_photo.reject` is the audit trail for a *deletion*: the
+row and its bytes are gone, and this entry is the only remaining
+record that the submission ever existed.
 
 ## When you change a table
 
