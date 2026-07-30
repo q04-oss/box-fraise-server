@@ -78,9 +78,9 @@ async fn seed_test_event(pool: &PgPool, admin_id: Uuid) -> Uuid {
             description: None,
             questions: vec![],
             poster_url: None,
-            address: "123 Test St, Montreal".into(),
-            latitude: 45.5,
-            longitude: -73.5,
+            address: "123 Test St, Edmonton".into(),
+            latitude: 53.5,
+            longitude: -113.5,
             starts_at: now,
             ends_at: now + ChronoDuration::hours(4),
             published: true,
@@ -845,8 +845,8 @@ async fn seed_sticker(pool: &PgPool, admin_id: Uuid, published: bool) -> Uuid {
             slug: format!("test-{}", Uuid::new_v4()),
             label: format!("Test Sticker {}", random_label()),
             hint: Some("Behind the sign".into()),
-            latitude: 45.5199,
-            longitude: -73.5951,
+            latitude: 53.5439,
+            longitude: -113.4924,
             placed_on: None,
             sort_order: 0,
             published,
@@ -1201,7 +1201,7 @@ async fn sticker_slug_must_be_well_formed() {
     let admin_id = seed_test_admin(&pool).await;
 
     // Case is normalised rather than rejected — an operator typing
-    // "St-Viateur" gets "st-viateur", which is friendlier than a 400
+    // "Whyte-Ave" gets "whyte-ave", which is friendlier than a 400
     // and cannot collide with anything. Everything else about the
     // shape is strict.
     let normalised = stickers_service::create(
@@ -1211,8 +1211,8 @@ async fn sticker_slug_must_be_well_formed() {
             slug: format!("MiXeD-{}", Uuid::new_v4()),
             label: "Label".into(),
             hint: None,
-            latitude: 45.5,
-            longitude: -73.5,
+            latitude: 53.5,
+            longitude: -113.5,
             placed_on: None,
             sort_order: 0,
             published: true,
@@ -1242,8 +1242,8 @@ async fn sticker_slug_must_be_well_formed() {
                 slug: bad.into(),
                 label: "Label".into(),
                 hint: None,
-                latitude: 45.5,
-                longitude: -73.5,
+                latitude: 53.5,
+                longitude: -113.5,
                 placed_on: None,
                 sort_order: 0,
                 published: true,

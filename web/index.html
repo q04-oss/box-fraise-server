@@ -371,8 +371,10 @@
     const MAX_EDGE = 1600;
     const JPEG_QUALITY = 0.82;
 
-    // Fallback view when there are no pins to fit — central Montreal.
-    const DEFAULT_CENTER = [45.5019, -73.5674];
+    // Fallback view when there are no pins to fit — central Edmonton.
+    // Only shown on an empty map: as soon as there is at least one
+    // sticker, fitBounds/setView below reframes on the real pins.
+    const DEFAULT_CENTER = [53.5461, -113.4938];
     const DEFAULT_ZOOM = 12;
 
     const mapEl    = document.getElementById('map');
