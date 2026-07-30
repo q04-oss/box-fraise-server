@@ -49,8 +49,19 @@ jobs:
         # Migrations run as the owner role so RLS is created cleanly.
         # If schema and code drift, this step fails loud and early —
         # exactly the property we want from CI.
+        #
+        # ALL of them, in filename order. This used to apply only
+        # 0001_init.sql, which silently rotted the moment 0002 landed:
+        # every test touching a later table (staff, consultation
+        # requests, businesses, stickers) failed on a missing relation.
+        # ON_ERROR_STOP makes psql exit non-zero so the default `bash
+        # -e` aborts the step on the first bad migration instead of
+        # carrying on to a confusing test failure.
         run: |
-          psql "$MIGRATION_DATABASE_URL" -f migrations/0001_init.sql
+          for m in migrations/*.sql; do
+            echo "── applying $m"
+            psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f "$m"
+          done
 
       - name: Format check
         run: cargo fmt --all -- --check
