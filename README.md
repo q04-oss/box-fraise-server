@@ -54,6 +54,9 @@ On boot, the server will:
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
 | `GET  /v1/stickers`                          | public    | Sticker map pins + approved-photo counts           |
+| `GET  /v1/sites`                             | public    | Strawberry sites (published)                       |
+| `GET  /v1/admin/sites`                       | admin     | Includes unpublished sites                         |
+| `POST /v1/admin/sites`                       | admin     | Add a site                                         |
 | `GET  /v1/stickers/{slug}`                   | public    | One pin; 404 unless published                      |
 | `GET  /v1/stickers/{slug}/photos`            | public    | Approved photos for a pin                          |
 | `POST /v1/stickers/{slug}/photos`            | **none**  | Multipart photo submission → 202 pending           |
@@ -149,9 +152,11 @@ src/
   domain/onboarding/   — register, challenge, verify, me
   domain/events/       — public list/get + admin list/create/count
   domain/stickers/     — sticker map, public photo submit, moderation
+  domain/sites/        — strawberry sites (camera spots)
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
   0012_stickers.sql    — stickers + sticker_photos, public-insert policy
+  0013_hosts_and_sites.sql — sticker.host + sites table
 web/index.html         — the homepage: sticker map + scoreboard (Leaflet
                          vendored in web/js)
 admin/index.html       — single-file admin tool

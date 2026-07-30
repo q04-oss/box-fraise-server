@@ -12,7 +12,8 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::stickers` (sticker map).
+  `domain::stickers` (sticker map), `domain::sites` (strawberry
+  camera spots).
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
 - **One endpoint accepts unauthenticated writes:**
@@ -188,6 +189,32 @@ needed because a public transaction cannot see pending rows to count
 them. Do not replace it by opening an `AdminRlsTransaction` on a
 public request.
 
+## Sites, and the location that is never collected
+
+`sites` are places a visitor can stand and see a strawberry through
+their phone camera. The table holds only where the sites are.
+
+**There is deliberately no check-in table, and no column anywhere
+recording who went where.** Whether a visitor is close enough is
+decided in their browser: the page reads a position from the
+Geolocation API, compares it to the site's published coordinates, and
+discards it. Nothing is transmitted, so nothing can leak, be
+subpoenaed, or need a retention policy. If a future feature seems to
+need "who visited", that is a design change with a privacy cost, not a
+missing column — treat it as such.
+
+The corollary: the proximity check is **not a security boundary**.
+Anyone with devtools can fake a position. That is acceptable because
+nothing is at stake — there is no reward, no account, and no record.
+Do not build anything on top of it that assumes the visitor really was
+there.
+
+Sites are stored separately from stickers rather than as a `kind`
+column, because `sticker_photos` has a foreign key to `stickers` and a
+site can never have photos. One table would have meant rows that are
+structurally allowed to have children they can never legitimately
+have.
+
 ## Audit
 
 `audit::write` always takes the pool, never a transaction. This is
@@ -200,7 +227,7 @@ call on the success path. Use the actor_type / action conventions
 that already exist (`user.register`, `challenge.issued`, `user.verify`,
 `event.create`, `admin.login`, `maintenance.prune`, `sticker.create`,
 `sticker_photo.submit`, `sticker_photo.approve`,
-`sticker_photo.reject`).
+`sticker_photo.reject`, `site.create`).
 
 `actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
 was added in migration 0012 for anonymous photo submissions — an

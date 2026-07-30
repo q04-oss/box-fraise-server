@@ -145,7 +145,8 @@
           <div style="margin-top: 10px;">
             <label>Label</label><input id="st-label" placeholder="Corner of Whyte &amp; 104 St">
             <label>Slug</label><input id="st-slug" placeholder="whyte-104-st">
-            <label>Hint (where exactly to look)</label><input id="st-hint" placeholder="Back of the stop sign, facing the alley">
+            <label>Host (the place that agreed to it)</label><input id="st-host" placeholder="Remedy Cafe">
+            <label>Hint (where exactly to look)</label><input id="st-hint" placeholder="Window ledge by the till">
             <div class="row">
               <div><label>Latitude</label><input id="st-lat" type="number" step="0.000001"></div>
               <div><label>Longitude</label><input id="st-lng" type="number" step="0.000001"></div>
@@ -154,6 +155,36 @@
             <label style="margin-top: 10px;"><input id="st-pub" type="checkbox" checked> Published</label>
             <div style="margin-top: 12px;"><button id="create-sticker-btn">Place sticker</button></div>
             <div id="create-sticker-msg"></div>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Strawberry sites</legend>
+        <div class="row">
+          <div class="muted" id="site-meta">—</div>
+          <button class="secondary" id="refresh-sites">Refresh</button>
+        </div>
+        <p class="muted" style="margin-top: 10px;">
+          Places where a visitor can point their camera and see a floating
+          strawberry. Whether they are close enough is decided in their
+          browser — no location is ever sent here.
+        </p>
+        <div id="site-list" style="margin-top: 10px;"></div>
+
+        <details style="margin-top: 14px;">
+          <summary style="cursor: pointer; font-size: 14px;">Add a site</summary>
+          <div style="margin-top: 10px;">
+            <label>Label</label><input id="si-label" placeholder="End of the pier">
+            <label>Slug</label><input id="si-slug" placeholder="end-of-the-pier">
+            <label>Blurb</label><textarea id="si-blurb" rows="2" placeholder="Stand near the railing and look out."></textarea>
+            <div class="row">
+              <div><label>Latitude</label><input id="si-lat" type="number" step="0.000001"></div>
+              <div><label>Longitude</label><input id="si-lng" type="number" step="0.000001"></div>
+            </div>
+            <label style="margin-top: 10px;"><input id="si-pub" type="checkbox" checked> Published</label>
+            <div style="margin-top: 12px;"><button id="create-site-btn">Add site</button></div>
+            <div id="create-site-msg"></div>
           </div>
         </details>
       </fieldset>
@@ -219,6 +250,7 @@
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
       loadStickers();
+      loadSites();
       loadPending();
     } else {
       $('login').classList.remove('hidden');
@@ -455,7 +487,9 @@
         // textContent, not innerHTML — the label is operator-entered,
         // but the habit is what keeps the public-facing paths safe.
         row.textContent =
-          `${s.label} · /${s.slug} · ${s.photo_count} photo${s.photo_count === 1 ? '' : 's'}`
+          `${s.label} · /${s.slug}`
+          + (s.host ? ` · hosted by ${s.host}` : ' · NO HOST')
+          + ` · ${s.photo_count} photo${s.photo_count === 1 ? '' : 's'}`
           + (s.published ? '' : ' · UNPUBLISHED');
         list.append(row);
       }
@@ -473,6 +507,7 @@
       label: $('st-label').value.trim(),
       slug: $('st-slug').value.trim().toLowerCase(),
       hint: $('st-hint').value.trim() || null,
+      host: $('st-host').value.trim() || null,
       latitude: parseFloat($('st-lat').value),
       longitude: parseFloat($('st-lng').value),
       // An empty date input is "", which serde cannot read as a date.
@@ -490,12 +525,64 @@
     try {
       const s = await api('/admin/stickers', { method: 'POST', body: JSON.stringify(body) });
       setMsg(msg, 'ok', `Placed “${escape(s.label)}” at /${escape(s.slug)}.`);
-      for (const id of ['st-label', 'st-slug', 'st-hint', 'st-lat', 'st-lng', 'st-placed']) {
+      for (const id of ['st-label', 'st-slug', 'st-hint', 'st-host', 'st-lat', 'st-lng', 'st-placed']) {
         $(id).value = '';
       }
       loadStickers();
     } catch (e) {
       setMsg(msg, 'err', 'Could not place sticker: ' + escape(e.message));
+    }
+  });
+
+  // ── Strawberry sites ─────────────────────────────────────────────
+
+  async function loadSites() {
+    try {
+      const sites = await api('/admin/sites');
+      const list = $('site-list');
+      list.replaceChildren();
+      $('site-meta').textContent = sites.length ? `${sites.length} live` : 'none yet';
+      for (const s of sites) {
+        const row = document.createElement('div');
+        row.className = 'muted';
+        row.style.padding = '6px 0';
+        row.style.borderTop = '1px solid var(--rule)';
+        row.textContent = `${s.label} · /${s.slug} · ${s.latitude.toFixed(5)}, ${s.longitude.toFixed(5)}`
+          + (s.published ? '' : ' · UNPUBLISHED');
+        list.append(row);
+      }
+    } catch (e) {
+      $('site-meta').textContent = 'could not load sites';
+    }
+  }
+
+  $('refresh-sites').addEventListener('click', () => loadSites());
+
+  $('create-site-btn').addEventListener('click', async () => {
+    const msg = $('create-site-msg');
+    const body = {
+      label: $('si-label').value.trim(),
+      slug: $('si-slug').value.trim().toLowerCase(),
+      blurb: $('si-blurb').value.trim() || null,
+      latitude: parseFloat($('si-lat').value),
+      longitude: parseFloat($('si-lng').value),
+      published: $('si-pub').checked,
+    };
+    if (!body.label || !body.slug) {
+      setMsg(msg, 'err', 'Label and slug required.');
+      return;
+    }
+    if (Number.isNaN(body.latitude) || Number.isNaN(body.longitude)) {
+      setMsg(msg, 'err', 'Latitude and longitude required.');
+      return;
+    }
+    try {
+      const s = await api('/admin/sites', { method: 'POST', body: JSON.stringify(body) });
+      setMsg(msg, 'ok', `Added “${escape(s.label)}”.`);
+      for (const id of ['si-label', 'si-slug', 'si-blurb', 'si-lat', 'si-lng']) $(id).value = '';
+      loadSites();
+    } catch (e) {
+      setMsg(msg, 'err', 'Could not add site: ' + escape(e.message));
     }
   });
 

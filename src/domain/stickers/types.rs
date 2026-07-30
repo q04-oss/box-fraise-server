@@ -15,6 +15,10 @@ pub struct Sticker {
     pub slug: String,
     pub label: String,
     pub hint: Option<String>,
+    /// The shop, café or venue that agreed to host this sticker.
+    /// Free text, not a link to a businesses row — naming a host
+    /// should not require onboarding it to the directory first.
+    pub host: Option<String>,
     pub latitude: f64,
     pub longitude: f64,
     pub placed_on: Option<NaiveDate>,
@@ -67,6 +71,10 @@ pub struct CreateStickerRequest {
     pub slug: String,
     pub label: String,
     pub hint: Option<String>,
+    /// The shop, café or venue that agreed to host this sticker.
+    /// Free text, not a link to a businesses row — naming a host
+    /// should not require onboarding it to the directory first.
+    pub host: Option<String>,
     pub latitude: f64,
     pub longitude: f64,
     pub placed_on: Option<NaiveDate>,

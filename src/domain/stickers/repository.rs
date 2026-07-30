@@ -14,7 +14,7 @@ use super::types::{PendingStickerPhoto, Sticker, StickerPhoto, StickerPhotoImage
 /// with the public one. Being explicit keeps the number meaning the
 /// same thing in both contexts.
 const STICKER_COLUMNS: &str = "
-    s.id, s.slug, s.label, s.hint, s.latitude, s.longitude,
+    s.id, s.slug, s.label, s.hint, s.host, s.latitude, s.longitude,
     s.placed_on, s.sort_order, s.published,
     (SELECT COUNT(*) FROM sticker_photos p
       WHERE p.sticker_id = s.id AND p.status = 'approved') AS photo_count,
@@ -69,6 +69,7 @@ pub async fn insert_sticker(
     slug: &str,
     label: &str,
     hint: Option<&str>,
+    host: Option<&str>,
     latitude: f64,
     longitude: f64,
     placed_on: Option<NaiveDate>,
@@ -79,14 +80,15 @@ pub async fn insert_sticker(
     // rather than a correlated subquery over the row we just wrote.
     sqlx::query_as::<_, Sticker>(
         "INSERT INTO stickers
-             (slug, label, hint, latitude, longitude, placed_on, sort_order, published)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id, slug, label, hint, latitude, longitude, placed_on,
+             (slug, label, hint, host, latitude, longitude, placed_on, sort_order, published)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, slug, label, hint, host, latitude, longitude, placed_on,
                    sort_order, published, 0::bigint AS photo_count, created_at",
     )
     .bind(slug)
     .bind(label)
     .bind(hint)
+    .bind(host)
     .bind(latitude)
     .bind(longitude)
     .bind(placed_on)

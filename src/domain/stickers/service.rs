@@ -189,6 +189,7 @@ pub async fn create(pool: &Pool, admin_id: Uuid, req: CreateStickerRequest) -> A
         &slug,
         label,
         req.hint.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+        req.host.as_deref().map(str::trim).filter(|s| !s.is_empty()),
         req.latitude,
         req.longitude,
         req.placed_on,

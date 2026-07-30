@@ -23,6 +23,7 @@ use box_fraise::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
         },
+        sites::{service as sites_service, types::CreateSiteRequest},
         stickers::{
             service as stickers_service,
             types::{CreateStickerRequest, PhotoUpload},
@@ -845,6 +846,7 @@ async fn seed_sticker(pool: &PgPool, admin_id: Uuid, published: bool) -> Uuid {
             slug: format!("test-{}", Uuid::new_v4()),
             label: format!("Test Sticker {}", random_label()),
             hint: Some("Behind the sign".into()),
+            host: Some("Test Host Cafe".into()),
             latitude: 53.5439,
             longitude: -113.4924,
             placed_on: None,
@@ -1211,6 +1213,7 @@ async fn sticker_slug_must_be_well_formed() {
             slug: format!("MiXeD-{}", Uuid::new_v4()),
             label: "Label".into(),
             hint: None,
+            host: None,
             latitude: 53.5,
             longitude: -113.5,
             placed_on: None,
@@ -1242,6 +1245,7 @@ async fn sticker_slug_must_be_well_formed() {
                 slug: bad.into(),
                 label: "Label".into(),
                 hint: None,
+                host: None,
                 latitude: 53.5,
                 longitude: -113.5,
                 placed_on: None,
@@ -1253,6 +1257,143 @@ async fn sticker_slug_must_be_well_formed() {
         assert!(
             matches!(result, Err(AppError::BadRequest(_))),
             "slug {bad:?} must be rejected before it reaches the DB"
+        );
+    }
+}
+
+// ── Hosts and sites ─────────────────────────────────────────────────
+
+/// A sticker's host is the record that somebody agreed to it being
+/// there. It has to survive the round trip, because the map shows it
+/// and that display is the whole point of collecting it.
+#[tokio::test]
+async fn sticker_host_round_trips() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let sticker_id = seed_sticker(&pool, admin_id, true).await;
+    let slug = slug_of(&pool, sticker_id).await;
+
+    let public = stickers_service::get_public(&pool, &slug).await.unwrap();
+    assert_eq!(
+        public.host.as_deref(),
+        Some("Test Host Cafe"),
+        "host must be readable on the public map"
+    );
+}
+
+/// Sites carry the same published/draft boundary as stickers, so an
+/// unannounced strawberry cannot be found by reading the API.
+#[tokio::test]
+async fn unpublished_site_is_hidden_from_public() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+
+    let draft = sites_service::create(
+        &pool,
+        admin_id,
+        CreateSiteRequest {
+            slug: format!("draft-{}", Uuid::new_v4()),
+            label: "Unannounced strawberry".into(),
+            blurb: None,
+            latitude: 53.5461,
+            longitude: -113.4938,
+            sort_order: 0,
+            published: false,
+        },
+    )
+    .await
+    .unwrap();
+
+    let public = sites_service::list_public(&pool).await.unwrap();
+    assert!(
+        public.iter().all(|s| s.id != draft.id),
+        "unpublished site must not appear publicly"
+    );
+
+    let admin_view = sites_service::list_admin(&pool).await.unwrap();
+    assert!(
+        admin_view.iter().any(|s| s.id == draft.id),
+        "admin list must include unpublished sites"
+    );
+}
+
+#[tokio::test]
+async fn published_site_is_publicly_listed() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+
+    let live = sites_service::create(
+        &pool,
+        admin_id,
+        CreateSiteRequest {
+            slug: format!("live-{}", Uuid::new_v4()),
+            label: "Visible strawberry".into(),
+            blurb: Some("Stand by the railing.".into()),
+            latitude: 53.5461,
+            longitude: -113.4938,
+            sort_order: 0,
+            published: true,
+        },
+    )
+    .await
+    .unwrap();
+
+    let public = sites_service::list_public(&pool).await.unwrap();
+    let found = public
+        .iter()
+        .find(|s| s.id == live.id)
+        .expect("site must be public");
+    assert_eq!(found.blurb.as_deref(), Some("Stand by the railing."));
+    assert_eq!(found.latitude, 53.5461);
+}
+
+/// Non-admins must not be able to write sites, the same way they
+/// cannot write events. This is the isolation property that matters
+/// for a table whose rows tell people where to physically go.
+#[tokio::test]
+async fn non_admin_cannot_insert_site() {
+    let pool = test_pool().await;
+    let slug = format!("sneaky-{}", Uuid::new_v4());
+
+    // Plain transaction: no app.is_admin, i.e. a public request.
+    let mut tx = pool.begin().await.unwrap();
+    let result = sqlx::query(
+        "INSERT INTO sites (slug, label, latitude, longitude, published)
+         VALUES ($1, 'Fake', 53.5, -113.5, true)",
+    )
+    .bind(&slug)
+    .execute(&mut *tx)
+    .await;
+    assert!(
+        result.is_err(),
+        "public context must not be able to create a site"
+    );
+    tx.rollback().await.ok();
+}
+
+#[tokio::test]
+async fn site_slug_must_be_well_formed() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+
+    for bad in ["Has Spaces", "trailing-", "--double", "under_score", ""] {
+        let result = sites_service::create(
+            &pool,
+            admin_id,
+            CreateSiteRequest {
+                slug: bad.into(),
+                label: "Label".into(),
+                blurb: None,
+                latitude: 53.5,
+                longitude: -113.5,
+                sort_order: 0,
+                published: true,
+            },
+        )
+        .await;
+        assert!(
+            matches!(result, Err(AppError::BadRequest(_))),
+            "site slug {bad:?} must be rejected before it reaches the DB"
         );
     }
 }
