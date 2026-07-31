@@ -119,45 +119,19 @@
       </fieldset>
 
       <fieldset>
-        <legend>Sticker photos awaiting review</legend>
+        <legend>Sightings awaiting review</legend>
         <div class="row">
           <div class="muted" id="pending-meta">—</div>
           <button class="secondary" id="refresh-pending">Refresh</button>
         </div>
         <p class="muted" style="margin-top: 10px;">
-          Submitted by the public from <code>/stickers</code> and invisible on the
-          site until approved. Rejecting deletes the image.
+          Submitted by the public from the front page and invisible on the map
+          until approved. Rejecting deletes the image.
         </p>
         <div id="pending-list"></div>
         <div id="pending-msg"></div>
       </fieldset>
 
-      <fieldset>
-        <legend>Stickers</legend>
-        <div class="row">
-          <div class="muted" id="sticker-meta">—</div>
-          <button class="secondary" id="refresh-stickers">Refresh</button>
-        </div>
-        <div id="sticker-list" style="margin-top: 10px;"></div>
-
-        <details style="margin-top: 14px;">
-          <summary style="cursor: pointer; font-size: 14px;">Place a new sticker</summary>
-          <div style="margin-top: 10px;">
-            <label>Label</label><input id="st-label" placeholder="Corner of Whyte &amp; 104 St">
-            <label>Slug</label><input id="st-slug" placeholder="whyte-104-st">
-            <label>Host (the place that agreed to it)</label><input id="st-host" placeholder="Remedy Cafe">
-            <label>Hint (where exactly to look)</label><input id="st-hint" placeholder="Window ledge by the till">
-            <div class="row">
-              <div><label>Latitude</label><input id="st-lat" type="number" step="0.000001"></div>
-              <div><label>Longitude</label><input id="st-lng" type="number" step="0.000001"></div>
-            </div>
-            <label>Placed on</label><input id="st-placed" type="date">
-            <label style="margin-top: 10px;"><input id="st-pub" type="checkbox" checked> Published</label>
-            <div style="margin-top: 12px;"><button id="create-sticker-btn">Place sticker</button></div>
-            <div id="create-sticker-msg"></div>
-          </div>
-        </details>
-      </fieldset>
 
       <fieldset>
         <legend>Strawberry sites</legend>
@@ -249,7 +223,6 @@
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
-      loadStickers();
       loadSites();
       loadPending();
     } else {
@@ -470,122 +443,6 @@
     }
   }
 
-  // ── Stickers ─────────────────────────────────────────────────────
-
-  async function loadStickers() {
-    try {
-      const stickers = await api('/admin/stickers');
-      const list = $('sticker-list');
-      list.replaceChildren();
-      $('sticker-meta').textContent =
-        stickers.length ? `${stickers.length} placed` : 'none placed yet';
-      for (const s of stickers) {
-        const row = document.createElement('div');
-        row.className = 'muted';
-        row.style.padding = '6px 0';
-        row.style.borderTop = '1px solid var(--rule)';
-        // textContent, not innerHTML — the label is operator-entered,
-        // but the habit is what keeps the public-facing paths safe.
-        row.textContent =
-          `${s.label} · /${s.slug}`
-          + (s.host ? ` · hosted by ${s.host}` : ' · NO HOST')
-          + ` · ${s.photo_count} photo${s.photo_count === 1 ? '' : 's'}`
-          + (s.published ? '' : ' · UNPUBLISHED');
-        list.append(row);
-      }
-    } catch (e) {
-      $('sticker-meta').textContent = 'could not load stickers';
-    }
-  }
-
-  $('refresh-stickers').addEventListener('click', () => loadStickers());
-
-  $('create-sticker-btn').addEventListener('click', async () => {
-    const msg = $('create-sticker-msg');
-    const placed = $('st-placed').value;
-    const body = {
-      label: $('st-label').value.trim(),
-      slug: $('st-slug').value.trim().toLowerCase(),
-      hint: $('st-hint').value.trim() || null,
-      host: $('st-host').value.trim() || null,
-      latitude: parseFloat($('st-lat').value),
-      longitude: parseFloat($('st-lng').value),
-      // An empty date input is "", which serde cannot read as a date.
-      placed_on: placed || null,
-      published: $('st-pub').checked,
-    };
-    if (!body.label || !body.slug) {
-      setMsg(msg, 'err', 'Label and slug required.');
-      return;
-    }
-    if (Number.isNaN(body.latitude) || Number.isNaN(body.longitude)) {
-      setMsg(msg, 'err', 'Latitude and longitude required.');
-      return;
-    }
-    try {
-      const s = await api('/admin/stickers', { method: 'POST', body: JSON.stringify(body) });
-      setMsg(msg, 'ok', `Placed “${escape(s.label)}” at /${escape(s.slug)}.`);
-      for (const id of ['st-label', 'st-slug', 'st-hint', 'st-host', 'st-lat', 'st-lng', 'st-placed']) {
-        $(id).value = '';
-      }
-      loadStickers();
-    } catch (e) {
-      setMsg(msg, 'err', 'Could not place sticker: ' + escape(e.message));
-    }
-  });
-
-  // ── Strawberry sites ─────────────────────────────────────────────
-
-  async function loadSites() {
-    try {
-      const sites = await api('/admin/sites');
-      const list = $('site-list');
-      list.replaceChildren();
-      $('site-meta').textContent = sites.length ? `${sites.length} live` : 'none yet';
-      for (const s of sites) {
-        const row = document.createElement('div');
-        row.className = 'muted';
-        row.style.padding = '6px 0';
-        row.style.borderTop = '1px solid var(--rule)';
-        row.textContent = `${s.label} · /${s.slug} · ${s.latitude.toFixed(5)}, ${s.longitude.toFixed(5)}`
-          + (s.published ? '' : ' · UNPUBLISHED');
-        list.append(row);
-      }
-    } catch (e) {
-      $('site-meta').textContent = 'could not load sites';
-    }
-  }
-
-  $('refresh-sites').addEventListener('click', () => loadSites());
-
-  $('create-site-btn').addEventListener('click', async () => {
-    const msg = $('create-site-msg');
-    const body = {
-      label: $('si-label').value.trim(),
-      slug: $('si-slug').value.trim().toLowerCase(),
-      blurb: $('si-blurb').value.trim() || null,
-      latitude: parseFloat($('si-lat').value),
-      longitude: parseFloat($('si-lng').value),
-      published: $('si-pub').checked,
-    };
-    if (!body.label || !body.slug) {
-      setMsg(msg, 'err', 'Label and slug required.');
-      return;
-    }
-    if (Number.isNaN(body.latitude) || Number.isNaN(body.longitude)) {
-      setMsg(msg, 'err', 'Latitude and longitude required.');
-      return;
-    }
-    try {
-      const s = await api('/admin/sites', { method: 'POST', body: JSON.stringify(body) });
-      setMsg(msg, 'ok', `Added “${escape(s.label)}”.`);
-      for (const id of ['si-label', 'si-slug', 'si-blurb', 'si-lat', 'si-lng']) $(id).value = '';
-      loadSites();
-    } catch (e) {
-      setMsg(msg, 'err', 'Could not add site: ' + escape(e.message));
-    }
-  });
-
   // ── Photo moderation ─────────────────────────────────────────────
 
   // Object URLs for the previews currently on screen. An <img src> can
@@ -613,7 +470,7 @@
   async function loadPending() {
     const list = $('pending-list');
     try {
-      const pending = await api('/admin/sticker-photos/pending');
+      const pending = await api('/admin/sightings/pending');
       releasePreviews();
       list.replaceChildren();
       $('pending-meta').textContent =
@@ -636,7 +493,7 @@
     img.style.display = 'block';
     img.style.background = '#eee';
     img.style.borderRadius = '4px';
-    authedImageUrl(`/admin/sticker-photos/${encodeURIComponent(p.id)}/image`)
+    authedImageUrl(`/admin/sightings/${encodeURIComponent(p.id)}/image`)
       .then(u => { img.src = u; })
       .catch(() => { img.alt = 'preview unavailable'; });
     wrap.append(img);
@@ -646,9 +503,21 @@
     meta.style.margin = '8px 0';
     const kb = Math.round(p.byte_size / 1024);
     // Anonymous free text — textContent only.
-    meta.textContent = `${p.sticker_label} · /${p.sticker_slug} · ${p.content_type} · ${kb} KB`
-      + ` · ${new Date(p.submitted_at).toLocaleString()}`;
+    meta.textContent = `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`
+      + ` · ${p.content_type} · ${kb} KB · ${new Date(p.submitted_at).toLocaleString()}`;
     wrap.append(meta);
+
+    // The coordinates are submitter-supplied, so check the pin lands
+    // somewhere plausible before approving it onto the public map.
+    const where = document.createElement('div');
+    where.style.margin = '4px 0';
+    const wl = document.createElement('a');
+    wl.href = `https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`;
+    wl.target = '_blank';
+    wl.rel = 'noopener noreferrer';
+    wl.textContent = 'Check this location →';
+    where.append(wl);
+    wrap.append(where);
 
     if (p.caption) {
       const cap = document.createElement('div');
@@ -687,13 +556,12 @@
   async function review(p, action, buttons) {
     for (const b of buttons) b.disabled = true;
     try {
-      await api(`/admin/sticker-photos/${encodeURIComponent(p.id)}/${action}`, { method: 'POST' });
+      await api(`/admin/sightings/${encodeURIComponent(p.id)}/${action}`, { method: 'POST' });
       setMsg($('pending-msg'), 'ok',
-        `${action === 'approve' ? 'Approved' : 'Rejected'} · ${escape(p.sticker_label)}`);
-      // Reload rather than splice the row out: an approval changes the
-      // sticker's public photo count too.
+        `${action === 'approve' ? 'Approved' : 'Rejected'} · sighting`);
+      // Reload rather than splice the row out, so the queue reflects
+      // anything another admin reviewed in the meantime.
       loadPending();
-      loadStickers();
     } catch (e) {
       setMsg($('pending-msg'), 'err', escape(e.message));
       for (const b of buttons) b.disabled = false;

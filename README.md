@@ -53,20 +53,16 @@ On boot, the server will:
 | `POST /v1/admin/events`                      | admin     | Create an event                                    |
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
-| `GET  /v1/stickers`                          | public    | Sticker map pins + approved-photo counts           |
 | `GET  /v1/sites`                             | public    | Strawberry sites (published)                       |
 | `GET  /v1/admin/sites`                       | admin     | Includes unpublished sites                         |
 | `POST /v1/admin/sites`                       | admin     | Add a site                                         |
-| `GET  /v1/stickers/{slug}`                   | public    | One pin; 404 unless published                      |
-| `GET  /v1/stickers/{slug}/photos`            | public    | Approved photos for a pin                          |
-| `POST /v1/stickers/{slug}/photos`            | **none**  | Multipart photo submission → 202 pending           |
-| `GET  /v1/sticker-photos/{id}/image`         | public    | Image bytes; approved only                         |
-| `GET  /v1/admin/stickers`                    | admin     | Includes unpublished pins                          |
-| `POST /v1/admin/stickers`                    | admin     | Place a sticker                                    |
-| `GET  /v1/admin/sticker-photos/pending`      | admin     | Moderation queue                                   |
-| `GET  /v1/admin/sticker-photos/{id}/image`   | admin     | Preview an unapproved photo                        |
-| `POST /v1/admin/sticker-photos/{id}/approve` | admin     | Publish it → 204, 409 if already reviewed          |
-| `POST /v1/admin/sticker-photos/{id}/reject`  | admin     | Delete it (bytes included) → 204                   |
+| `GET  /v1/sightings`                         | public    | Approved sightings (the map pins)                  |
+| `POST /v1/sightings`                         | **none**  | Multipart: photo + lat/lng → 202 pending           |
+| `GET  /v1/sightings/{id}/image`              | public    | Image bytes; approved only                         |
+| `GET  /v1/admin/sightings/pending`           | admin     | Moderation queue                                   |
+| `GET  /v1/admin/sightings/{id}/image`        | admin     | Preview an unapproved sighting                     |
+| `POST /v1/admin/sightings/{id}/approve`      | admin     | Publish it → 204, 409 if already reviewed          |
+| `POST /v1/admin/sightings/{id}/reject`       | admin     | Delete it (bytes included) → 204                   |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
 | `GET  /`                                     | public    | The sticker map — homepage (`web/index.html`), and fallback for unmatched paths |
@@ -101,8 +97,8 @@ to grant camera permission.
 - **Verification is in-person.** Pending users sit on a 30-day TTL
   unless an admin scans their QR at a real event. No remote
   self-verification path exists.
-- **Exactly one unauthenticated write.** `POST
-  /v1/stickers/{slug}/photos` accepts a photo from anyone. RLS pins
+- **Exactly one unauthenticated write.** `POST /v1/sightings`
+  accepts a photo plus coordinates from anyone. RLS pins
   the inserted row to `status = 'pending'` and hides it from every
   public read until an admin approves it, the content type is derived
   from magic bytes rather than the client's claim (JPEG/PNG/WebP only
@@ -126,7 +122,7 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
-consultation lifecycle, and the sticker-photo moderation boundary
+consultation lifecycle, and the sighting moderation boundary
 (pending rows invisible, self-approval refused, approve race,
 non-image bytes rejected).
 
@@ -151,13 +147,14 @@ src/
   domain/admin/        — admin login
   domain/onboarding/   — register, challenge, verify, me
   domain/events/       — public list/get + admin list/create/count
-  domain/stickers/     — sticker map, public photo submit, moderation
+  domain/sightings/    — public sighting submit + moderation
   domain/sites/        — strawberry sites (camera spots)
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0012_stickers.sql    — stickers + sticker_photos, public-insert policy
-  0013_hosts_and_sites.sql — sticker.host + sites table
-web/index.html         — the homepage: sticker map + scoreboard (Leaflet
+  0012_stickers.sql    — (superseded by 0014)
+  0013_hosts_and_sites.sql — sites table (sticker.host superseded)
+  0014_sightings.sql   — sightings; drops the placed-sticker tables
+web/index.html         — the homepage: the map + submit flow (Leaflet
                          vendored in web/js)
 admin/index.html       — single-file admin tool
 docker-compose.yml     — Postgres (init script creates bf_app)

@@ -23,11 +23,8 @@ use box_fraise::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
         },
+        sightings::{service as sightings_service, types::SightingUpload},
         sites::{service as sites_service, types::CreateSiteRequest},
-        stickers::{
-            service as stickers_service,
-            types::{CreateStickerRequest, PhotoUpload},
-        },
     },
     error::AppError,
 };
@@ -816,12 +813,12 @@ async fn questions_archive_filters_and_lists() {
     );
 }
 
-// ── Sticker map ─────────────────────────────────────────────────────
+// ── Sightings ───────────────────────────────────────────────────────
 //
-// The sticker_photos table is the only one an unauthenticated request
-// can write to, so these tests are mostly about proving the blast
-// radius of that door is exactly one row shape: pending, invisible,
-// attached to a published sticker.
+// `sightings` is the only table an unauthenticated request can write
+// to, so these tests are mostly about proving the blast radius of that
+// door is exactly one row shape: pending, invisible, and unable to
+// publish itself.
 
 /// Minimum-viable "image": a real JPEG magic-byte prefix padded past
 /// the service's MIN_IMAGE_BYTES floor.
@@ -836,147 +833,72 @@ fn fake_jpeg() -> Vec<u8> {
     bytes
 }
 
-async fn seed_sticker(pool: &PgPool, admin_id: Uuid, published: bool) -> Uuid {
-    stickers_service::create(
-        pool,
-        admin_id,
-        CreateStickerRequest {
-            // Slugs are globally unique; a UUID keeps parallel tests
-            // from colliding.
-            slug: format!("test-{}", Uuid::new_v4()),
-            label: format!("Test Sticker {}", random_label()),
-            hint: Some("Behind the sign".into()),
-            host: Some("Test Host Cafe".into()),
-            latitude: 53.5439,
-            longitude: -113.4924,
-            placed_on: None,
-            sort_order: 0,
-            published,
-        },
-    )
-    .await
-    .unwrap()
-    .id
-}
-
-async fn slug_of(pool: &PgPool, sticker_id: Uuid) -> String {
-    let mut tx = AdminRlsTransaction::begin(pool).await.unwrap();
-    let (slug,): (String,) = sqlx::query_as("SELECT slug FROM stickers WHERE id = $1")
-        .bind(sticker_id)
-        .fetch_one(tx.conn())
-        .await
-        .unwrap();
-    tx.commit().await.unwrap();
-    slug
-}
-
-fn upload() -> PhotoUpload {
-    PhotoUpload {
+/// A sighting somewhere in central Edmonton.
+fn upload() -> SightingUpload {
+    SightingUpload {
         image_bytes: fake_jpeg(),
-        caption: Some("found it".into()),
+        latitude: 53.5461,
+        longitude: -113.4938,
+        caption: Some("saw it on a bike rack".into()),
         submitter_name: Some("anon".into()),
     }
 }
 
 #[tokio::test]
-async fn unpublished_sticker_is_hidden_from_public() {
+async fn submitted_sighting_is_pending_and_invisible() {
     let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, false).await;
-    let slug = slug_of(&pool, sticker_id).await;
-
-    let public = stickers_service::list_public(&pool).await.unwrap();
-    assert!(
-        public.iter().all(|s| s.id != sticker_id),
-        "unpublished sticker must not appear on the public map"
-    );
-    assert!(
-        matches!(
-            stickers_service::get_public(&pool, &slug).await,
-            Err(AppError::NotFound)
-        ),
-        "unpublished sticker must 404 by slug"
-    );
-
-    // The admin list runs with app.is_admin and must see the draft.
-    let admin_view = stickers_service::list_admin(&pool).await.unwrap();
-    assert!(
-        admin_view.iter().any(|s| s.id == sticker_id),
-        "admin list must include unpublished stickers"
-    );
-}
-
-#[tokio::test]
-async fn submitted_photo_is_pending_and_invisible() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
-
-    let res = stickers_service::submit_photo(&pool, &slug, upload())
-        .await
-        .unwrap();
+    let res = sightings_service::submit(&pool, upload()).await.unwrap();
     assert_eq!(res.status, "pending");
 
-    // Invisible in the public gallery...
-    let photos = stickers_service::list_photos(&pool, &slug).await.unwrap();
+    // Invisible on the public map...
+    let public = sightings_service::list_public(&pool).await.unwrap();
     assert!(
-        photos.is_empty(),
-        "a pending photo must not appear in the public gallery"
+        public.iter().all(|s| s.id != res.id),
+        "a pending sighting must not appear on the public map"
     );
 
     // ...and its bytes are not servable, even knowing the exact id.
     assert!(
         matches!(
-            stickers_service::photo_image_public(&pool, res.id).await,
+            sightings_service::image_public(&pool, res.id).await,
             Err(AppError::NotFound)
         ),
-        "pending photo bytes must not be publicly servable"
-    );
-
-    // The found-count on the map must not move on submission alone.
-    let sticker = stickers_service::get_public(&pool, &slug).await.unwrap();
-    assert_eq!(
-        sticker.photo_count, 0,
-        "photo_count counts approved photos only"
+        "pending sighting bytes must not be publicly servable"
     );
 
     // The admin preview path is the one place it resolves.
-    stickers_service::photo_image_admin(&pool, res.id)
+    sightings_service::image_admin(&pool, res.id)
         .await
-        .expect("admin must be able to preview a pending photo");
-    let pending = stickers_service::list_pending(&pool).await.unwrap();
+        .expect("admin must be able to preview a pending sighting");
+    let pending = sightings_service::list_pending(&pool).await.unwrap();
     assert!(
         pending.iter().any(|p| p.id == res.id),
-        "pending photo must appear in the moderation queue"
+        "pending sighting must appear in the moderation queue"
     );
 }
 
 #[tokio::test]
-async fn approving_a_photo_publishes_it() {
+async fn approving_a_sighting_publishes_it() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
 
-    let res = stickers_service::submit_photo(&pool, &slug, upload())
-        .await
-        .unwrap();
-    stickers_service::approve(&pool, admin_id, res.id)
+    let res = sightings_service::submit(&pool, upload()).await.unwrap();
+    sightings_service::approve(&pool, admin_id, res.id)
         .await
         .unwrap();
 
-    let photos = stickers_service::list_photos(&pool, &slug).await.unwrap();
-    assert_eq!(photos.len(), 1, "approved photo must be publicly visible");
-    assert_eq!(photos[0].caption.as_deref(), Some("found it"));
+    let public = sightings_service::list_public(&pool).await.unwrap();
+    let found = public
+        .iter()
+        .find(|s| s.id == res.id)
+        .expect("approved sighting must be publicly visible");
+    assert_eq!(found.caption.as_deref(), Some("saw it on a bike rack"));
+    assert_eq!(found.latitude, 53.5461);
 
-    let img = stickers_service::photo_image_public(&pool, res.id)
+    let img = sightings_service::image_public(&pool, res.id)
         .await
-        .expect("approved photo bytes must be servable");
+        .expect("approved sighting bytes must be servable");
     assert_eq!(img.content_type, "image/jpeg");
-
-    let sticker = stickers_service::get_public(&pool, &slug).await.unwrap();
-    assert_eq!(sticker.photo_count, 1, "approval must bump the found count");
 }
 
 /// The load-bearing RLS invariant: the INSERT policy pins status to
@@ -985,69 +907,44 @@ async fn approving_a_photo_publishes_it() {
 #[tokio::test]
 async fn public_insert_cannot_self_approve() {
     let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
     let bytes = fake_jpeg();
 
     // Plain transaction: no app.user_id, no app.is_admin — exactly the
     // context a public request runs in.
     let mut tx = pool.begin().await.unwrap();
     let result = sqlx::query(
-        "INSERT INTO sticker_photos
-             (sticker_id, image_bytes, content_type, byte_size, status)
-         VALUES ($1, $2, 'image/jpeg', $3, 'approved')",
+        "INSERT INTO sightings
+             (image_bytes, content_type, byte_size, latitude, longitude, status)
+         VALUES ($1, 'image/jpeg', $2, 53.5, -113.5, 'approved')",
     )
-    .bind(sticker_id)
     .bind(&bytes)
     .bind(bytes.len() as i32)
     .execute(&mut *tx)
     .await;
     assert!(
         result.is_err(),
-        "public context must not be able to insert an approved photo"
+        "public context must not be able to insert an approved sighting"
     );
     tx.rollback().await.ok();
 
     // The same insert as 'pending' is the intended path and must work.
     let mut tx = pool.begin().await.unwrap();
     sqlx::query(
-        "INSERT INTO sticker_photos
-             (sticker_id, image_bytes, content_type, byte_size, status)
-         VALUES ($1, $2, 'image/jpeg', $3, 'pending')",
+        "INSERT INTO sightings
+             (image_bytes, content_type, byte_size, latitude, longitude, status)
+         VALUES ($1, 'image/jpeg', $2, 53.5, -113.5, 'pending')",
     )
-    .bind(sticker_id)
     .bind(&bytes)
     .bind(bytes.len() as i32)
     .execute(&mut *tx)
     .await
-    .expect("public context must be able to insert a pending photo");
+    .expect("public context must be able to insert a pending sighting");
     tx.commit().await.unwrap();
-}
-
-/// A photo cannot be queued against a sticker the public cannot see,
-/// so taking a sticker down also closes its submission path.
-#[tokio::test]
-async fn cannot_submit_to_unpublished_sticker() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, false).await;
-    let slug = slug_of(&pool, sticker_id).await;
-
-    assert!(
-        matches!(
-            stickers_service::submit_photo(&pool, &slug, upload()).await,
-            Err(AppError::NotFound)
-        ),
-        "submitting to an unpublished sticker must 404"
-    );
 }
 
 #[tokio::test]
 async fn submit_rejects_non_image_and_undersized_bytes() {
     let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
 
     // Big enough to clear the size floor, but not an image. This is the
     // case that would otherwise let an HTML payload be served back
@@ -1056,13 +953,11 @@ async fn submit_rejects_non_image_and_undersized_bytes() {
     html.resize(1024, b' ');
     assert!(
         matches!(
-            stickers_service::submit_photo(
+            sightings_service::submit(
                 &pool,
-                &slug,
-                PhotoUpload {
+                SightingUpload {
                     image_bytes: html,
-                    caption: None,
-                    submitter_name: None,
+                    ..upload()
                 }
             )
             .await,
@@ -1074,13 +969,11 @@ async fn submit_rejects_non_image_and_undersized_bytes() {
     // Correct magic bytes but too small to be a real photo.
     assert!(
         matches!(
-            stickers_service::submit_photo(
+            sightings_service::submit(
                 &pool,
-                &slug,
-                PhotoUpload {
+                SightingUpload {
                     image_bytes: vec![0xFF, 0xD8, 0xFF, 0x00],
-                    caption: None,
-                    submitter_name: None,
+                    ..upload()
                 }
             )
             .await,
@@ -1090,33 +983,53 @@ async fn submit_rejects_non_image_and_undersized_bytes() {
     );
 }
 
+/// Coordinates come from the uploader, so they are untrusted input
+/// like everything else in the submission.
 #[tokio::test]
-async fn rejecting_a_photo_deletes_the_bytes() {
+async fn submit_rejects_impossible_coordinates() {
+    let pool = test_pool().await;
+
+    for (lat, lng) in [(91.0, 0.0), (-91.0, 0.0), (0.0, 181.0), (0.0, -181.0)] {
+        assert!(
+            matches!(
+                sightings_service::submit(
+                    &pool,
+                    SightingUpload {
+                        latitude: lat,
+                        longitude: lng,
+                        ..upload()
+                    }
+                )
+                .await,
+                Err(AppError::BadRequest(_))
+            ),
+            "coordinates {lat},{lng} must be rejected"
+        );
+    }
+}
+
+#[tokio::test]
+async fn rejecting_a_sighting_deletes_the_bytes() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
 
-    let res = stickers_service::submit_photo(&pool, &slug, upload())
-        .await
-        .unwrap();
-    stickers_service::reject(&pool, admin_id, res.id)
+    let res = sightings_service::submit(&pool, upload()).await.unwrap();
+    sightings_service::reject(&pool, admin_id, res.id)
         .await
         .unwrap();
 
     let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
-    let remaining: i64 =
-        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM sticker_photos WHERE id = $1")
-            .bind(res.id)
-            .fetch_one(tx.conn())
-            .await
-            .unwrap();
+    let remaining: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM sightings WHERE id = $1")
+        .bind(res.id)
+        .fetch_one(tx.conn())
+        .await
+        .unwrap();
     tx.commit().await.unwrap();
     assert_eq!(remaining, 0, "reject must delete the row, not flag it");
 
     // Rejecting again is a no-op, not a second audit entry.
     assert!(matches!(
-        stickers_service::reject(&pool, admin_id, res.id).await,
+        sightings_service::reject(&pool, admin_id, res.id).await,
         Err(AppError::NotFound)
     ));
 }
@@ -1127,161 +1040,67 @@ async fn rejecting_a_photo_deletes_the_bytes() {
 async fn concurrent_approve_only_one_succeeds() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
-    let photo_id = stickers_service::submit_photo(&pool, &slug, upload())
-        .await
-        .unwrap()
-        .id;
+    let id = sightings_service::submit(&pool, upload()).await.unwrap().id;
 
     let a = {
         let pool = pool.clone();
-        tokio::spawn(async move { stickers_service::approve(&pool, admin_id, photo_id).await })
+        tokio::spawn(async move { sightings_service::approve(&pool, admin_id, id).await })
     };
     let b = {
         let pool = pool.clone();
-        tokio::spawn(async move { stickers_service::approve(&pool, admin_id, photo_id).await })
+        tokio::spawn(async move { sightings_service::approve(&pool, admin_id, id).await })
     };
     let (ra, rb) = (a.await.unwrap(), b.await.unwrap());
 
     let wins = [&ra, &rb].iter().filter(|r| r.is_ok()).count();
     assert_eq!(wins, 1, "exactly one concurrent approve may succeed");
-    let losers = [&ra, &rb];
     assert!(
-        losers.iter().any(|r| matches!(r, Err(AppError::Conflict))),
+        [&ra, &rb]
+            .iter()
+            .any(|r| matches!(r, Err(AppError::Conflict))),
         "the losing approve must be a conflict"
     );
 }
 
-/// The submit path's flood guard reads pending counts through a
+/// The submit path's flood guard reads the pending count through a
 /// SECURITY DEFINER function, because a public transaction cannot see
-/// pending rows. This asserts the function is actually reachable as
-/// bf_app and counts what it should.
+/// pending rows. This asserts the function is reachable as bf_app and
+/// counts what a plain SELECT cannot.
 #[tokio::test]
-async fn pending_count_function_is_callable_by_runtime_role() {
+async fn pending_count_function_sees_through_rls() {
     let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
 
     let mut tx = pool.begin().await.unwrap();
-    let before: i32 = sqlx::query_scalar("SELECT bf_sticker_pending_photo_count($1)")
-        .bind(sticker_id)
+    let before: i32 = sqlx::query_scalar("SELECT bf_pending_sighting_count()")
         .fetch_one(&mut *tx)
         .await
         .expect("bf_app must be able to execute the counter function");
     tx.commit().await.unwrap();
-    assert_eq!(before, 0);
 
-    stickers_service::submit_photo(&pool, &slug, upload())
+    let id = sightings_service::submit(&pool, upload()).await.unwrap().id;
+
+    let mut tx = pool.begin().await.unwrap();
+    // A plain SELECT in this context cannot see the row...
+    let visible: i64 = sqlx::query_scalar("SELECT COUNT(*)::bigint FROM sightings WHERE id = $1")
+        .bind(id)
+        .fetch_one(&mut *tx)
         .await
         .unwrap();
-
-    // A plain SELECT in this context sees nothing...
-    let mut tx = pool.begin().await.unwrap();
-    let visible: i64 =
-        sqlx::query_scalar("SELECT COUNT(*)::bigint FROM sticker_photos WHERE sticker_id = $1")
-            .bind(sticker_id)
-            .fetch_one(&mut *tx)
-            .await
-            .unwrap();
-    // ...while the function still counts the hidden row.
-    let after: i32 = sqlx::query_scalar("SELECT bf_sticker_pending_photo_count($1)")
-        .bind(sticker_id)
+    // ...while the function counts it.
+    let after: i32 = sqlx::query_scalar("SELECT bf_pending_sighting_count()")
         .fetch_one(&mut *tx)
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     assert_eq!(visible, 0, "pending rows stay invisible to public SELECT");
-    assert_eq!(after, 1, "the counter function must see through RLS");
-}
-
-#[tokio::test]
-async fn sticker_slug_must_be_well_formed() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-
-    // Case is normalised rather than rejected — an operator typing
-    // "Whyte-Ave" gets "whyte-ave", which is friendlier than a 400
-    // and cannot collide with anything. Everything else about the
-    // shape is strict.
-    let normalised = stickers_service::create(
-        &pool,
-        admin_id,
-        CreateStickerRequest {
-            slug: format!("MiXeD-{}", Uuid::new_v4()),
-            label: "Label".into(),
-            hint: None,
-            host: None,
-            latitude: 53.5,
-            longitude: -113.5,
-            placed_on: None,
-            sort_order: 0,
-            published: true,
-        },
-    )
-    .await
-    .expect("mixed-case slug should be normalised, not rejected");
-    assert_eq!(
-        normalised.slug,
-        normalised.slug.to_lowercase(),
-        "slug must be stored lowercased"
-    );
-
-    for bad in [
-        "Has Spaces",
-        "trailing-",
-        "-leading",
-        "--double",
-        "no_underscores",
-        "acc\u{e9}nts",
-        "",
-    ] {
-        let result = stickers_service::create(
-            &pool,
-            admin_id,
-            CreateStickerRequest {
-                slug: bad.into(),
-                label: "Label".into(),
-                hint: None,
-                host: None,
-                latitude: 53.5,
-                longitude: -113.5,
-                placed_on: None,
-                sort_order: 0,
-                published: true,
-            },
-        )
-        .await;
-        assert!(
-            matches!(result, Err(AppError::BadRequest(_))),
-            "slug {bad:?} must be rejected before it reaches the DB"
-        );
-    }
-}
-
-// ── Hosts and sites ─────────────────────────────────────────────────
-
-/// A sticker's host is the record that somebody agreed to it being
-/// there. It has to survive the round trip, because the map shows it
-/// and that display is the whole point of collecting it.
-#[tokio::test]
-async fn sticker_host_round_trips() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let sticker_id = seed_sticker(&pool, admin_id, true).await;
-    let slug = slug_of(&pool, sticker_id).await;
-
-    let public = stickers_service::get_public(&pool, &slug).await.unwrap();
-    assert_eq!(
-        public.host.as_deref(),
-        Some("Test Host Cafe"),
-        "host must be readable on the public map"
+    assert!(
+        after > before,
+        "the counter function must see through RLS (before {before}, after {after})"
     );
 }
 
-/// Sites carry the same published/draft boundary as stickers, so an
+/// Sites carry the same published/draft boundary as everything else
 /// unannounced strawberry cannot be found by reading the API.
 #[tokio::test]
 async fn unpublished_site_is_hidden_from_public() {
