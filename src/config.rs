@@ -7,6 +7,12 @@ pub struct Config {
     pub cors_allowed_origins: Vec<String>,
     pub admin_session_ttl: chrono::Duration,
     pub challenge_ttl: chrono::Duration,
+    /// The gap between meeting someone and being asked whether you
+    /// still want to talk. Three days by default — long enough that
+    /// the answer is given somewhere other than the room you met in.
+    pub pairing_cooling: chrono::Duration,
+    /// How long you then have to answer before the pairing lapses.
+    pub pairing_window: chrono::Duration,
     pub seed_admin_email: Option<String>,
     pub seed_admin_password: Option<String>,
 }
@@ -31,6 +37,10 @@ impl Config {
         let admin_session_ttl =
             chrono::Duration::seconds(parse_env_or("ADMIN_SESSION_TTL_SECS", 43_200)?);
         let challenge_ttl = chrono::Duration::seconds(parse_env_or("CHALLENGE_TTL_SECS", 120)?);
+        let pairing_cooling =
+            chrono::Duration::seconds(parse_env_or("PAIRING_COOLING_SECS", 3 * 24 * 60 * 60)?);
+        let pairing_window =
+            chrono::Duration::seconds(parse_env_or("PAIRING_WINDOW_SECS", 7 * 24 * 60 * 60)?);
         let seed_admin_email = env::var("SEED_ADMIN_EMAIL").ok().filter(|s| !s.is_empty());
         let seed_admin_password = env::var("SEED_ADMIN_PASSWORD")
             .ok()
@@ -41,6 +51,8 @@ impl Config {
             cors_allowed_origins,
             admin_session_ttl,
             challenge_ttl,
+            pairing_cooling,
+            pairing_window,
             seed_admin_email,
             seed_admin_password,
         })

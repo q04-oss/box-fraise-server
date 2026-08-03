@@ -237,12 +237,36 @@ async function fetchMe() {
   return await api('/me');
 }
 
+/**
+ * Sign an arbitrary string with the device key, returning a
+ * base64 DER signature — the shape the server verifies.
+ *
+ * `signedChallenge` above only signs a nonce this browser asked for.
+ * Pairing needs the opposite: the nonce comes off someone else's
+ * screen, and signing it is what proves this device was close enough
+ * to read it.
+ */
+async function signText(text) {
+  const kp = await loadKeypair();
+  if (!kp) throw new Error('no keypair — register first');
+  const rawSig = new Uint8Array(await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    kp.privateKey,
+    new TextEncoder().encode(text)
+  ));
+  return bytesToBase64(rawSignatureToDer(rawSig));
+}
+
 // ── Export ───────────────────────────────────────────────────────────
 
 window.BoxFraise = {
   registerIfNeeded,
   signedChallenge,
+  signText,
   fetchMe,
   loadSession,
   clearSession,
+  // Authenticated fetch against /v1, for pages that need endpoints
+  // this library does not wrap.
+  api,
 };

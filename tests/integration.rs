@@ -23,6 +23,10 @@ use box_fraise::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
         },
+        pairings::{
+            service as pairings_service,
+            types::{ClaimRequest, DecisionRequest, SetDisplayNameRequest},
+        },
         sightings::{service as sightings_service, types::SightingUpload},
         sites::{service as sites_service, types::CreateSiteRequest},
     },
@@ -1215,6 +1219,489 @@ async fn site_slug_must_be_well_formed() {
             "site slug {bad:?} must be rejected before it reaches the DB"
         );
     }
+}
+
+// ── Pairings ────────────────────────────────────────────────────────
+//
+// The property under test throughout: a declined pairing and an
+// ignored one must be indistinguishable to the other party. Most of
+// these exist to prove that one thing from different angles.
+
+/// One second, so the waiting period elapses inside a test; and a
+/// generous window so nothing lapses mid-assertion.
+///
+/// Passed as arguments rather than set in the environment. Env vars
+/// are process-global and this suite runs in parallel, so a test that
+/// mutated them would silently corrupt whichever other test happened
+/// to be mid-flight.
+const SHORT_COOLING: ChronoDuration = ChronoDuration::seconds(1);
+const LONG_WINDOW: ChronoDuration = ChronoDuration::seconds(300);
+
+/// Register two users and walk them through a scan, with the cooling
+/// period turned down so the test does not take three days.
+///
+/// Returns (initiator, scanner, pairing_id).
+async fn seed_pair(pool: &PgPool) -> (Uuid, Uuid, Uuid) {
+    let (initiator, _sk_a) = register_with_keypair(pool).await;
+    let (scanner, sk_b) = register_with_keypair(pool).await;
+
+    let nonce = pairings_service::issue_nonce(pool, initiator)
+        .await
+        .unwrap();
+    let sig = URL_SAFE_NO_PAD.encode(sign_der(&sk_b, &nonce.nonce));
+    let claim = pairings_service::claim(
+        pool,
+        scanner,
+        SHORT_COOLING,
+        LONG_WINDOW,
+        ClaimRequest {
+            nonce: nonce.nonce,
+            signature_b64: sig,
+        },
+    )
+    .await
+    .unwrap();
+
+    (initiator, scanner, claim.pairing_id)
+}
+
+async fn wait_for_window() {
+    tokio::time::sleep(std::time::Duration::from_millis(1200)).await;
+}
+
+#[tokio::test]
+async fn claim_requires_a_valid_signature_from_the_scanner() {
+    let pool = test_pool().await;
+    let (initiator, _sk_a) = register_with_keypair(&pool).await;
+    let (scanner, _sk_b) = register_with_keypair(&pool).await;
+
+    let nonce = pairings_service::issue_nonce(&pool, initiator)
+        .await
+        .unwrap();
+
+    // A signature from a key that is not the scanner's.
+    let (stranger_sk, _pk) = fresh_keypair();
+    let bad = URL_SAFE_NO_PAD.encode(sign_der(&stranger_sk, &nonce.nonce));
+    assert!(
+        matches!(
+            pairings_service::claim(
+                &pool,
+                scanner,
+                SHORT_COOLING,
+                LONG_WINDOW,
+                ClaimRequest {
+                    nonce: nonce.nonce.clone(),
+                    signature_b64: bad
+                }
+            )
+            .await,
+            Err(AppError::InvalidSignature)
+        ),
+        "a scan must be signed by the scanner's own device key"
+    );
+}
+
+#[tokio::test]
+async fn a_nonce_cannot_be_claimed_twice() {
+    let pool = test_pool().await;
+    let (_a, _b, _id) = seed_pair(&pool).await;
+    // seed_pair burned the nonce; a second claim of the same nonce is
+    // covered by the burn race-close. Here: a fresh third party trying
+    // the same code.
+    let (initiator, _sk) = register_with_keypair(&pool).await;
+    let nonce = pairings_service::issue_nonce(&pool, initiator)
+        .await
+        .unwrap();
+
+    let (first, sk_first) = register_with_keypair(&pool).await;
+    let (second, sk_second) = register_with_keypair(&pool).await;
+
+    pairings_service::claim(
+        &pool,
+        first,
+        SHORT_COOLING,
+        LONG_WINDOW,
+        ClaimRequest {
+            nonce: nonce.nonce.clone(),
+            signature_b64: URL_SAFE_NO_PAD.encode(sign_der(&sk_first, &nonce.nonce)),
+        },
+    )
+    .await
+    .expect("first claim should win");
+
+    assert!(
+        matches!(
+            pairings_service::claim(
+                &pool,
+                second,
+                SHORT_COOLING,
+                LONG_WINDOW,
+                ClaimRequest {
+                    nonce: nonce.nonce.clone(),
+                    signature_b64: URL_SAFE_NO_PAD.encode(sign_der(&sk_second, &nonce.nonce)),
+                }
+            )
+            .await,
+            Err(AppError::Conflict)
+        ),
+        "a burned nonce must not be reusable"
+    );
+}
+
+#[tokio::test]
+async fn cannot_decide_before_the_waiting_period_is_over() {
+    let pool = test_pool().await;
+
+    let (initiator, _sk_a) = register_with_keypair(&pool).await;
+    let (scanner, sk_b) = register_with_keypair(&pool).await;
+    let nonce = pairings_service::issue_nonce(&pool, initiator)
+        .await
+        .unwrap();
+    let claim = pairings_service::claim(
+        &pool,
+        scanner,
+        // Long enough that the pairing is still in `waiting` when the
+        // assertion below runs.
+        ChronoDuration::seconds(600),
+        LONG_WINDOW,
+        ClaimRequest {
+            nonce: nonce.nonce.clone(),
+            signature_b64: URL_SAFE_NO_PAD.encode(sign_der(&sk_b, &nonce.nonce)),
+        },
+    )
+    .await
+    .unwrap();
+
+    // This is the whole point of the design: no answer is possible at
+    // the event, so nobody can be pressured into giving one.
+    assert!(
+        matches!(
+            pairings_service::decide(
+                &pool,
+                scanner,
+                claim.pairing_id,
+                DecisionRequest {
+                    decision: "yes".into()
+                }
+            )
+            .await,
+            Err(AppError::BadRequest(_))
+        ),
+        "deciding before opens_at must be refused"
+    );
+}
+
+#[tokio::test]
+async fn mutual_yes_opens_the_channel() {
+    let pool = test_pool().await;
+    let (initiator, scanner, id) = seed_pair(&pool).await;
+    wait_for_window().await;
+
+    let after_first = pairings_service::decide(
+        &pool,
+        scanner,
+        id,
+        DecisionRequest {
+            decision: "yes".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(after_first.status, "deciding", "one yes is not enough");
+    assert!(
+        !pairings_service::authorized(&pool, scanner, initiator)
+            .await
+            .unwrap()
+            .authorized,
+        "chat must not be authorized on one confirmation"
+    );
+
+    let after_second = pairings_service::decide(
+        &pool,
+        initiator,
+        id,
+        DecisionRequest {
+            decision: "yes".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(after_second.status, "open");
+
+    assert!(
+        pairings_service::authorized(&pool, scanner, initiator)
+            .await
+            .unwrap()
+            .authorized
+    );
+    assert!(
+        pairings_service::authorized(&pool, initiator, scanner)
+            .await
+            .unwrap()
+            .authorized
+    );
+}
+
+/// **The load-bearing test.** After one side declines, the other side
+/// must see exactly what they would have seen had that person simply
+/// never answered.
+#[tokio::test]
+async fn a_decline_is_indistinguishable_from_silence() {
+    let pool = test_pool().await;
+
+    // Pair one: the scanner declines.
+    let (init_a, scan_a, id_a) = seed_pair(&pool).await;
+    // Pair two: the scanner never answers.
+    let (init_b, _scan_b, id_b) = seed_pair(&pool).await;
+    wait_for_window().await;
+
+    pairings_service::decide(
+        &pool,
+        scan_a,
+        id_a,
+        DecisionRequest {
+            decision: "no".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let declined = pairings_service::list(&pool, init_a)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|p| p.id == id_a)
+        .expect("the declined pairing must still be listed");
+    let ignored = pairings_service::list(&pool, init_b)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|p| p.id == id_b)
+        .expect("the ignored pairing must still be listed");
+
+    // Same status, same absence of any signal.
+    assert_eq!(declined.status, ignored.status);
+    assert_eq!(declined.status, "deciding");
+    assert_eq!(declined.my_decision, None);
+    assert_eq!(ignored.my_decision, None);
+    assert_eq!(declined.peer_id, None, "no peer id before opening");
+
+    // And the row is still there — an early delete would let the other
+    // side watch it vanish ahead of schedule, which is a side channel.
+    assert!(
+        !pairings_service::authorized(&pool, init_a, scan_a)
+            .await
+            .unwrap()
+            .authorized,
+        "a declined pairing must never authorize chat"
+    );
+
+    // Serialized, the two are byte-identical apart from ids and times.
+    let d = serde_json::to_value(&declined).unwrap();
+    let i = serde_json::to_value(&ignored).unwrap();
+    assert_eq!(d["status"], i["status"]);
+    assert_eq!(d["my_decision"], i["my_decision"]);
+    assert_eq!(d["peer_id"], i["peer_id"]);
+    assert!(
+        d.get("their_decision").is_none() && d.get("peer_decision").is_none(),
+        "the view must have no field for the other side's answer"
+    );
+}
+
+#[tokio::test]
+async fn one_no_never_opens_even_with_a_yes() {
+    let pool = test_pool().await;
+    let (initiator, scanner, id) = seed_pair(&pool).await;
+    wait_for_window().await;
+
+    pairings_service::decide(
+        &pool,
+        scanner,
+        id,
+        DecisionRequest {
+            decision: "yes".into(),
+        },
+    )
+    .await
+    .unwrap();
+    let after = pairings_service::decide(
+        &pool,
+        initiator,
+        id,
+        DecisionRequest {
+            decision: "no".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(after.status, "deciding", "a no must not open the channel");
+    assert!(
+        !pairings_service::authorized(&pool, initiator, scanner)
+            .await
+            .unwrap()
+            .authorized
+    );
+}
+
+#[tokio::test]
+async fn blocking_closes_the_channel_for_both() {
+    let pool = test_pool().await;
+    let (initiator, scanner, id) = seed_pair(&pool).await;
+    wait_for_window().await;
+
+    pairings_service::decide(
+        &pool,
+        scanner,
+        id,
+        DecisionRequest {
+            decision: "yes".into(),
+        },
+    )
+    .await
+    .unwrap();
+    pairings_service::decide(
+        &pool,
+        initiator,
+        id,
+        DecisionRequest {
+            decision: "yes".into(),
+        },
+    )
+    .await
+    .unwrap();
+    assert!(
+        pairings_service::authorized(&pool, initiator, scanner)
+            .await
+            .unwrap()
+            .authorized
+    );
+
+    pairings_service::block(&pool, initiator, id).await.unwrap();
+
+    assert!(
+        !pairings_service::authorized(&pool, initiator, scanner)
+            .await
+            .unwrap()
+            .authorized,
+        "blocking must revoke authorization for the blocker"
+    );
+    assert!(
+        !pairings_service::authorized(&pool, scanner, initiator)
+            .await
+            .unwrap()
+            .authorized,
+        "and for the other side too"
+    );
+    // Terminal: a second block is a conflict, not a silent no-op.
+    assert!(matches!(
+        pairings_service::block(&pool, scanner, id).await,
+        Err(AppError::Conflict)
+    ));
+}
+
+#[tokio::test]
+async fn the_same_two_people_cannot_pair_twice() {
+    let pool = test_pool().await;
+    let (initiator, scanner, _id) = seed_pair(&pool).await;
+
+    // Scan again — the unique index on the ordered pair should refuse.
+    let nonce = pairings_service::issue_nonce(&pool, initiator)
+        .await
+        .unwrap();
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let (_pk,): (Vec<u8>,) =
+        sqlx::query_as("SELECT public_key FROM device_keys WHERE user_id = $1")
+            .bind(scanner)
+            .fetch_one(tx.conn())
+            .await
+            .unwrap();
+    tx.commit().await.unwrap();
+
+    // Signature will be wrong (we don't hold the scanner's key here),
+    // so assert on the earlier failure mode instead: a nonce claimed
+    // by an already-paired user. Re-register the pair relationship via
+    // a direct insert to isolate the unique index.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let (lower, upper) = if initiator < scanner {
+        (initiator, scanner)
+    } else {
+        (scanner, initiator)
+    };
+    let dup = sqlx::query(
+        "INSERT INTO pairings (lower_user_id, upper_user_id, opens_at, expires_at)
+         VALUES ($1, $2, now() + interval '1 hour', now() + interval '2 hours')",
+    )
+    .bind(lower)
+    .bind(upper)
+    .execute(tx.conn())
+    .await;
+    tx.rollback().await.ok();
+
+    assert!(
+        dup.is_err(),
+        "a second pairing between the same two must be refused"
+    );
+    drop(nonce);
+}
+
+#[tokio::test]
+async fn display_name_is_what_the_other_person_sees() {
+    let pool = test_pool().await;
+    let (initiator, scanner, _id) = seed_pair(&pool).await;
+
+    pairings_service::set_display_name(
+        &pool,
+        scanner,
+        SetDisplayNameRequest {
+            display_name: "  Sam  ".into(),
+        },
+    )
+    .await
+    .unwrap();
+
+    let seen = pairings_service::list(&pool, initiator).await.unwrap();
+    let entry = seen.first().expect("initiator should see the pairing");
+    assert_eq!(
+        entry.peer_name.as_deref(),
+        Some("Sam"),
+        "name is trimmed and shown"
+    );
+
+    assert!(matches!(
+        pairings_service::set_display_name(
+            &pool,
+            scanner,
+            SetDisplayNameRequest {
+                display_name: "x".repeat(41)
+            }
+        )
+        .await,
+        Err(AppError::BadRequest(_))
+    ));
+}
+
+#[tokio::test]
+async fn a_third_party_sees_nothing_of_someone_elses_pairing() {
+    let pool = test_pool().await;
+    let (initiator, scanner, _id) = seed_pair(&pool).await;
+    let (stranger, _sk) = register_with_keypair(&pool).await;
+
+    let theirs = pairings_service::list(&pool, stranger).await.unwrap();
+    assert!(theirs.is_empty(), "a stranger must see no pairings");
+    assert!(
+        !pairings_service::authorized(&pool, stranger, initiator)
+            .await
+            .unwrap()
+            .authorized,
+        "a stranger must not be authorized to message a paired user"
+    );
+    assert!(
+        !pairings_service::authorized(&pool, stranger, scanner)
+            .await
+            .unwrap()
+            .authorized
+    );
 }
 
 #[tokio::test]

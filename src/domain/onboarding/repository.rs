@@ -143,6 +143,7 @@ pub async fn promote_user_to_verified(
 /// from the current RLS context (e.g. it has since been unpublished).
 pub struct MeRow {
     pub status: String,
+    pub display_name: Option<String>,
     pub verified_at: Option<DateTime<Utc>>,
     pub event: Option<crate::domain::onboarding::types::VerifiedEvent>,
 }
@@ -150,6 +151,7 @@ pub struct MeRow {
 pub async fn get_user_me(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<Option<MeRow>> {
     type RawRow = (
         String,                // u.status
+        Option<String>,        // u.display_name
         Option<DateTime<Utc>>, // u.verified_at
         Option<Uuid>,          // e.id
         Option<String>,        // e.name
@@ -158,7 +160,7 @@ pub async fn get_user_me(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result
         Option<String>,        // e.address
     );
     let row: Option<RawRow> = sqlx::query_as(
-        "SELECT u.status, u.verified_at,
+        "SELECT u.status, u.display_name, u.verified_at,
                 e.id, e.name, e.host_name, e.starts_at, e.address
            FROM users u
            LEFT JOIN events e ON e.id = u.verified_at_event_id
@@ -168,8 +170,8 @@ pub async fn get_user_me(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result
     .fetch_optional(conn)
     .await?;
 
-    Ok(
-        row.map(|(status, verified_at, eid, ename, ehost, estarts, eaddr)| {
+    Ok(row.map(
+        |(status, display_name, verified_at, eid, ename, ehost, estarts, eaddr)| {
             let event = match (eid, ename, ehost, estarts, eaddr) {
                 (Some(id), Some(name), Some(host_name), Some(starts_at), Some(address)) => {
                     Some(crate::domain::onboarding::types::VerifiedEvent {
@@ -184,9 +186,10 @@ pub async fn get_user_me(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result
             };
             MeRow {
                 status,
+                display_name,
                 verified_at,
                 event,
             }
-        }),
-    )
+        },
+    ))
 }

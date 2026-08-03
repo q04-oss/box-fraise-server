@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat — box fraise</title>
+  <meta name="description" content="Meet someone at an event, swap codes, and three days later decide whether to talk.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em;
+      line-height: 1.1; margin: 0 0 20px;
+    }
+    .lede { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 34px; max-width: 50ch; }
+    .label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); display: block;
+    }
+    p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; }
+
+    section.block { margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--rule); }
+    section.block:first-of-type { border-top: 2px solid var(--ink); }
+
+    button.act {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      background: var(--ink); color: #fff; border: 0;
+      padding: 13px 22px; cursor: pointer; transition: opacity 120ms ease;
+    }
+    button.act:hover:not(:disabled) { opacity: 0.8; }
+    button.act:disabled { opacity: 0.4; cursor: default; }
+    button.ghost { background: none; color: var(--muted); border: 1px solid var(--rule); }
+    button.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--ink); opacity: 1; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+
+    input[type="text"] {
+      font-family: 'Newsreader', Georgia, serif; font-size: 16px;
+      width: 100%; padding: 10px 12px; border: 1px solid var(--rule);
+      border-radius: 0; background: #fff; color: var(--ink); margin-bottom: 12px;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--ink); }
+    textarea {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; width: 100%; padding: 10px 12px;
+      border: 1px solid var(--rule); border-radius: 0;
+    }
+
+    #qr { margin: 20px 0 6px; }
+    #qr img, #qr canvas, #qr table { image-rendering: pixelated; }
+    #qr table { border-collapse: collapse; }
+    #qr td { width: 6px; height: 6px; }
+    .qr-note {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    video { width: 100%; max-height: 52vh; background: #000; display: block; margin-top: 14px; }
+
+    .msg {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.06em; line-height: 1.6; margin-top: 14px;
+    }
+    .msg.ok  { color: var(--ink); }
+    .msg.err { color: var(--accent); }
+
+    .pairing { padding: 20px 0; border-top: 1px solid var(--rule); }
+    .pairing:last-child { border-bottom: 1px solid var(--rule); }
+    .pairing-name { font-size: 20px; font-weight: 500; line-height: 1.3; }
+    .pairing-meta { font-size: 15px; color: var(--muted); line-height: 1.55; margin-top: 5px; }
+    .pairing-state {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin-top: 10px;
+    }
+    .pairing-state.open { color: var(--accent); }
+    .pairing-actions { margin-top: 14px; }
+    .empty { font-size: 17px; line-height: 1.65; color: var(--muted); padding: 22px 0; }
+    .hidden { display: none !important; }
+    .fineprint { font-size: 13px; line-height: 1.6; color: var(--muted); margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Chat</h1>
+    <p class="lede">
+      You meet someone at an event and swap codes. Nothing happens yet. Three
+      days later you are each asked, on your own, whether you still want to
+      talk — and only if you both say yes does anything open.
+    </p>
+
+    <!-- Not verified yet -->
+    <section id="gate" class="block hidden">
+      <span class="label">first</span>
+      <p>You need a pass before you can connect with anyone. It takes a moment
+      and stays in this browser.</p>
+      <p class="row"><a class="act" href="/pass" style="text-decoration:none;">Get a pass</a></p>
+    </section>
+
+    <!-- Verified -->
+    <section id="me" class="block hidden">
+      <span class="label">your name</span>
+      <p class="fineprint" style="margin-top:8px;">What the person you met will see. Not public, not searchable.</p>
+      <input type="text" id="name-input" maxlength="40" placeholder="e.g. Sam">
+      <div class="row">
+        <button class="act" id="save-name" type="button">Save</button>
+      </div>
+      <div class="msg" id="name-msg"></div>
+    </section>
+
+    <section id="swap" class="block hidden">
+      <span class="label">meeting someone</span>
+      <p>One of you shows a code, the other scans it. Either way round works —
+      you only need to do it once between you.</p>
+      <div class="row">
+        <button class="act" id="show-code" type="button">Show my code</button>
+        <button class="act ghost" id="scan-code" type="button">Scan theirs</button>
+      </div>
+
+      <div id="qr-wrap" class="hidden">
+        <div id="qr"></div>
+        <div class="qr-note" id="qr-expiry"></div>
+      </div>
+
+      <div id="scan-wrap" class="hidden">
+        <video id="cam" autoplay playsinline muted></video>
+        <div class="row" style="margin-top:12px;">
+          <button class="act ghost" id="stop-scan" type="button">Stop</button>
+        </div>
+        <details style="margin-top:14px;">
+          <summary style="cursor:pointer;font-size:14px;">Camera not working? Type the code</summary>
+          <p class="fineprint">Ask them to read it out.</p>
+          <textarea id="manual-code" rows="2"></textarea>
+          <div class="row" style="margin-top:8px;">
+            <button class="act ghost" id="manual-claim" type="button">Use this code</button>
+          </div>
+        </details>
+      </div>
+      <div class="msg" id="swap-msg"></div>
+    </section>
+
+    <section id="list-block" class="block hidden">
+      <span class="label">your connections</span>
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <script src="/js/box-fraise.js"></script>
+  <script src="/js/qrcode.min.js"></script>
+  <script>
+  (() => {
+    'use strict';
+
+    const $ = id => document.getElementById(id);
+    const el = (tag, cls, text) => {
+      const n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined && text !== null) n.textContent = text;
+      return n;
+    };
+    const setMsg = (node, kind, text) => {
+      node.className = 'msg ' + kind;
+      node.textContent = text;
+    };
+
+    let me = null;
+    let scanner = null;   // { stream, raf }
+
+    boot();
+
+    async function boot() {
+      // A session may already exist in this browser from /pass.
+      try {
+        me = await BoxFraise.fetchMe();
+      } catch {
+        $('gate').classList.remove('hidden');
+        return;
+      }
+      // Pairing is for people who have actually been checked in at an
+      // event — that is the whole basis of the identity.
+      if (!me || me.status !== 'verified') {
+        $('gate').classList.remove('hidden');
+        return;
+      }
+      $('me').classList.remove('hidden');
+      $('swap').classList.remove('hidden');
+      $('list-block').classList.remove('hidden');
+      if (me.display_name) $('name-input').value = me.display_name;
+      await refresh();
+    }
+
+    // ── Name ──────────────────────────────────────────────
+
+    $('save-name').addEventListener('click', async () => {
+      const name = $('name-input').value.trim();
+      if (!name) { setMsg($('name-msg'), 'err', 'Put something in first.'); return; }
+      try {
+        await BoxFraise.api('/me/display-name', {
+          method: 'POST',
+          body: JSON.stringify({ display_name: name }),
+        });
+        setMsg($('name-msg'), 'ok', 'Saved.');
+      } catch (e) {
+        setMsg($('name-msg'), 'err', String(e.message || e));
+      }
+    });
+
+    // ── Showing a code ────────────────────────────────────
+
+    $('show-code').addEventListener('click', async () => {
+      stopScanning();
+      $('scan-wrap').classList.add('hidden');
+      setMsg($('swap-msg'), 'ok', '');
+      try {
+        const r = await BoxFraise.api('/pairings/nonce', { method: 'POST' });
+        // qrcode-generator: type 0 = auto size, 'M' error correction.
+        // Same vendored library /pass uses.
+        const qr = qrcode(0, 'M');
+        qr.addData(r.nonce);
+        qr.make();
+        $('qr').innerHTML = qr.createImgTag(6, 8);
+        const secs = Math.max(0, Math.round((new Date(r.expires_at) - Date.now()) / 1000));
+        $('qr-expiry').textContent = `good for about ${secs} seconds`;
+        $('qr-wrap').classList.remove('hidden');
+      } catch (e) {
+        setMsg($('swap-msg'), 'err', String(e.message || e));
+      }
+    });
+
+    // ── Scanning a code ───────────────────────────────────
+
+    $('scan-code').addEventListener('click', async () => {
+      $('qr-wrap').classList.add('hidden');
+      $('scan-wrap').classList.remove('hidden');
+      setMsg($('swap-msg'), 'ok', '');
+
+      if (!('BarcodeDetector' in window)) {
+        setMsg($('swap-msg'), 'err',
+          'This browser cannot scan QR codes — type the code in instead.');
+        return;
+      }
+      // Camera needs a secure context: https, or localhost in dev.
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setMsg($('swap-msg'), 'err', 'No camera available here.');
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+        });
+        const video = $('cam');
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        scanner = { stream, raf: null };
+        const tick = async () => {
+          if (!scanner) return;
+          try {
+            const found = await detector.detect(video);
+            if (found.length) {
+              const code = found[0].rawValue;
+              stopScanning();
+              await claim(code);
+              return;
+            }
+          } catch { /* bad frame; try the next one */ }
+          scanner.raf = requestAnimationFrame(tick);
+        };
+        scanner.raf = requestAnimationFrame(tick);
+      } catch (e) {
+        setMsg($('swap-msg'), 'err', 'Could not open the camera.');
+      }
+    });
+
+    $('stop-scan').addEventListener('click', () => {
+      stopScanning();
+      $('scan-wrap').classList.add('hidden');
+    });
+
+    $('manual-claim').addEventListener('click', () => {
+      const code = $('manual-code').value.trim();
+      if (!code) { setMsg($('swap-msg'), 'err', 'Nothing typed in.'); return; }
+      claim(code);
+    });
+
+    function stopScanning() {
+      if (!scanner) return;
+      if (scanner.raf) cancelAnimationFrame(scanner.raf);
+      for (const t of scanner.stream.getTracks()) t.stop();
+      $('cam').srcObject = null;
+      scanner = null;
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopScanning();
+    });
+
+    /**
+     * Sign their nonce with this browser's key and send it. The
+     * signature is what proves this device was close enough to read
+     * their screen while the code was alive.
+     */
+    async function claim(nonce) {
+      setMsg($('swap-msg'), 'ok', 'connecting…');
+      try {
+        const signature_b64 = await BoxFraise.signText(nonce);
+        await BoxFraise.api('/pairings/claim', {
+          method: 'POST',
+          body: JSON.stringify({ nonce, signature_b64 }),
+        });
+        $('scan-wrap').classList.add('hidden');
+        $('manual-code').value = '';
+        setMsg($('swap-msg'), 'ok',
+          'Done. Neither of you has agreed to anything yet — come back in three days.');
+        await refresh();
+      } catch (e) {
+        setMsg($('swap-msg'), 'err', String(e.message || e));
+      }
+    }
+
+    // ── The list ──────────────────────────────────────────
+
+    async function refresh() {
+      let pairings;
+      try {
+        pairings = await BoxFraise.api('/pairings');
+      } catch (e) {
+        $('list').replaceChildren(el('div', 'empty', 'Could not load your connections.'));
+        return;
+      }
+      $('list').replaceChildren();
+      if (!pairings.length) {
+        $('list').append(el('div', 'empty',
+          'Nobody yet. Swap codes with someone at an event and they will show up here.'));
+        return;
+      }
+      for (const p of pairings) $('list').append(renderPairing(p));
+    }
+
+    function renderPairing(p) {
+      const wrap = el('div', 'pairing');
+      wrap.append(el('div', 'pairing-name', p.peer_name || 'Someone you met'));
+
+      const where = p.event_name
+        ? `Met at ${p.event_name}`
+        : 'Met in person';
+      wrap.append(el('div', 'pairing-meta',
+        `${where} · ${new Date(p.met_at).toLocaleDateString(undefined,
+          { month: 'long', day: 'numeric' })}`));
+
+      const state = el('div', 'pairing-state');
+      wrap.append(state);
+
+      if (p.status === 'waiting') {
+        state.textContent = `you can decide from ${new Date(p.opens_at)
+          .toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}`;
+        return wrap;
+      }
+
+      if (p.status === 'deciding') {
+        if (p.my_decision) {
+          // Deliberately says nothing about the other person. It
+          // cannot: the server never tells this browser what they
+          // chose, and an ignored connection looks exactly like a
+          // declined one.
+          state.textContent = p.my_decision === 'yes'
+            ? 'you said yes — it opens if they do too'
+            : 'you said no';
+          return wrap;
+        }
+        state.textContent = 'do you still want to talk?';
+        const actions = el('div', 'pairing-actions row');
+        const yes = el('button', 'act', 'Yes');
+        const no  = el('button', 'act ghost', 'No');
+        yes.type = 'button'; no.type = 'button';
+        yes.addEventListener('click', () => decide(p.id, 'yes', [yes, no]));
+        no.addEventListener('click', () => decide(p.id, 'no', [yes, no]));
+        actions.append(yes, no);
+        wrap.append(actions);
+        return wrap;
+      }
+
+      if (p.status === 'open') {
+        state.className = 'pairing-state open';
+        state.textContent = 'open';
+        wrap.append(el('p', 'fineprint',
+          'You both said yes. Messaging is not switched on yet — this is where it will appear.'));
+        const actions = el('div', 'pairing-actions row');
+        const block = el('button', 'act ghost', 'Close this');
+        block.type = 'button';
+        block.addEventListener('click', () => {
+          if (!window.confirm('Close this permanently? It cannot be reopened.')) return;
+          doBlock(p.id, block);
+        });
+        actions.append(block);
+        wrap.append(actions);
+        return wrap;
+      }
+
+      if (p.status === 'lapsed') {
+        state.textContent = 'expired';
+        return wrap;
+      }
+
+      state.textContent = 'closed';
+      return wrap;
+    }
+
+    async function decide(id, decision, buttons) {
+      for (const b of buttons) b.disabled = true;
+      try {
+        await BoxFraise.api(`/pairings/${encodeURIComponent(id)}/decision`, {
+          method: 'POST',
+          body: JSON.stringify({ decision }),
+        });
+        await refresh();
+      } catch (e) {
+        setMsg($('swap-msg'), 'err', String(e.message || e));
+        for (const b of buttons) b.disabled = false;
+      }
+    }
+
+    async function doBlock(id, button) {
+      button.disabled = true;
+      try {
+        await BoxFraise.api(`/pairings/${encodeURIComponent(id)}/block`, { method: 'POST' });
+        await refresh();
+      } catch (e) {
+        setMsg($('swap-msg'), 'err', String(e.message || e));
+        button.disabled = false;
+      }
+    }
+  })();
+  </script>
+</body>
+</html>
