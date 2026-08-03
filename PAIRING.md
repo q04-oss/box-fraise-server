@@ -26,10 +26,61 @@ separately, and later.
 
 ---
 
+## Where this runs
+
+**The website is the client.** Someone turns up to an event, opens the
+site on the phone in their pocket, and it works — no app store, no
+download, nothing to install between hearing about this and using it.
+That is the point of the feature, not an implementation detail.
+
+The browser is already a first-class device. `web/js/box-fraise.js`
+generates a **non-extractable P-256 keypair via WebCrypto**, keeps the
+private key in IndexedDB, sends the public key as SEC1 uncompressed,
+and converts WebCrypto's raw signatures to DER so the server accepts
+them on exactly the same path as iOS. Register, signed challenge, and
+`/v1/me` are all there. A browser user is not a lesser user.
+
+### What actually has to work at the event
+
+Not chat. The three-day gap means that at the event, two people need
+only to
+
+1. be verified users, and
+2. exchange the pairing code.
+
+Nothing is sent. Nothing is decided. The channel opens three days
+later, somewhere else entirely.
+
+That matters because it decouples the deadline from the hard part.
+Identity and pairing both run on the P-256 keys and signature contract
+that already exist — **neither needs Signal protocol at all.** The
+web-native "turn up and it just works" experience can ship without the
+messaging crypto being solved, and the cooling-off period then buys
+literal days before a message has to move.
+
+### The messaging client is a separate, later decision
+
+There is **no official browser build of libsignal.** Signal's
+`@signalapp/libsignal-client` ships native binaries for Node and
+Electron; `libsignal-protocol-javascript` is abandoned; the WASM
+bridge request (signalapp/libsignal#350) is closed. Browser options
+are third-party or academic.
+
+So a web chat client means depending on an unaudited third-party WASM
+build of the security-critical core, in a project whose whole argument
+is trustworthy identity — and adding a build pipeline to a codebase
+that deliberately has none. That is a real decision with real cost,
+and it does not have to be made now. Chat stays end-to-end encrypted
+either way; what is open is *how*, on the web.
+
+---
+
 ## The shape
 
 1. **They meet at an event.** Both are already verified users, so both
-   have a Secure Enclave key and a device the server can challenge.
+   hold a device key the server can challenge — an iPhone's Secure
+   Enclave key or a browser's WebCrypto key, which are equal citizens
+   here (see "Where this runs").
 2. **They exchange codes in person.** One shows a QR, the other scans
    it and signs it. That produces cryptographic evidence that two
    specific devices were in the same place at the same moment.
@@ -321,7 +372,28 @@ See the rule above.
    mistaken tap. An "unblock" would need to be reachable only by the
    person who blocked.
 5. **No push infrastructure.** Nothing can tell someone their three
-   days are up. Until that exists, the flow depends on people opening
-   the app and looking, which they will mostly not do. This is the
-   biggest practical risk to the feature working at all, and it is not
-   solved by anything in this document.
+   days are up. Until that exists, the flow depends on people coming
+   back to the site and looking, which they will mostly not do. This
+   is the biggest practical risk to the feature working at all, and it
+   is not solved by anything in this document. On the web the usual
+   answer is the Push API plus a service worker; on iOS it is APNs.
+   Neither exists today.
+
+6. **A browser identity is one "clear site data" from gone.** The
+   private key lives non-extractably in IndexedDB. Clear the browsing
+   data, switch browsers, or move from phone to laptop, and it is a
+   different key and therefore a different person — with every pairing
+   and every chat session attached to the old one, unrecoverably.
+
+   Signal solves this with an account and a PIN. There is no
+   equivalent here and no recovery path of any kind. For a project
+   whose central claim is that identity is solid, this needs an answer
+   before people start depending on it. Options worth weighing: allow
+   a user to register additional device keys against one identity
+   (`device_keys` is already multi-key since 0002), or accept the
+   limitation and say so loudly in the interface. What is not
+   acceptable is letting someone discover it by losing everything.
+
+7. **`/pass` is the only route in.** It is the sole page that touches
+   the identity library, and it is currently unlinked from the site.
+   Nothing else about this feature matters until someone can reach it.

@@ -66,6 +66,21 @@
       color: var(--muted);
       padding: 12px 0;
     }
+    .intro {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+      margin: -12px 0 30px;
+      max-width: 52ch;
+    }
+    .intro a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    .intro a:hover { text-decoration-color: var(--accent); }
     .event {
       padding: 26px 0;
       border-bottom: 1px solid var(--rule);
@@ -162,6 +177,9 @@
     <a class="backlink" href="/">← box fraise</a>
 
     <h1>Events</h1>
+
+    <p class="intro">Coming to one? Get your <a href="/pass">pass</a> first — it takes a
+    moment in your browser, and it is how you get checked in at the door.</p>
 
     <div id="list"><div class="status">loading…</div></div>
   </main>
