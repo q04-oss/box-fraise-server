@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>About — box fraise</title>
-  <meta name="description" content="Box Fraise is a project about solving the username and password problem, in person.">
+  <meta name="description" content="Box Fraise — a run club at Coffee Bureau every Saturday, and a project about solving the username and password problem in person.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,6 +74,41 @@
       margin: 0 0 30px;
       max-width: 44ch;
     }
+    /* Same bordered block as "How to give" on /donations, so the two
+       pages handle practical detail the same way. */
+    .when {
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 22px 24px;
+      margin: 26px 0 24px;
+      background: #fafafa;
+    }
+    .when-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .when dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 18px;
+      align-items: baseline;
+    }
+    .when dt {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .when dd {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.5;
+    }
     a {
       color: var(--ink);
       text-decoration: underline;
@@ -93,6 +128,19 @@
 
     <p class="thesis">Box Fraise is a project about solving the username and password problem.</p>
 
+    <p><strong>The next generation Playboy magazine.</strong> That is the ambition, and it is meant as a comparison of kind. Playboy was a magazine that was also a scene, a set of clubs, a look, and an argument about how to live — all carried under one name. Box Fraise is after the same thing: an institution with a point of view, built around places people actually turn up to.</p>
+
+    <p><strong>The run club.</strong> Every Saturday, Box Fraise runs a club out of Coffee Bureau, timed to the opening of the cafe. You do not need to be fast and you do not need to know anyone.</p>
+
+    <div class="when">
+      <div class="when-label">Saturdays · Coffee Bureau</div>
+      <dl>
+        <dt>7:40</dt><dd>Check in, outside — before the doors open.</dd>
+        <dt>8:00</dt><dd>The cafe opens.</dd>
+        <dt>8:30</dt><dd>The run begins.</dd>
+      </dl>
+    </div>
+
     <p><strong>The problem.</strong> A username and a password are what you use when there is nobody there to recognise you. They stand in for being known. Every account is a small act of proving yourself to a machine, repeated forever, and the whole apparatus exists because the digital world has no equivalent of walking into a room where people already know your face.</p>
 
     <p><strong>The approach.</strong> Box Fraise solves it in person, and it does it playfully. Verification happens face to face, at events, between people — an in-person design structure rather than a login screen. The playfulness is not decoration. A structure people enjoy taking part in is one they will actually turn up to, and turning up is the entire mechanism.</p>
@@ -101,7 +149,15 @@
 
     <p><strong>Consent and accountability.</strong> As a platform, its behaviour is to create an environment where it is possible to consensually call people out — accountability that people have opted into, rather than accountability imposed by an anonymous crowd. That is what lets the physical world and the digital one sit in harmony instead of in tension. The consequence is physical communities reinforced by being online rather than hollowed out by it.</p>
 
+    <p><strong>The app that does not exist yet.</strong> There will be an iOS app. There isn't one, for a reason worth saying out loud rather than dressing up: the founder cannot afford a Macintosh, and you cannot build for iPhone without one. So the website is the whole product for now, which has turned out to be the right constraint — nobody has to install anything to take part.</p>
+
+    <p><strong>What it will look like.</strong> Maps. A map with markers, and a marker on Coffee Bureau saying the run club will be there. That is the first version, and it is deliberately not much more than that.</p>
+
+    <p><strong>Every cafe needs a run club.</strong> That is the argument the first version of the app is built to make. The espresso bar is one of the few genuinely democratic meeting spaces left: anyone can stand at it, and standing at it is enough to be part of what is happening there. A run club gives a cafe a reason to gather people rather than only serve them.</p>
+
     <p><strong>A login for everyone else.</strong> In time Box Fraise will publish its own login API, so that other projects can authenticate people through the network instead of issuing usernames and passwords of their own. Someone verified in person, once, becomes someone any participating project can trust. That is what solving the problem is for — not one platform with a better login, but a way of being known that other people's software can build on.</p>
+
+    <p><strong>A new kind of business school.</strong> The founder has always wondered what it would take to imagine one, and this is the attempt to find out by building it rather than writing it down. He is also an advertising nerd, and will talk about advertising for as long as you let him.</p>
 
     <p><strong>On it seeming new.</strong> The world we live in now has not been through an update like this one, so parts of it will read as unfamiliar. Nothing here is exotic, though. It is the obvious next thing, and someone was going to arrive at it eventually.</p>
   </main>
