@@ -104,6 +104,46 @@
       max-width: 48ch;
     }
 
+    /* The standing weekly thing, above the stickers, because it
+       happens every week and the stickers are wherever they are. */
+    .runclub {
+      border: 1px solid var(--rule);
+      border-left: 2px solid var(--accent);
+      padding: 20px 22px;
+      margin: 0 0 30px;
+      background: #fafafa;
+      max-width: 52ch;
+    }
+    .runclub-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .runclub h2 {
+      font-size: 21px;
+      font-weight: 500;
+      line-height: 1.3;
+      margin: 0 0 8px;
+    }
+    .runclub p { font-size: 16px; line-height: 1.6; margin: 0 0 10px; }
+    .runclub .times {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      color: var(--ink);
+      line-height: 1.7;
+    }
+    .runclub a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    .runclub a:hover { text-decoration-color: var(--accent); }
+
     /* ── Buttons ─────────────────────────────────────────────────── */
     button.submit {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -366,6 +406,19 @@
       <span class="next-label">Next · <span id="next-date"></span></span>
       <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
     </a>
+
+    <section class="runclub" aria-label="Run club">
+      <div class="runclub-label">every saturday</div>
+      <h2>Run club at Coffee Bureau</h2>
+      <p>12316 102 Avenue, Edmonton. You do not need to be fast and you do not
+      need to know anyone.</p>
+      <div class="times">
+        7:40 — check in, outside<br>
+        8:00 — the cafe opens<br>
+        8:30 — the run begins
+      </div>
+      <p style="margin-top:12px;"><a href="/about">Why a cafe needs a run club →</a></p>
+    </section>
 
     <p class="rules">
       Strawberry stickers are sold at Box Fraise events for $5, and people put
