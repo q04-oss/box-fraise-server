@@ -104,6 +104,43 @@
       max-width: 48ch;
     }
 
+    /* The hero. The ad tells people to scan it "at fraise.box", so
+       the first thing on the page has to be the way to do that —
+       before the map, before anything. */
+    .hero { margin: 0 0 34px; max-width: 52ch; }
+    .hero h2 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(30px, 6vw, 46px);
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+      margin: 0 0 14px;
+    }
+    .hero p { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 22px; }
+    a.scan {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      padding: 18px 28px;
+      transition: opacity 120ms ease;
+    }
+    a.scan:hover { opacity: 0.85; }
+    a.scan .lens {
+      width: 13px; height: 13px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
     /* The standing weekly thing, above the stickers, because it
        happens every week and the stickers are wherever they are. */
     .runclub {
@@ -407,6 +444,12 @@
       <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
     </a>
 
+    <section class="hero" aria-label="Scan the ad">
+      <h2>Seen the ad?</h2>
+      <p>Point your camera at it. No code to find — the whole advertisement is the thing you scan.</p>
+      <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan the ad</a>
+    </section>
+
     <section class="runclub" aria-label="Run club">
       <div class="runclub-label">every saturday</div>
       <h2>Run club at Coffee Bureau</h2>
@@ -417,7 +460,7 @@
         8:00 — the cafe opens<br>
         8:30 — the run begins
       </div>
-      <p style="margin-top:12px;"><a href="/about">Why a cafe needs a run club →</a></p>
+      <p style="margin-top:12px;"><a href="/run">More about the run club →</a></p>
     </section>
 
     <p class="rules">

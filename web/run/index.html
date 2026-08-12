@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Run club — box fraise</title>
+  <meta name="description" content="Box Fraise run club. Every Saturday at Coffee Bureau, 12316 102 Avenue, Edmonton. Check in 7:40, run at 8:30.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(32px, 6vw, 52px); letter-spacing: -0.02em;
+      line-height: 1.05; margin: 0 0 18px;
+    }
+    .lede { font-size: 20px; line-height: 1.55; margin: 0 0 32px; max-width: 46ch; }
+    p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; }
+    p strong { font-weight: 500; }
+
+    .when {
+      border: 1px solid var(--rule);
+      border-left: 2px solid var(--accent);
+      padding: 24px 26px;
+      margin: 0 0 32px;
+      background: #fafafa;
+    }
+    .when-label {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .when .where { font-size: 19px; font-weight: 500; margin-bottom: 4px; }
+    .when .addr { font-size: 16px; color: var(--muted); margin-bottom: 16px; }
+    .when dl {
+      margin: 0; display: grid; grid-template-columns: auto 1fr;
+      gap: 8px 18px; align-items: baseline;
+    }
+    .when dt {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px; color: var(--accent); white-space: nowrap;
+    }
+    .when dd { margin: 0; font-size: 16px; line-height: 1.5; }
+    .maplink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      display: inline-block; margin-top: 18px;
+      color: var(--ink); text-decoration: none;
+      border-bottom: 1px solid var(--rule); padding-bottom: 2px;
+      transition: border-color 120ms ease;
+    }
+    .maplink:hover { border-color: var(--accent); }
+
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Run club</h1>
+    <p class="lede">Every Saturday, out of Coffee Bureau, timed to the opening of the cafe. You do not need to be fast and you do not need to know anyone.</p>
+
+    <div class="when">
+      <div class="when-label">every saturday</div>
+      <div class="where">Coffee Bureau</div>
+      <div class="addr">12316 102 Avenue, Edmonton</div>
+      <dl>
+        <dt>7:40</dt><dd>Check in, outside — before the doors open.</dd>
+        <dt>8:00</dt><dd>The cafe opens.</dd>
+        <dt>8:30</dt><dd>The run begins.</dd>
+      </dl>
+      <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=12316+102+Avenue+NW,+Edmonton,+AB"
+         target="_blank" rel="noopener noreferrer">Open in Maps →</a>
+    </div>
+
+    <p><strong>Just turn up.</strong> There is nothing to sign and nobody to email first. Come at 7:40, run at 8:30, have a coffee after.</p>
+
+    <p><strong>Why a cafe needs a run club.</strong> The espresso bar is one of the few genuinely democratic meeting spaces left: anyone can stand at it, and standing at it is enough to be part of what is happening there. A run club gives a cafe a reason to gather people rather than only serve them.</p>
+
+    <p><strong>What it is part of.</strong> Box Fraise is the next generation of Playboy magazine, and an attempt to imagine what the next generation of business school is going to be. The run is the first thing it does — a community organised around what is good for the nervous system, on the theory that better people make better work. <a class="inline" href="/about">The whole argument is here</a>.</p>
+
+    <p class="closer">Box Fraise × run club · Edmonton</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scan the ad — box fraise</title>
+  <meta name="description" content="Point your camera at the Box Fraise ad.">
+  <meta name="theme-color" content="#000000">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Newsreader', Georgia, serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #stage { position: fixed; inset: 0; }
+    video {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+
+    /* Framing guide. Same proportions as the ad (2000 × 2680), which
+       is what makes an approximate matcher workable: it pins scale and
+       position so the fingerprint is taken of roughly the same crop
+       every time. */
+    .guide {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -52%);
+      width: min(74vw, 58vh);
+      aspect-ratio: 2000 / 2680;
+      border: 2px solid rgba(255,255,255,0.85);
+      border-radius: 2px;
+      box-shadow: 0 0 0 100vmax rgba(0,0,0,0.45);
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+      pointer-events: none;
+    }
+    .guide.warm { border-color: rgba(255,190,190,0.95); }
+    .guide.hit  { border-color: var(--accent); box-shadow: 0 0 0 100vmax rgba(0,0,0,0.62); }
+
+    .hud {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      padding: 22px 22px calc(22px + env(safe-area-inset-top));
+      display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+    }
+    .hud a, .hud span {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.85); text-decoration: none;
+    }
+
+    .foot {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 20px 22px calc(24px + env(safe-area-inset-bottom));
+      text-align: center;
+      background: linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0));
+    }
+    .instruction { font-size: 19px; line-height: 1.4; margin: 0 0 14px; }
+    .status {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: rgba(255,255,255,0.7); min-height: 14px;
+    }
+    /* How close the current frame is to the ad. An approximate
+       matcher should show its working, so a near miss reads as
+       "keep going" rather than "broken". */
+    .meter { width: min(240px, 70vw); height: 2px; background: rgba(255,255,255,0.25); margin: 12px auto 0; }
+    .meter > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 180ms ease; }
+    .escape {
+      display: inline-block; margin-top: 18px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: #fff; text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.5); padding-bottom: 3px;
+    }
+
+    /* Shown when there is no camera to use at all. */
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      background: var(--bg); color: var(--ink);
+      padding: 56px 24px; overflow: auto;
+    }
+    #fallback.on { display: block; }
+    #fallback .inner { max-width: 560px; margin: 0 auto; }
+    #fallback h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(28px, 5vw, 40px); margin: 0 0 18px; line-height: 1.1;
+    }
+    #fallback p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; color: var(--muted); }
+    #fallback a.act {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      background: var(--ink); color: #fff; text-decoration: none;
+      padding: 14px 22px; display: inline-block; margin-top: 6px;
+    }
+    #fallback .back {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none; display: inline-block; margin-bottom: 32px;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <video id="cam" autoplay muted playsinline></video>
+    <div class="guide" id="guide"></div>
+
+    <div class="hud">
+      <a href="/">← box fraise</a>
+      <span id="hint">point at the ad</span>
+    </div>
+
+    <div class="foot">
+      <p class="instruction" id="instruction">Fill the frame with the ad.</p>
+      <div class="status" id="status">starting the camera…</div>
+      <div class="meter"><i id="meter"></i></div>
+      <a class="escape" href="/run">Can't scan? Go to the run club →</a>
+    </div>
+  </div>
+
+  <div id="fallback">
+    <div class="inner">
+      <a class="back" href="/">← box fraise</a>
+      <h1 id="fb-title">This device can't scan</h1>
+      <p id="fb-body">Scanning needs a camera, and a secure connection. You can still read everything about the run club.</p>
+      <a class="act" href="/run">Go to the run club →</a>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // Where a successful scan lands.
+    const DESTINATION = '/run';
+    // The reference artwork. Small on purpose — it is only ever used
+    // to compute a fingerprint, never displayed.
+    const REFERENCE = '/ads/run-club.jpg';
+
+    // dHash geometry: an 8×8 grid of horizontal comparisons, so 64
+    // bits. Small enough to be tolerant of lighting, focus and phone
+    // sensors; large enough to tell this ad from a wall.
+    const HASH_W = 9, HASH_H = 8, BITS = (HASH_W - 1) * HASH_H;
+    // Bits allowed to differ and still count as the same picture.
+    // Generous: a photograph of a print under a cafe light is never a
+    // pixel match. Tightening this trades misses for false hits.
+    const MAX_DISTANCE = 14;
+    // Two agreeing frames in a row, so a single fluke does not fire.
+    const CONFIRMATIONS = 2;
+    const INTERVAL_MS = 220;
+
+    const video   = document.getElementById('cam');
+    const guide   = document.getElementById('guide');
+    const statusEl = document.getElementById('status');
+    const meter   = document.getElementById('meter');
+    const hint    = document.getElementById('hint');
+
+    let referenceHash = null;
+    let stream = null;
+    let timer = null;
+    let streak = 0;
+    let done = false;
+
+    const work = document.createElement('canvas');
+    work.width = HASH_W; work.height = HASH_H;
+    const wctx = work.getContext('2d', { willReadFrequently: true });
+
+    start();
+
+    async function start() {
+      try {
+        referenceHash = await hashImage(REFERENCE);
+      } catch (e) {
+        console.error(e);
+        // Without a reference there is nothing to compare against;
+        // say so rather than pretending to scan.
+        showFallback('Scanning is unavailable', 'The reference image could not be loaded.');
+        return;
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showFallback('This device can’t scan',
+          'Scanning needs a camera, and the page must be served over https.');
+        return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+          audio: false,
+        });
+      } catch (err) {
+        showFallback(
+          err && err.name === 'NotAllowedError' ? 'Camera permission refused' : 'No camera available',
+          'You can still read everything about the run club.');
+        return;
+      }
+      video.srcObject = stream;
+      try { await video.play(); } catch { /* autoplay policy; feed still shows */ }
+      statusEl.textContent = 'looking…';
+      timer = setInterval(tick, INTERVAL_MS);
+    }
+
+    function tick() {
+      if (done || !video.videoWidth) return;
+      const hash = hashGuideRegion();
+      if (!hash) return;
+      const d = hamming(hash, referenceHash);
+
+      // Show the working: how close, as a bar.
+      const closeness = Math.max(0, Math.min(1, 1 - d / (BITS * 0.5)));
+      meter.style.width = Math.round(closeness * 100) + '%';
+
+      if (d <= MAX_DISTANCE) {
+        streak++;
+        guide.className = 'guide hit';
+        statusEl.textContent = 'got it';
+        if (streak >= CONFIRMATIONS) return succeed();
+      } else {
+        streak = 0;
+        const warm = d <= MAX_DISTANCE + 8;
+        guide.className = warm ? 'guide warm' : 'guide';
+        statusEl.textContent = warm ? 'nearly — hold steady' : 'looking…';
+      }
+    }
+
+    function succeed() {
+      done = true;
+      clearInterval(timer);
+      hint.textContent = 'match';
+      document.getElementById('instruction').textContent = 'Found it.';
+      stop();
+      // A beat so the red frame registers as a response to what the
+      // person did, rather than the page just vanishing.
+      setTimeout(() => { window.location.assign(DESTINATION); }, 450);
+    }
+
+    /**
+     * Fingerprint the part of the video inside the framing guide.
+     *
+     * The guide is drawn over a `object-fit: cover` video, so the
+     * visible feed is a centre-crop of the real frame. Both are mapped
+     * back to source pixels here, otherwise the region sampled is not
+     * the region the person is aiming with.
+     */
+    function hashGuideRegion() {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const rect = guide.getBoundingClientRect();
+      const stageW = window.innerWidth, stageH = window.innerHeight;
+      if (!vw || !vh || !rect.width) return null;
+
+      // `cover` scales by the larger ratio and centres the overflow.
+      const scale = Math.max(stageW / vw, stageH / vh);
+      const dispW = vw * scale, dispH = vh * scale;
+      const offX = (dispW - stageW) / 2, offY = (dispH - stageH) / 2;
+
+      const sx = (rect.left + offX) / scale;
+      const sy = (rect.top + offY) / scale;
+      const sw = rect.width / scale;
+      const sh = rect.height / scale;
+      if (sw < 8 || sh < 8) return null;
+
+      wctx.drawImage(video, sx, sy, sw, sh, 0, 0, HASH_W, HASH_H);
+      return dHashFromContext(wctx);
+    }
+
+    /** Same pipeline for the reference, so the two are comparable. */
+    function hashImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          wctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, HASH_W, HASH_H);
+          resolve(dHashFromContext(wctx));
+        };
+        img.onerror = () => reject(new Error('reference image failed to load'));
+        img.src = src;
+      });
+    }
+
+    /**
+     * Difference hash: compare each pixel's brightness with the one to
+     * its right. Encodes relative structure rather than absolute
+     * values, which is why it survives a poster being brighter, dimmer
+     * or slightly off-white under a cafe light.
+     */
+    function dHashFromContext(ctx) {
+      const { data } = ctx.getImageData(0, 0, HASH_W, HASH_H);
+      const grey = new Float32Array(HASH_W * HASH_H);
+      for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+        grey[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+      const bits = new Uint8Array(BITS);
+      let b = 0;
+      for (let y = 0; y < HASH_H; y++) {
+        for (let x = 0; x < HASH_W - 1; x++) {
+          bits[b++] = grey[y * HASH_W + x] > grey[y * HASH_W + x + 1] ? 1 : 0;
+        }
+      }
+      return bits;
+    }
+
+    function hamming(a, b) {
+      let d = 0;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+      return d;
+    }
+
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (stream) {
+        for (const t of stream.getTracks()) t.stop();
+        stream = null;
+      }
+      video.srcObject = null;
+    }
+
+    function showFallback(title, body) {
+      stop();
+      document.getElementById('fb-title').textContent = title;
+      document.getElementById('fb-body').textContent = body;
+      document.getElementById('fallback').classList.add('on');
+    }
+
+    // Release the camera when the tab goes away, so the recording
+    // indicator does not stay lit in someone's pocket.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop();
+    });
+    window.addEventListener('pagehide', stop);
+  })();
+  </script>
+</body>
+</html>
