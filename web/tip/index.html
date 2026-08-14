@@ -68,6 +68,12 @@
       padding: 18px 0;
     }
     .entry-name { font-size: 19px; line-height: 1.3; }
+    .entry-name a {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    .entry-name a:hover { text-decoration-color: var(--accent); }
     .entry-note { font-size: 15px; line-height: 1.5; color: var(--muted); margin-top: 5px; }
     .empty {
       border-bottom: 1px solid var(--rule);
@@ -90,7 +96,8 @@
 
     <div class="list">
       <div class="entry">
-        <div class="entry-name">FnZa</div>
+        <div class="entry-name"><a href="https://order.tryotter.com/s/fn%E2%80%99za/11939-jasper-ave%2C-edmonton%2C-ab-t5k-0p1%2C-canada/44a8d923-8ffb-4125-92d4-13dc30996cac"
+           target="_blank" rel="noopener noreferrer">Fn’Za</a></div>
         <div class="entry-note">11939 Jasper Ave. No tipping — their site says the crew
         shares in profits, and they run their own delivery.</div>
       </div>
