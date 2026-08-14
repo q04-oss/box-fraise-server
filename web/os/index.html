@@ -172,15 +172,47 @@
     }
     .procs .kern { color: var(--muted); }
     .totals {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px;
       margin-top: 16px; padding-top: 14px; border-top: 2px solid var(--ink);
     }
+    .tot.wide { grid-column: 1 / -1; }
     .tot .kv { margin-bottom: 4px; }
     .tot .num {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+      font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
     }
-    .tot.cut .num { color: var(--accent); }
+    /* The user's share is the claim, so it is the biggest number on
+       the screen and the cut is the small one beside it. */
+    .tot.you .num { color: var(--accent); font-size: 26px; }
+    .tot.cut .num { color: var(--muted); }
+
+    /* Permissions. A grant is a switch, and turning it off stops both
+       the pulls and the income from that app. */
+    .perm {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      border-bottom: 1px solid var(--rule); padding: 10px 0;
+    }
+    .perm .who { font-size: 13.5px; line-height: 1.25; }
+    .perm .what { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .tog {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 5px 10px; border-radius: 999px; cursor: pointer;
+      background: none; flex: 0 0 auto;
+    }
+    .tog[data-on="1"] { border: 1px solid var(--accent); color: var(--accent); }
+    .tog[data-on="0"] { border: 1px solid var(--rule); color: var(--muted); }
+    tr.off td { color: #aaa; }
+
+    .yes {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 6px 10px; border: 1px solid var(--ink); border-radius: 999px;
+      background: none; color: var(--ink); cursor: pointer;
+      margin-left: auto; flex: 0 0 auto;
+    }
+    .yes:hover { border-color: var(--accent); color: var(--accent); }
+    .yes[disabled] { border-color: var(--rule); color: var(--accent); cursor: default; }
     .note {
       margin-top: 14px; font-size: 12.5px; line-height: 1.5; color: var(--muted);
     }
@@ -277,7 +309,7 @@
       <span class="mi">Window</span>
       <span class="mi">Help</span>
       <span class="spacer"></span>
-      <span class="meter" id="menu-meter">0 pulls</span>
+      <span class="meter" id="menu-meter">$0.00</span>
       <span class="clock" id="clock">--:--</span>
     </div>
 
@@ -289,16 +321,18 @@
       <div class="body">
         <p class="kv">Processes pulling on box fraise</p>
         <table class="procs">
-          <thead><tr><th>Process</th><th class="r">Pulls</th><th class="r">Rate</th></tr></thead>
+          <thead><tr><th>Process</th><th class="r">Pulls</th><th class="r">Paid to you</th></tr></thead>
           <tbody id="proclist"></tbody>
         </table>
         <div class="totals">
-          <div class="tot"><p class="kv">Server pulls today</p><div class="num" id="pulls">0</div></div>
-          <div class="tot cut"><p class="kv">Box Fraise cut</p><div class="num" id="cut">$0.00</div></div>
+          <div class="tot wide"><p class="kv">Server pulls today</p><div class="num" id="pulls">0</div></div>
+          <div class="tot you"><p class="kv">Paid to you &middot; 70%</p><div class="num" id="paid">$0.00</div></div>
+          <div class="tot cut"><p class="kv">Box Fraise cut &middot; 30%</p><div class="num" id="cut">$0.00</div></div>
         </div>
-        <p class="note">A platform does not get the database. It gets calls, and every
-        call is counted. What it pays for is a person who was verified in the room and
-        asked for permission — which is the expensive part, and the part already done.</p>
+        <p class="note">These are products other companies built. Each one pulls only
+        what you granted it, and every pull pays you. Box Fraise keeps thirty percent
+        for holding the identity and the consent &mdash; <a href="#" data-open="win-perms">revoke
+        any of it</a> and both stop.</p>
       </div>
     </section>
 
@@ -306,12 +340,13 @@
     <section class="win" id="win-inbox" style="left:754px; top:74px; width:300px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Inbox</span></header>
       <div class="body">
-        <div class="msg"><div class="sq"></div><div><div class="nm">Ferngrove Bakery</div><div class="sub">Wants to advertise · $3</div></div></div>
-        <div class="msg on"><div class="sq"></div><div><div class="nm">Hale &amp; Co. Cycles</div><div class="sub">Wants to advertise · $3</div></div></div>
-        <div class="msg"><div class="sq"></div><div><div class="nm">Norlight Coffee</div><div class="sub">Wants to advertise · $3</div></div></div>
+        <div class="msg" data-ad><div class="sq"></div><div><div class="nm">Ferngrove Bakery</div><div class="sub">Wants to advertise &middot; $3</div></div><button class="yes">Say yes</button></div>
+        <div class="msg" data-ad><div class="sq"></div><div><div class="nm">Hale &amp; Co. Cycles</div><div class="sub">Wants to advertise &middot; $3</div></div><button class="yes">Say yes</button></div>
+        <div class="msg" data-ad><div class="sq"></div><div><div class="nm">Norlight Coffee</div><div class="sub">Wants to advertise &middot; $3</div></div><button class="yes">Say yes</button></div>
         <div class="paid">
-          <div class="amt">+$3.00</div>
-          <div class="sub">Paid to you for choosing to watch.</div>
+          <div class="amt" id="ad-total">$0.00</div>
+          <div class="sub">Paid to you for choosing to watch. It lands in the same
+          account the pulls do.</div>
         </div>
       </div>
     </section>
@@ -386,6 +421,17 @@
       </div>
     </section>
 
+    <!-- ── Permissions ── -->
+    <section class="win" id="win-perms" style="left:110px; top:300px; width:360px;">
+      <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Permissions</span></header>
+      <div class="body">
+        <p class="kv">What each product may pull</p>
+        <div id="permlist"></div>
+        <p class="note" style="margin-top:14px">Revoke one and its pulls stop, and so
+        does the money it was paying you. That is the trade, and it is yours to make.</p>
+      </div>
+    </section>
+
     <!-- ── Read me ── -->
     <section class="win" id="win-readme" style="left:520px; top:150px; width:360px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Read me</span></header>
@@ -393,8 +439,9 @@
         <p class="lead">This is a mock.</p>
         <p>None of it is running. There is no kernel, no processes, no meter — the
         numbers are made up and count nothing. It is a picture of an idea.</p>
-        <p>The idea: Box Fraise holds identity and consent, other platforms build on
-        top, and every pull they make is metered. What is real today is
+        <p>The idea: other companies build products on top, they pull only what you
+        granted, and every pull pays you seventy percent. Box Fraise holds the identity
+        and the consent, and keeps thirty. What is real today is
         <a href="/scan">the scanner</a> and <a href="/run">the run club</a>.</p>
         <p><a href="/">← back to box fraise</a></p>
       </div>
@@ -415,6 +462,7 @@
       { id: 'win-scan',     name: 'Scan',      glyph: '◉' },
       { id: 'win-run',      name: 'Run club',  glyph: '▲' },
       { id: 'win-tip',      name: 'Tip',       glyph: '★' },
+      { id: 'win-perms',    name: 'Permissions', glyph: '⚿' },
       { id: 'win-readme',   name: 'Read me',   glyph: '?' },
     ];
 
@@ -476,55 +524,108 @@
       });
     });
 
+    document.querySelectorAll('[data-open]').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); open(el.dataset.open); });
+    });
+
     ['win-activity', 'win-readme', 'win-inbox'].forEach(open);
     focus(win('win-readme'));
 
     // ── The meter ──────────────────────────────────────────────────
-    // Invented processes, invented numbers, ticking to make the model
-    // legible. A tenth of a cent per pull, which is also invented.
+    // Products other companies built. Each pulls only what it was
+    // granted; every pull pays the user 70% and box fraise 30%. All of
+    // it is invented — see the Read me window.
     const PROCS = [
-      { name: 'box-fraise.kernel', kern: true, base: 0,     rate: 0  },
-      { name: 'weather.app',       base: 41200, rate: 26 },
-      { name: 'transit.app',       base: 33850, rate: 19 },
-      { name: 'ticketing.app',     base: 27410, rate: 11 },
-      { name: 'dating.app',        base: 18930, rate: 7  },
-      { name: 'radio.app',         base:  7060, rate: 3  },
+      { name: 'weather.app',   what: 'Verified adult · postal code',     base: 41200, rate: 26, on: true },
+      { name: 'transit.app',   what: 'Location while running',           base: 33850, rate: 19, on: true },
+      { name: 'ticketing.app', what: 'Verified adult',                   base: 27410, rate: 11, on: true },
+      { name: 'dating.app',    what: 'Verified in person · contactable', base: 18930, rate:  7, on: true },
+      { name: 'radio.app',     what: 'Nothing but the count',            base:  7060, rate:  3, on: true },
     ];
     const RATE_PER_PULL = 0.01;
+    const USER_SHARE    = 0.70;
     const nf = new Intl.NumberFormat('en-CA');
+    const money = n => '$' + n.toLocaleString('en-CA',
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    let adEarnings = 0;
+
+    // Process table. textContent everywhere, so a name can never be
+    // read as markup.
     const list = document.getElementById('proclist');
     PROCS.forEach(p => {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td class="' + (p.kern ? 'kern' : '') + '">' + p.name + '</td>' +
-                     '<td class="n r" data-n></td>' +
-                     '<td class="n r">' + (p.kern ? '—' : p.rate + '/s') + '</td>';
+      tr.innerHTML = '<td></td><td class="n r" data-pulls></td><td class="n r" data-paid></td>';
+      tr.querySelector('td').textContent = p.name;
       list.appendChild(tr);
-      p.cell = tr.querySelector('[data-n]');
+      p.row    = tr;
+      p.cPulls = tr.querySelector('[data-pulls]');
+      p.cPaid  = tr.querySelector('[data-paid]');
+    });
+
+    // Permission switches. Flipping one off freezes that process.
+    const perms = document.getElementById('permlist');
+    PROCS.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'perm';
+      row.innerHTML = '<div><div class="who"></div><div class="what"></div></div>' +
+                      '<button class="tog" data-on="1">Granted</button>';
+      row.querySelector('.who').textContent  = p.name;
+      row.querySelector('.what').textContent = p.what;
+      const t = row.querySelector('.tog');
+      t.addEventListener('click', () => {
+        p.on = !p.on;
+        t.dataset.on  = p.on ? '1' : '0';
+        t.textContent = p.on ? 'Granted' : 'Revoked';
+        p.row.classList.toggle('off', !p.on);
+        paint();
+      });
+      perms.appendChild(row);
     });
 
     const elPulls = document.getElementById('pulls');
+    const elPaid  = document.getElementById('paid');
     const elCut   = document.getElementById('cut');
     const elMenu  = document.getElementById('menu-meter');
+    const elAds   = document.getElementById('ad-total');
     const still   = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function paint() {
       let total = 0;
       PROCS.forEach(p => {
         total += p.base;
-        p.cell.textContent = p.kern ? 'system' : nf.format(Math.round(p.base));
+        p.cPulls.textContent = nf.format(Math.round(p.base));
+        p.cPaid.textContent  = money(p.base * RATE_PER_PULL * USER_SHARE);
       });
+      const gross = total * RATE_PER_PULL;
+      const toYou = gross * USER_SHARE;
       elPulls.textContent = nf.format(Math.round(total));
-      elCut.textContent = '$' + (total * RATE_PER_PULL)
-        .toLocaleString('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      elMenu.textContent = nf.format(Math.round(total)) + ' pulls';
+      elPaid.textContent  = money(toYou);
+      elCut.textContent   = money(gross - toYou);
+      elAds.textContent   = money(adEarnings);
+      // One account: what the apps paid you, plus what you were paid
+      // to watch. Saying yes is the same act in both windows.
+      elMenu.textContent  = money(toYou + adEarnings);
     }
+
+    document.querySelectorAll('[data-ad] .yes').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = '+' + money(3);
+        btn.closest('[data-ad]').classList.add('on');
+        adEarnings += 3;
+        paint();
+      });
+    });
+
     paint();
 
     if (!still) {
       setInterval(() => {
-        // Jitter so the columns do not tick in lockstep.
-        PROCS.forEach(p => { p.base += p.rate * (0.6 + Math.random() * 0.9); });
+        // Only granted processes pull, and the jitter keeps the columns
+        // from ticking in lockstep.
+        PROCS.forEach(p => { if (p.on) p.base += p.rate * (0.6 + Math.random() * 0.9); });
         paint();
       }, 900);
     }
