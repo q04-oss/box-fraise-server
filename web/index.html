@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
-  <meta name="description" content="Do you have what it takes to run this country? A run club on Whyte Avenue, and a map of strawberry stickers.">
+  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,6 +47,8 @@
       justify-content: space-between;
       gap: 24px;
       flex-wrap: wrap;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--rule);
     }
     .wordmark {
       font-family: 'Newsreader', serif;
@@ -97,103 +99,75 @@
     .next-event:hover .next-name { color: var(--accent); }
     .next-event:hover .next-arrow { color: var(--ink); }
 
-    /* The tagline owns the top of the page. Everything else is a
-       band underneath it. */
-    .tagline {
+    /* The page is one publication, not three products. A cover line,
+       a standfirst that says what the thing is, then departments —
+       the same furniture a magazine uses to make unrelated pages read
+       as one issue. */
+    .coverline {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(34px, 7.5vw, 68px);
+      font-size: clamp(36px, 8vw, 76px);
       letter-spacing: -0.03em;
-      line-height: 1.02;
-      margin: 0 0 30px;
-      max-width: 15ch;
+      line-height: 1;
+      margin: 0 0 26px;
+      max-width: 14ch;
+    }
+    .standfirst {
+      font-size: clamp(18px, 2.4vw, 21px);
+      line-height: 1.55;
+      margin: 0 0 40px;
+      max-width: 50ch;
+      color: var(--ink);
     }
 
-    /* Two things you can do, side by side and obviously tappable.
-       Stacked prose blocks made everything look like reading matter;
-       a card that is entirely a link does not. */
-    .cards {
+    /* Department: a label in the margin, content beside it. The label
+       column is what ties the sections together — each one announces
+       which part of the magazine you are in. */
+    .dept {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-      margin: 0 0 56px;
+      grid-template-columns: 132px 1fr;
+      gap: 28px;
+      border-top: 1px solid var(--rule);
+      padding: 30px 0 6px;
     }
-    @media (max-width: 700px) {
-      .cards { grid-template-columns: 1fr; gap: 14px; }
-    }
-    a.card {
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--rule);
-      padding: 26px 26px 24px;
-      text-decoration: none;
-      color: var(--ink);
-      background: #fff;
-      transition: border-color 140ms ease, transform 140ms ease;
-    }
-    a.card:hover { border-color: var(--ink); transform: translateY(-2px); }
-    a.card:hover .card-go { color: var(--accent); }
-    .card-label {
+    .dept:first-of-type { border-top: 2px solid var(--ink); }
+    .dept-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.18em;
-      color: var(--muted);
-      margin-bottom: 12px;
-      display: block;
+      color: var(--accent);
+      padding-top: 8px;
     }
-    .card-title {
+    .dept-body { max-width: 52ch; }
+    .dept-body h2 {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(26px, 4.4vw, 34px);
+      font-size: clamp(24px, 3.6vw, 31px);
       letter-spacing: -0.02em;
-      line-height: 1.1;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      line-height: 1.15;
+      margin: 0 0 12px;
     }
-    .card-note {
-      font-size: 16px;
-      line-height: 1.55;
-      color: var(--muted);
-      /* Pushes the call to action to the bottom so both cards line
-         up regardless of how much text each carries. */
-      flex: 1;
-      margin-bottom: 20px;
-    }
-    .card-go {
+    .dept-body p { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; }
+    .dept-go {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--ink);
-      transition: color 140ms ease;
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 3px;
+      transition: border-color 120ms ease;
     }
-    .card-title .lens {
-      width: 13px; height: 13px;
-      border: 2px solid var(--accent);
-      border-radius: 50%;
-      display: inline-block;
-      flex: 0 0 auto;
-    }
+    .dept-go:hover { border-color: var(--accent); }
 
-    /* The map gets a light heading rather than another heavy band,
-       and its intro sits beside the button instead of above it. */
-    .map-section { border-top: 1px solid var(--rule); padding-top: 28px; }
-    .section-head {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-      margin-bottom: 26px;
+    @media (max-width: 640px) {
+      .dept { grid-template-columns: 1fr; gap: 12px; padding-top: 26px; }
+      .dept-label { padding-top: 0; }
     }
-    .section-head-text { flex: 1 1 340px; }
-    .map-intro { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0; max-width: 46ch; }
-    .section-head .submit { flex: 0 0 auto; }
 
     /* ── Buttons ─────────────────────────────────────────────────── */
     button.submit {
@@ -412,40 +386,47 @@
   </header>
 
   <main>
-    <p class="tagline">Do you have what it takes to run this country?</p>
+    <p class="coverline">Do you have what it takes to run this country?</p>
+
+    <p class="standfirst">Box Fraise is a magazine — which is to say an advertising
+    machine, and the next generation of what Playboy was. Its pages are advertisements
+    you scan. Its question gets answered on a Saturday morning.</p>
 
     <a class="next-event" id="next-event" href="/events">
       <span class="next-label">Next · <span id="next-date"></span></span>
       <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
     </a>
 
-    <div class="cards">
-      <a class="card" href="/scan">
-        <span class="card-label">seen the ad?</span>
-        <span class="card-title">Scan it<span class="lens" aria-hidden="true"></span></span>
-        <span class="card-note">Point your camera at the whole advertisement. There is no
-        code to find.</span>
-        <span class="card-go">Open the camera →</span>
-      </a>
+    <section class="dept">
+      <div class="dept-label">the pages</div>
+      <div class="dept-body">
+        <h2>Scan an advertisement</h2>
+        <p>Every advertisement is a page of the magazine, and there is no code printed on
+        it. The whole page is the thing you scan. That is the part that is new.</p>
+        <a class="dept-go" href="/scan">Open the camera →</a>
+      </div>
+    </section>
 
-      <a class="card" href="/run">
-        <span class="card-label">saturdays at 8</span>
-        <span class="card-title">Run club</span>
-        <span class="card-note">On Whyte Avenue. We run to the railyard and back, making
-        the case for a Whyte without cars.</span>
-        <span class="card-go">Where, and why →</span>
-      </a>
-    </div>
+    <section class="dept">
+      <div class="dept-label">the question</div>
+      <div class="dept-body">
+        <h2>Run club, Saturdays at 8</h2>
+        <p>The question at the top of this page is the one the run asks. Whyte Avenue,
+        out to the Canadian Pacific railyard and back — and one day an app that asks it
+        of anyone, anywhere.</p>
+        <a class="dept-go" href="/run">Where, and why →</a>
+      </div>
+    </section>
 
-    <section class="map-section" aria-label="Sticker map">
-      <div class="section-head">
-        <div class="section-head-text">
-          <span class="card-label">the sticker map</span>
-          <p class="map-intro">Stickers are $5 at the run club and end up wherever people
-          put them. Spot one out in the world and put it on the map.</p>
-        </div>
+    <section class="dept" aria-label="Sticker map">
+      <div class="dept-label">in the wild</div>
+      <div class="dept-body">
+        <h2>The sticker map</h2>
+        <p>Strawberry stickers are the same advertising, off the page. $5 at the run club,
+        and they end up wherever people put them. Spot one and put it on the map.</p>
         <button class="submit" id="open-add" type="button">I saw a sticker</button>
       </div>
+    </section>
 
     <div id="map" role="application" aria-label="Map of sticker sightings and events"></div>
     <div class="map-key">
@@ -481,8 +462,7 @@
 
     <section class="section" id="recent"></section>
 
-      <section id="detail" class="hidden" aria-live="polite"></section>
-    </section>
+    <section id="detail" class="hidden" aria-live="polite"></section>
   </main>
 
   <script src="/js/leaflet.js"></script>
