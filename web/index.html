@@ -39,7 +39,7 @@
        The wordmark cannot sit bottom-right: Leaflet renders its
        required OpenStreetMap attribution in that corner. */
     .masthead {
-      max-width: 940px;
+      max-width: 1140px;
       margin: 0 auto;
       padding: 26px 24px 0;
       display: flex;
@@ -73,7 +73,7 @@
     .links a:hover { color: var(--ink); }
 
     main {
-      max-width: 940px;
+      max-width: 1140px;
       margin: 0 auto;
       padding: 34px 24px 80px;
     }
@@ -109,8 +109,8 @@
       font-weight: 500;
       /* Sized to fill the measure rather than sit in a column. The
          viewport term does the work on phones; the ceiling stops it
-         outgrowing the 940px container on a desktop. */
-      font-size: clamp(38px, 9.2vw, 94px);
+         outgrowing the 1140px container on a desktop. */
+      font-size: clamp(38px, 9vw, 108px);
       letter-spacing: -0.035em;
       line-height: 0.98;
       margin: 0 0 30px;
@@ -119,10 +119,10 @@
       text-wrap: balance;
     }
     .standfirst {
-      font-size: clamp(18px, 2.4vw, 21px);
+      font-size: clamp(18px, 2.4vw, 22px);
       line-height: 1.55;
-      margin: 0 0 40px;
-      max-width: 50ch;
+      margin: 0 0 44px;
+      max-width: 56ch;
       color: var(--ink);
     }
 
@@ -131,7 +131,7 @@
        which part of the magazine you are in. */
     .dept {
       display: grid;
-      grid-template-columns: 132px 1fr;
+      grid-template-columns: 150px 1fr;
       gap: 28px;
       border-top: 1px solid var(--rule);
       padding: 30px 0 6px;
@@ -145,7 +145,7 @@
       color: var(--accent);
       padding-top: 8px;
     }
-    .dept-body { max-width: 52ch; }
+    .dept-body { max-width: 58ch; }
     .dept-body h2 {
       font-family: 'Newsreader', serif;
       font-style: italic;
@@ -198,7 +198,7 @@
 
     /* ── Map ─────────────────────────────────────────────────────── */
     #map {
-      height: 460px;
+      height: 520px;
       width: 100%;
       border: 1px solid var(--rule);
       background: #f4f4f4;
