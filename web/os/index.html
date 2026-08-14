@@ -77,9 +77,16 @@
 
     /* ── Desktop icons ───────────────────────────────────────────── */
     .icons {
-      position: absolute; top: 46px; left: 16px;
-      display: flex; flex-direction: column; gap: 6px;
+      position: absolute; top: 40px; left: 16px;
+      display: flex; flex-direction: row; gap: 14px; align-items: flex-start;
       z-index: 10;
+    }
+    .group { display: flex; flex-direction: column; gap: 6px; }
+    .grouplabel {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: #55514a; background: rgba(255,255,255,0.5);
+      border-radius: 3px; padding: 2px 6px; margin: 0 0 2px; text-align: center;
     }
     .icon {
       width: 92px; padding: 8px 4px 7px;
@@ -102,6 +109,24 @@
       font-size: 10px; letter-spacing: 0.04em;
       background: rgba(255,255,255,0.55); border-radius: 3px; padding: 1px 4px;
     }
+    .icon.third .glyph {
+      background: #f7f6f3; border-style: dashed; box-shadow: none;
+      font-size: 13px; color: #555;
+    }
+    .icon.third.revoked .glyph { opacity: 0.4; }
+
+    /* A third-party window: what it may pull, what it has pulled,
+       what that paid you, and the switch. */
+    .pw-what { font-size: 14px; color: var(--muted); }
+    .pw-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+    }
+    .pw-stats .num {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 18px; font-variant-numeric: tabular-nums;
+    }
+    .pw-stats .num.accent { color: var(--accent); }
 
     /* ── Windows ─────────────────────────────────────────────────── */
     .win {
@@ -455,16 +480,69 @@
     // the tab, and the numbers are invented — see the Read me window.
     if (!document.getElementById('desktop')) return;
 
-    const APPS = [
-      { id: 'win-activity', name: 'Activity',  glyph: '▤' },
-      { id: 'win-inbox',    name: 'Inbox',     glyph: '✉' },
-      { id: 'win-map',      name: 'Map',       glyph: '◎' },
-      { id: 'win-scan',     name: 'Scan',      glyph: '◉' },
-      { id: 'win-run',      name: 'Run club',  glyph: '▲' },
-      { id: 'win-tip',      name: 'Tip',       glyph: '★' },
-      { id: 'win-perms',    name: 'Permissions', glyph: '⚿' },
-      { id: 'win-readme',   name: 'Read me',   glyph: '?' },
+    const desktop = document.getElementById('desktop');
+    const money = n => '$' + n.toLocaleString('en-CA',
+      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const nf = new Intl.NumberFormat('en-CA');
+
+    // ── Products other companies built ─────────────────────────────
+    // These run ON box fraise. Each pulls only what it was granted,
+    // and every pull pays the user 70% and box fraise 30%.
+    const RATE_PER_PULL = 0.01;
+    const USER_SHARE    = 0.70;
+    const PROCS = [
+      { id: 'weather',   name: 'weather.app',   glyph: '☂',
+        what: 'Verified adult · postal code',     base: 41200, rate: 26, on: true },
+      { id: 'transit',   name: 'transit.app',   glyph: '⇄',
+        what: 'Location while running',           base: 33850, rate: 19, on: true },
+      { id: 'ticketing', name: 'ticketing.app', glyph: '▢',
+        what: 'Verified adult',                   base: 27410, rate: 11, on: true },
+      { id: 'dating',    name: 'dating.app',    glyph: '♡',
+        what: 'Verified in person · contactable', base: 18930, rate:  7, on: true },
+      { id: 'radio',     name: 'radio.app',     glyph: '≋',
+        what: 'Nothing but the count',            base:  7060, rate:  3, on: true },
     ];
+
+    const APPS = [
+      { id: 'win-activity', name: 'Activity',    glyph: '▤' },
+      { id: 'win-perms',    name: 'Permissions', glyph: '⚿' },
+      { id: 'win-inbox',    name: 'Inbox',       glyph: '✉' },
+      { id: 'win-map',      name: 'Map',         glyph: '◎' },
+      { id: 'win-scan',     name: 'Scan',        glyph: '◉' },
+      { id: 'win-run',      name: 'Run club',    glyph: '▲' },
+      { id: 'win-tip',      name: 'Tip',         glyph: '★' },
+      { id: 'win-readme',   name: 'Read me',     glyph: '?' },
+    ];
+
+    // ── A window per product, built before anything is wired ───────
+    PROCS.forEach((p, i) => {
+      const w = document.createElement('section');
+      w.className = 'win';
+      w.id = 'win-p-' + p.id;
+      w.style.left  = (150 + i * 26) + 'px';
+      w.style.top   = (150 + i * 24) + 'px';
+      w.style.width = '300px';
+      w.innerHTML =
+        '<header class="titlebar"><button class="dot close" aria-label="Close"></button>' +
+        '<span class="title"></span></header>' +
+        '<div class="body">' +
+          '<p class="kv">Built by another company &middot; runs on box fraise</p>' +
+          '<p class="pw-what"></p>' +
+          '<div class="pw-stats">' +
+            '<div><p class="kv">Pulls</p><div class="num" data-pulls></div></div>' +
+            '<div><p class="kv">Paid to you</p><div class="num accent" data-paid></div></div>' +
+          '</div>' +
+          '<button class="tog" data-on="1">Granted</button>' +
+          '<p class="note" style="margin-top:12px">It never holds who you are. It asks, and box fraise answers only this much.</p>' +
+        '</div>';
+      w.querySelector('.title').textContent   = p.name;
+      w.querySelector('.pw-what').textContent = 'May pull: ' + p.what;
+      desktop.appendChild(w);
+      p.win    = w;
+      p.wPulls = w.querySelector('[data-pulls]');
+      p.wPaid  = w.querySelector('[data-paid]');
+      p.toggles = [w.querySelector('.tog')];
+    });
 
     let z = 100;
     const win = id => document.getElementById(id);
@@ -481,18 +559,31 @@
       focus(w);
     }
 
-    // Desktop icons.
+    // ── Desktop icons, in two columns ──────────────────────────────
     const icons = document.getElementById('icons');
-    APPS.forEach(a => {
-      const b = document.createElement('button');
-      b.className = 'icon';
-      b.innerHTML = '<span class="glyph" aria-hidden="true">' + a.glyph + '</span>' +
-                    '<span class="cap">' + a.name + '</span>';
-      b.addEventListener('click', () => open(a.id));
-      icons.appendChild(b);
-    });
+    function column(label, items, third) {
+      const g = document.createElement('div');
+      g.className = 'group';
+      const l = document.createElement('p');
+      l.className = 'grouplabel';
+      l.textContent = label;
+      g.appendChild(l);
+      items.forEach(a => {
+        const b = document.createElement('button');
+        b.className = 'icon' + (third ? ' third' : '');
+        b.innerHTML = '<span class="glyph" aria-hidden="true"></span><span class="cap"></span>';
+        b.querySelector('.glyph').textContent = a.glyph;
+        b.querySelector('.cap').textContent = a.name;
+        b.addEventListener('click', () => open(third ? 'win-p-' + a.id : a.id));
+        g.appendChild(b);
+        if (third) a.icon = b;
+      });
+      icons.appendChild(g);
+    }
+    column('box fraise', APPS, false);
+    column('built on top', PROCS, true);
 
-    // Windows: focus on touch, close on the red dot, drag by the titlebar.
+    // ── Windows: focus, close, drag ────────────────────────────────
     document.querySelectorAll('.win').forEach(w => {
       w.addEventListener('pointerdown', () => focus(w));
       w.querySelector('.dot.close').addEventListener('click', e => {
@@ -528,30 +619,9 @@
       el.addEventListener('click', e => { e.preventDefault(); open(el.dataset.open); });
     });
 
-    ['win-activity', 'win-readme', 'win-inbox'].forEach(open);
-    focus(win('win-readme'));
-
     // ── The meter ──────────────────────────────────────────────────
-    // Products other companies built. Each pulls only what it was
-    // granted; every pull pays the user 70% and box fraise 30%. All of
-    // it is invented — see the Read me window.
-    const PROCS = [
-      { name: 'weather.app',   what: 'Verified adult · postal code',     base: 41200, rate: 26, on: true },
-      { name: 'transit.app',   what: 'Location while running',           base: 33850, rate: 19, on: true },
-      { name: 'ticketing.app', what: 'Verified adult',                   base: 27410, rate: 11, on: true },
-      { name: 'dating.app',    what: 'Verified in person · contactable', base: 18930, rate:  7, on: true },
-      { name: 'radio.app',     what: 'Nothing but the count',            base:  7060, rate:  3, on: true },
-    ];
-    const RATE_PER_PULL = 0.01;
-    const USER_SHARE    = 0.70;
-    const nf = new Intl.NumberFormat('en-CA');
-    const money = n => '$' + n.toLocaleString('en-CA',
-      { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
     let adEarnings = 0;
 
-    // Process table. textContent everywhere, so a name can never be
-    // read as markup.
     const list = document.getElementById('proclist');
     PROCS.forEach(p => {
       const tr = document.createElement('tr');
@@ -563,7 +633,19 @@
       p.cPaid  = tr.querySelector('[data-paid]');
     });
 
-    // Permission switches. Flipping one off freezes that process.
+    // A grant is one fact with several switches showing it, so they
+    // all move together.
+    function setGrant(p, on) {
+      p.on = on;
+      p.toggles.forEach(t => {
+        t.dataset.on  = on ? '1' : '0';
+        t.textContent = on ? 'Granted' : 'Revoked';
+      });
+      p.row.classList.toggle('off', !on);
+      if (p.icon) p.icon.classList.toggle('revoked', !on);
+      paint();
+    }
+
     const perms = document.getElementById('permlist');
     PROCS.forEach(p => {
       const row = document.createElement('div');
@@ -572,15 +654,9 @@
                       '<button class="tog" data-on="1">Granted</button>';
       row.querySelector('.who').textContent  = p.name;
       row.querySelector('.what').textContent = p.what;
-      const t = row.querySelector('.tog');
-      t.addEventListener('click', () => {
-        p.on = !p.on;
-        t.dataset.on  = p.on ? '1' : '0';
-        t.textContent = p.on ? 'Granted' : 'Revoked';
-        p.row.classList.toggle('off', !p.on);
-        paint();
-      });
+      p.toggles.push(row.querySelector('.tog'));
       perms.appendChild(row);
+      p.toggles.forEach(t => t.addEventListener('click', () => setGrant(p, !p.on)));
     });
 
     const elPulls = document.getElementById('pulls');
@@ -594,8 +670,12 @@
       let total = 0;
       PROCS.forEach(p => {
         total += p.base;
-        p.cPulls.textContent = nf.format(Math.round(p.base));
-        p.cPaid.textContent  = money(p.base * RATE_PER_PULL * USER_SHARE);
+        const pulls = nf.format(Math.round(p.base));
+        const paid  = money(p.base * RATE_PER_PULL * USER_SHARE);
+        p.cPulls.textContent = pulls;
+        p.cPaid.textContent  = paid;
+        p.wPulls.textContent = pulls;
+        p.wPaid.textContent  = paid;
       });
       const gross = total * RATE_PER_PULL;
       const toYou = gross * USER_SHARE;
@@ -620,11 +700,13 @@
     });
 
     paint();
+    ['win-activity', 'win-readme', 'win-inbox'].forEach(open);
+    focus(win('win-readme'));
 
     if (!still) {
       setInterval(() => {
-        // Only granted processes pull, and the jitter keeps the columns
-        // from ticking in lockstep.
+        // Only granted processes pull, and the jitter keeps the
+        // columns from ticking in lockstep.
         PROCS.forEach(p => { if (p.on) p.base += p.rate * (0.6 + Math.random() * 0.9); });
         paint();
       }, 900);
