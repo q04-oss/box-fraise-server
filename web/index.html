@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
-  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club at the end of Whyte Avenue every Saturday.">
+  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,27 +74,6 @@
       padding: 40px 24px 96px;
     }
 
-    /* ── Next event teaser ───────────────────────────────────────── */
-    .next-event { display: none; text-decoration: none; margin-bottom: 26px; }
-    .next-event.visible { display: block; }
-    .next-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-      display: block;
-      margin-bottom: 6px;
-    }
-    .next-name { font-size: 19px; color: var(--ink); transition: color 120ms ease; }
-    .next-arrow {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 13px; color: var(--muted); margin-left: 8px;
-      transition: color 120ms ease;
-    }
-    .next-event:hover .next-name { color: var(--accent); }
-    .next-event:hover .next-arrow { color: var(--ink); }
-
     /* ── The statement ───────────────────────────────────────────── */
     .coverline {
       font-family: 'Newsreader', serif;
@@ -110,68 +89,42 @@
       text-wrap: balance;
     }
     .intro { max-width: 60ch; }
-    .intro p { font-size: 17.5px; line-height: 1.65; margin: 0 0 20px; color: var(--muted); }
-    .intro p strong { color: var(--ink); font-weight: 500; }
     .intro .standfirst {
       font-size: clamp(19px, 2.5vw, 24px);
       line-height: 1.5;
       color: var(--ink);
-      margin: 0 0 26px;
+      margin: 0;
     }
 
-    /* ── Actions ─────────────────────────────────────────────────── */
-    .actions {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      align-items: stretch;
-      margin: 30px 0 0;
+    /* ── Run club ────────────────────────────────────────────────── */
+    .run {
+      max-width: 60ch;
+      margin: 56px 0 0;
+      padding-top: 28px;
+      border-top: 1px solid var(--rule);
     }
-    .act {
+    .run p { font-size: 17.5px; line-height: 1.65; margin: 0 0 18px; }
+    .run p:last-of-type { color: var(--muted); }
+    .run a {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 12px;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
       text-decoration: none;
-      padding: 20px 30px;
-      /* A comfortable thumb target on a phone, well past the 44px
-         minimum, because the printed advertisement sends people here
-         holding a phone and nothing else. */
-      min-height: 58px;
-      transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease;
-    }
-    .act.primary { background: var(--accent); color: #fff; }
-    .act.primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .act.secondary {
-      background: none;
       color: var(--ink);
       border: 1px solid var(--rule);
+      padding: 20px 30px;
+      min-height: 58px;
+      margin-top: 10px;
+      transition: border-color 120ms ease;
     }
-    .act.secondary:hover { border-color: var(--ink); }
-    .act .lens {
-      width: 13px; height: 13px;
-      border: 2px solid currentColor;
-      border-radius: 50%;
-      display: inline-block;
-      flex: 0 0 auto;
-    }
-    .actions-note {
-      font-size: 14px;
-      line-height: 1.55;
-      color: var(--muted);
-      margin: 16px 0 0;
-      max-width: 46ch;
-    }
+    .run a:hover { border-color: var(--ink); }
 
-    /* On a phone the buttons go full width and stack, so the red one
-       is a single unmissable target rather than half a row. */
     @media (max-width: 560px) {
-      .actions { flex-direction: column; gap: 12px; }
-      .act { width: 100%; padding: 20px 22px; }
+      .run a { width: 100%; padding: 20px 22px; }
     }
   </style>
 </head>
@@ -193,57 +146,14 @@
       <p class="standfirst">Playboy was the most advanced advertising machine ever built.
       Box Fraise is the next generation of it — a magazine whose question is answered by
       having a curious platform behind it.</p>
+    </div>
 
-      <a class="next-event" id="next-event" href="/events">
-        <span class="next-label">Next · <span id="next-date"></span></span>
-        <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
-      </a>
-
-      <p><strong>There is a run club, and anyone can join it.</strong> Every Saturday at 8 at the
-      gazebo at the end of Whyte, out to the Canadian Pacific railyard and back — across the place
-      the question is about. You do not need to be fast and you do not need to know
-      anyone. Turn up and run.</p>
-
-      <p>The running is not a metaphor and the question is not rhetorical. The people who
-      turn up are the answer.</p>
-
-      <div class="actions">
-        <a class="act primary" href="/scan">
-          <span class="lens" aria-hidden="true"></span>Scan an advertisement
-        </a>
-        <a class="act secondary" href="/run">More about the run club</a>
-      </div>
-
-      <p class="actions-note">Found one of our advertisements out there? The red button
-      opens your camera. Point it at the whole page — there is no code on it to find.</p>
+    <div class="run">
+      <p>There is a run club. Its purpose is to advocate for Whyte Avenue to be
+      pedestrian only.</p>
+      <p>Saturdays at 8, the gazebo at the end of Whyte. Anyone can join.</p>
+      <a href="/run">More about the run club</a>
     </div>
   </main>
-
-  <script>
-  (() => {
-    'use strict';
-
-    // The "Next · date · name →" teaser, and the only thing on this
-    // page that talks to the server. /v1/events returns published
-    // events with ends_at >= now ordered by starts_at, so events[0]
-    // is the one we want. Silent no-op when there are none — the line
-    // simply stays hidden.
-    (async () => {
-      try {
-        const r = await fetch('/v1/events');
-        if (!r.ok) return;
-        const events = await r.json();
-        if (!events.length) return;
-        const next = events[0];
-        document.getElementById('next-date').textContent =
-          new Date(next.starts_at).toLocaleDateString(undefined, {
-            weekday: 'short', month: 'short', day: 'numeric',
-          });
-        document.getElementById('next-name').textContent = next.name;
-        document.getElementById('next-event').classList.add('visible');
-      } catch { /* silent — the line simply does not appear */ }
-    })();
-  })();
-  </script>
 </body>
 </html>
