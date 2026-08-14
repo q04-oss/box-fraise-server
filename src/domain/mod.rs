@@ -4,4 +4,3 @@ pub mod consultations;
 pub mod events;
 pub mod onboarding;
 pub mod pairings;
-pub mod sightings;

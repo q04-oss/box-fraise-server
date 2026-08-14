@@ -1,14 +1,16 @@
 // Background prune.
 //
-// Keeps three things bounded:
+// Keeps two things bounded:
 //   - admin_sessions whose expires_at is past
 //   - pending users older than PENDING_TTL with no verification
-//   - sticker photos left unreviewed past PHOTO_PENDING_TTL_DAYS
 //
-// The photo prune exists because those rows hold image bytes in the
-// DB. An unreviewed submission that has sat for a month is not going
-// to be approved, and keeping public-submitted images around
-// indefinitely is storage cost and liability both.
+// A third prune used to drop unreviewed public photo submissions.
+// That table is gone (0014 replaced it, 0017 dropped its replacement)
+// and the statement went with it. Note what it cost: prune_once runs
+// as ONE transaction, so a DELETE against a missing table aborted the
+// whole tick and the two prunes above silently stopped running too.
+// If you add a statement here, it shares that fate — keep this
+// function's SQL and the live schema in step.
 //
 // Pending-user delete cascades to device_keys + challenges + user_sessions
 // via the FK ON DELETE CASCADE clauses in the migration.
@@ -22,7 +24,6 @@ use crate::{audit, db::AdminRlsTransaction, db::Pool};
 
 const PRUNE_INTERVAL: Duration = Duration::from_secs(60 * 60); // 1h
 const PENDING_TTL_DAYS: i64 = 30;
-const PHOTO_PENDING_TTL_DAYS: i64 = 30;
 
 pub fn spawn(pool: Pool) {
     tokio::spawn(async move {
@@ -61,27 +62,12 @@ async fn prune_once(pool: &Pool) -> anyhow::Result<()> {
     .fetch_one(tx.conn())
     .await?;
 
-    // Only 'pending' rows are eligible. An approved photo is published
-    // content and is never pruned on a timer.
-    let stale_photos = sqlx::query_scalar::<_, i64>(
-        "WITH deleted AS (
-             DELETE FROM sticker_photos
-                   WHERE status = 'pending'
-                     AND submitted_at < now() - ($1::bigint || ' days')::interval
-                   RETURNING 1
-         ) SELECT COUNT(*)::bigint FROM deleted",
-    )
-    .bind(PHOTO_PENDING_TTL_DAYS)
-    .fetch_one(tx.conn())
-    .await?;
-
     tx.commit().await?;
 
-    if expired_sessions > 0 || stale_pending > 0 || stale_photos > 0 {
+    if expired_sessions > 0 || stale_pending > 0 {
         tracing::info!(
             expired_admin_sessions = expired_sessions,
             stale_pending_users = stale_pending,
-            stale_sticker_photos = stale_photos,
             "prune tick"
         );
         audit::write(
@@ -93,7 +79,6 @@ async fn prune_once(pool: &Pool) -> anyhow::Result<()> {
             serde_json::json!({
                 "expired_admin_sessions": expired_sessions,
                 "stale_pending_users": stale_pending,
-                "stale_sticker_photos": stale_photos,
             }),
         )
         .await;

@@ -4,17 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
-  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue.">
+  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue every Saturday.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-  <!-- Leaflet is vendored in web/js rather than pulled from a CDN,
-       matching how qrcode.min.js is handled. Map tiles still come from
-       openstreetmap.org — unavoidable for a map. -->
-  <link rel="stylesheet" href="/js/leaflet.css">
 
   <style>
     :root {
@@ -35,19 +30,16 @@
       text-rendering: optimizeLegibility;
     }
 
-    /* ── Masthead ────────────────────────────────────────────────────
-       The wordmark cannot sit bottom-right: Leaflet renders its
-       required OpenStreetMap attribution in that corner. */
+    /* ── Masthead ────────────────────────────────────────────────── */
     .masthead {
       max-width: 1140px;
       margin: 0 auto;
-      padding: 26px 24px 0;
+      padding: 26px 24px 18px;
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       gap: 24px;
       flex-wrap: wrap;
-      padding-bottom: 18px;
       border-bottom: 1px solid var(--rule);
     }
     .wordmark {
@@ -75,11 +67,11 @@
     main {
       max-width: 1140px;
       margin: 0 auto;
-      padding: 34px 24px 80px;
+      padding: 40px 24px 96px;
     }
 
     /* ── Next event teaser ───────────────────────────────────────── */
-    .next-event { display: none; text-decoration: none; margin-bottom: 30px; }
+    .next-event { display: none; text-decoration: none; margin-bottom: 26px; }
     .next-event.visible { display: block; }
     .next-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -99,28 +91,21 @@
     .next-event:hover .next-name { color: var(--accent); }
     .next-event:hover .next-arrow { color: var(--ink); }
 
-    /* A cover line the width of the page, then one column of prose
-       beneath it. Magazine furniture, minus the section dividers. */
+    /* ── The statement ───────────────────────────────────────────── */
     .coverline {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      /* Sized to fill the measure rather than sit in a column. The
-         viewport term does the work on phones; the ceiling stops it
-         outgrowing the 1140px container on a desktop. */
+      /* Runs the width of the page rather than sitting in a column.
+         The viewport term does the work on phones; the ceiling stops
+         it outgrowing the 1140px measure on a desktop. */
       font-size: clamp(38px, 9vw, 108px);
       letter-spacing: -0.035em;
       line-height: 0.98;
-      margin: 0 0 30px;
-      /* No max-width: the whole point is that it runs the width of
-         the page. Wrapping is left to the measure itself. */
+      margin: 0 0 32px;
       text-wrap: balance;
     }
-    /* One column of prose under a full-width cover line. The page
-       reads top to bottom as a single statement rather than a set of
-       sections, so there are no labels and no sub-headings to break
-       it up — the measure and the type sizes carry the hierarchy. */
-    .intro { max-width: 60ch; margin: 0 0 40px; }
+    .intro { max-width: 60ch; }
     .intro p { font-size: 17.5px; line-height: 1.65; margin: 0 0 20px; color: var(--muted); }
     .intro p strong { color: var(--ink); font-weight: 500; }
     .intro .standfirst {
@@ -128,270 +113,61 @@
       line-height: 1.5;
       color: var(--ink);
       margin: 0 0 26px;
-      max-width: none;
     }
-    .intro a.inline {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--ink);
-      text-decoration: none;
-      border-bottom: 1px solid var(--rule);
-      padding-bottom: 2px;
-      white-space: nowrap;
-      transition: border-color 120ms ease;
-    }
-    .intro a.inline:hover { border-color: var(--accent); }
 
-
-    /* The two things you can point a camera at, side by side but not
-       equal: scanning is the invitation the printed advertisements
-       send people here to accept, so it is the loud one. Reporting a
-       sticker is for people already holding one. */
+    /* ── Actions ─────────────────────────────────────────────────── */
     .actions {
       display: flex;
       gap: 14px;
       flex-wrap: wrap;
       align-items: stretch;
-      margin-top: 4px;
+      margin: 30px 0 0;
     }
-    /* Scanning is the primary invitation, so it is the larger, red
-       one; reporting a sticker sits beside it as the quieter option. */
-    a.scan {
+    .act {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 12px;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 13px;
       text-transform: uppercase;
       letter-spacing: 0.15em;
-      background: var(--accent);
-      color: #fff;
       text-decoration: none;
-      padding: 19px 30px;
-      transition: opacity 120ms ease, transform 120ms ease;
+      padding: 20px 30px;
+      /* A comfortable thumb target on a phone, well past the 44px
+         minimum, because the printed advertisement sends people here
+         holding a phone and nothing else. */
+      min-height: 58px;
+      transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease;
     }
-    a.scan:hover { opacity: 0.9; transform: translateY(-1px); }
-    .actions .submit { padding: 19px 26px; }
-    .actions-note {
-      font-size: 14px;
-      line-height: 1.55;
-      color: var(--muted);
-      margin: 14px 0 0;
-      max-width: 46ch;
+    .act.primary { background: var(--accent); color: #fff; }
+    .act.primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .act.secondary {
+      background: none;
+      color: var(--ink);
+      border: 1px solid var(--rule);
     }
-    a.scan .lens {
+    .act.secondary:hover { border-color: var(--ink); }
+    .act .lens {
       width: 13px; height: 13px;
-      border: 2px solid #fff;
+      border: 2px solid currentColor;
       border-radius: 50%;
       display: inline-block;
       flex: 0 0 auto;
     }
-
-    /* ── Buttons ─────────────────────────────────────────────────── */
-    button.submit {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      background: var(--ink);
-      color: #fff;
-      border: 0;
-      padding: 13px 22px;
-      cursor: pointer;
-      transition: opacity 120ms ease;
-    }
-    button.submit:hover:not(:disabled) { opacity: 0.8; }
-    button.submit:disabled { opacity: 0.4; cursor: default; }
-    button.ghost {
-      background: none;
+    .actions-note {
+      font-size: 14px;
+      line-height: 1.55;
       color: var(--muted);
-      border: 1px solid var(--rule);
-    }
-    button.ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--ink); opacity: 1; }
-
-    /* ── Map ─────────────────────────────────────────────────────── */
-    #map {
-      height: 520px;
-      width: 100%;
-      border: 1px solid var(--rule);
-      background: #f4f4f4;
-      z-index: 0;
-    }
-    .leaflet-container {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      background: #f4f4f4;
-    }
-    /* Custom markers, so Leaflet's default icon PNGs are never
-       requested. */
-    .pin {
-      width: 16px; height: 16px; border-radius: 50%;
-      background: var(--accent);
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.28);
-      transition: transform 120ms ease;
-    }
-    .pin.active { transform: scale(1.45); }
-    .pin-event {
-      width: 14px; height: 14px;
-      background: var(--ink);
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 1px rgba(0,0,0,0.28);
-      transform: rotate(45deg);
-      transition: transform 120ms ease;
-    }
-    .pin-event.active { transform: rotate(45deg) scale(1.4); }
-
-    .map-key {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--muted);
-      margin-top: 10px;
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .map-key span { display: inline-flex; align-items: center; gap: 7px; }
-    .map-key i {
-      width: 9px; height: 9px; display: inline-block;
-      background: var(--accent); border-radius: 50%;
-    }
-    .map-key i.event { background: var(--ink); border-radius: 0; transform: rotate(45deg); }
-
-    .label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-    }
-    .status {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--muted);
-      padding: 12px 0;
-    }
-    .status.err { color: var(--accent); }
-
-    /* ── Recent sightings ────────────────────────────────────────── */
-    .section { margin-top: 44px; }
-    .gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 14px;
       margin: 16px 0 0;
-    }
-    .shot {
-      margin: 0;
-      text-align: left;
-      background: none;
-      border: 0;
-      padding: 0;
-      cursor: pointer;
-      font: inherit;
-      color: inherit;
-    }
-    .shot img {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      object-fit: cover;
-      display: block;
-      background: #f0f0f0;
-      border: 1px solid var(--rule);
-      transition: border-color 120ms ease;
-    }
-    .shot:hover img { border-color: var(--ink); }
-    .shot figcaption {
-      font-size: 14px; line-height: 1.45; color: var(--muted);
-      margin-top: 7px; word-break: break-word;
-    }
-    .shot .by {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
-      color: var(--muted); margin-top: 4px; word-break: break-word;
-    }
-    .empty {
-      padding: 24px 0;
-      font-size: 17px;
-      line-height: 1.65;
-      color: var(--muted);
-      max-width: 52ch;
+      max-width: 46ch;
     }
 
-    /* ── Site rows ───────────────────────────────────────────────── */
-    .pin-row {
-      display: block; width: 100%; text-align: left;
-      background: none; border: 0; border-top: 1px solid var(--rule);
-      padding: 18px 0; cursor: pointer; font: inherit; color: inherit;
-    }
-    .pin-row:last-of-type { border-bottom: 1px solid var(--rule); }
-    .pin-row[aria-current="true"] { background: #fafafa; }
-    .pin-row:hover .pin-label { color: var(--accent); }
-    .pin-label { font-size: 20px; font-weight: 500; line-height: 1.3; transition: color 120ms ease; }
-    .pin-hint { font-size: 15px; color: var(--muted); line-height: 1.55; margin-top: 5px; }
-    .pin-count {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
-      color: var(--muted); margin-top: 9px;
-    }
-
-    /* ── Detail panel ────────────────────────────────────────────── */
-    #detail {
-      margin-top: 44px; padding-top: 32px;
-      border-top: 2px solid var(--ink);
-      max-width: 640px;
-    }
-    #detail.hidden { display: none; }
-    #detail h2 { font-size: 26px; font-weight: 500; margin: 10px 0 6px; line-height: 1.2; }
-    .detail-hint { font-size: 16px; line-height: 1.6; color: var(--muted); margin: 0 0 6px; }
-    .detail-photo {
-      width: 100%; max-width: 420px; display: block;
-      border: 1px solid var(--rule); margin-top: 20px;
-    }
-
-    /* ── Submit form ─────────────────────────────────────────────── */
-    #add { margin-top: 44px; padding-top: 32px; border-top: 2px solid var(--ink); max-width: 640px; }
-    #add.hidden { display: none; }
-    #add h2 { font-size: 24px; font-weight: 500; margin: 10px 0 8px; }
-    #pick-map {
-      height: 260px; width: 100%;
-      border: 1px solid var(--rule);
-      background: #f4f4f4;
-      margin: 6px 0 4px;
-      z-index: 0;
-    }
-    .pick-note { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 0 0 18px; }
-    .pick-note.set { color: var(--ink); }
-    input[type="file"] {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 13px; width: 100%; margin-bottom: 18px;
-    }
-    input[type="text"] {
-      font-family: 'Newsreader', Georgia, serif;
-      font-size: 16px; width: 100%; padding: 10px 12px;
-      border: 1px solid var(--rule); border-radius: 0;
-      background: #fff; color: var(--ink); margin-bottom: 12px;
-    }
-    input[type="text"]:focus { outline: none; border-color: var(--ink); }
-    .form-msg {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; letter-spacing: 0.06em; line-height: 1.6; margin-top: 14px;
-    }
-    .form-msg.ok  { color: var(--ink); }
-    .form-msg.err { color: var(--accent); }
-    .fineprint { font-size: 13px; line-height: 1.6; color: var(--muted); margin-top: 16px; }
-
-    @media (max-width: 600px) {
-      .masthead { padding: 22px 22px 0; }
-      main { padding: 28px 22px 80px; }
-      #map { height: 380px; }
+    /* On a phone the buttons go full width and stack, so the red one
+       is a single unmissable target rather than half a row. */
+    @media (max-width: 560px) {
+      .actions { flex-direction: column; gap: 12px; }
+      .act { width: 100%; padding: 20px 22px; }
     }
   </style>
 </head>
@@ -421,468 +197,47 @@
       <p><strong>There is a run club, and anyone can join it.</strong> Every Saturday at 8
       on Whyte Avenue, out to the Canadian Pacific railyard and back — across the place
       the question is about. You do not need to be fast and you do not need to know
-      anyone. Turn up and run. The people who turn up are the answer, and stickers are $5
-      there. <a class="inline" href="/run">Where, and why →</a></p>
+      anyone. Turn up and run.</p>
 
-      <p>Everything the magazine makes goes out into the world for you to point a camera
-      at. An advertisement is a page of it, scanned whole, with no code printed on it. A
-      sticker is a pin on the map below — which is how the next person finds the run. The
-      advertising is the community advertising itself.</p>
+      <p>The running is not a metaphor and the question is not rhetorical. The people who
+      turn up are the answer.</p>
 
       <div class="actions">
-        <a class="scan" href="/scan">
+        <a class="act primary" href="/scan">
           <span class="lens" aria-hidden="true"></span>Scan an advertisement
         </a>
-        <button class="submit ghost" id="open-add" type="button">I saw a sticker</button>
+        <a class="act secondary" href="/run">More about the run club</a>
       </div>
-      <p class="actions-note">Found one of our advertisements out there? The button opens
-      your camera — point it at the whole page, there is nothing on it to find.</p>
+
+      <p class="actions-note">Found one of our advertisements out there? The red button
+      opens your camera. Point it at the whole page — there is no code on it to find.</p>
     </div>
-
-    <div id="map" role="application" aria-label="Map of sticker sightings and events"></div>
-    <div class="map-key">
-      <span><i></i> sightings</span>
-      <span><i class="event"></i> events</span>
-    </div>
-
-    <!-- Add a sighting. Hidden until asked for, because the map is the
-         point of the page and a form sitting open under it competes. -->
-    <section id="add" class="hidden" aria-live="polite">
-      <div class="label">add a sighting</div>
-      <h2>Where did you see it?</h2>
-      <p class="pick-note" id="pick-note">Tap the map below to drop a pin where the sticker is.</p>
-      <div id="pick-map" role="application" aria-label="Tap to place the sighting"></div>
-
-      <p class="label" style="margin-top: 22px; display: block;">the photo</p>
-      <input type="file" id="add-file" accept="image/*" capture="environment">
-
-      <input type="text" id="add-caption" placeholder="Caption (optional)" maxlength="280">
-      <input type="text" id="add-name" placeholder="Your name or handle (optional)" maxlength="60">
-
-      <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px;">
-        <button class="submit" id="add-send" type="button">Send it</button>
-        <button class="submit ghost" id="add-cancel" type="button">Cancel</button>
-      </div>
-      <div class="form-msg" id="add-msg"></div>
-      <p class="fineprint">
-        Sightings are reviewed before they appear on the map, so yours will not
-        show up straight away. Location data is stripped from the photo before
-        it is sent — the pin is only where you tapped.
-      </p>
-    </section>
-
-    <section class="section" id="recent"></section>
-
-    <section id="detail" class="hidden" aria-live="polite"></section>
   </main>
 
-  <script src="/js/leaflet.js"></script>
   <script>
   (() => {
     'use strict';
 
-    // Longest edge of an uploaded photo after downscaling, and the
-    // JPEG quality used for the re-encode. Between them these put a
-    // typical phone photo around 200–400 KB, well under the server's
-    // 8 MB cap.
-    const MAX_EDGE = 1600;
-    const JPEG_QUALITY = 0.82;
-
-    // Fallback view when there are no pins to fit — central Edmonton.
-    const DEFAULT_CENTER = [53.5461, -113.4938];
-    const DEFAULT_ZOOM = 12;
-
-
-    const mapEl    = document.getElementById('map');
-    const recentEl = document.getElementById('recent');
-    const detailEl = document.getElementById('detail');
-    const addEl    = document.getElementById('add');
-
-    let map = null;
-    let sightings = [];
-    let events = [];
-    const markers = new Map();   // "kind:id" -> L.Marker
-    let activeKey = null;
-
-    const key = (kind, k) => kind + ':' + k;
-
-    // ── Boot ──────────────────────────────────────────────
-
-    initMap();
-    load();
-
-    function initMap() {
-      map = L.map(mapEl, { scrollWheelZoom: false })
-             .setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        // Attribution is a requirement of the OSM tile usage policy,
-        // not decoration. Do not remove it.
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-      }).addTo(map);
-    }
-
-    // Three sources, fetched together. Sightings are the only required
-    // one — if events fail, the map still works without them.
-    async function load() {
-      const [sightingRes, eventRes] = await Promise.allSettled([
-        fetchJson('/v1/sightings'),
-        fetchJson('/v1/events'),
-      ]);
-
-      if (sightingRes.status !== 'fulfilled') {
-        console.error(sightingRes.reason);
-        recentEl.replaceChildren(el('div', 'status err', 'unable to load the map'));
-        return;
-      }
-      sightings = sightingRes.value;
-      events = eventRes.status === 'fulfilled' ? eventRes.value : [];
-      if (eventRes.status !== 'fulfilled') console.error(eventRes.reason);
-
-      renderNextEvent();
-      renderRecent();
-      renderMarkers();
-    }
-
-    async function fetchJson(path) {
-      const r = await fetch(path);
-      if (!r.ok) throw new Error(path + ' → http ' + r.status);
-      return r.json();
-    }
-
-    // The "Next · date · name →" teaser. /v1/events returns published
-    // events with ends_at >= now ordered by starts_at, so events[0] is
-    // the one we want.
-    function renderNextEvent() {
-      if (!events.length) return;
-      const next = events[0];
-      document.getElementById('next-date').textContent =
-        new Date(next.starts_at).toLocaleDateString(undefined, {
-          weekday: 'short', month: 'short', day: 'numeric',
-        });
-      document.getElementById('next-name').textContent = next.name;
-      document.getElementById('next-event').classList.add('visible');
-    }
-
-    // ── Rendering ─────────────────────────────────────────
-    //
-    // Everything below builds DOM nodes and assigns textContent.
-    // Captions and submitter names are anonymous free text, so they
-    // must never touch innerHTML.
-
-    function el(tag, className, text) {
-      const n = document.createElement(tag);
-      if (className) n.className = className;
-      if (text !== undefined && text !== null) n.textContent = text;
-      return n;
-    }
-
-    // The gallery doubles as the accessible route to the map: a
-    // Leaflet map is close to unusable with a keyboard or a screen
-    // reader, and these are focusable buttons that select the same
-    // pins.
-    function renderRecent() {
-      recentEl.replaceChildren();
-      if (!sightings.length) {
-        const wrap = el('div', 'empty');
-        wrap.append(el('p', null,
-          'No sightings yet. If you have seen one of the stickers, you could be first.'));
-        recentEl.append(wrap);
-        return;
-      }
-      recentEl.append(el('div', 'label',
-        `${sightings.length} sighting${sightings.length === 1 ? '' : 's'}`));
-
-      const grid = el('div', 'gallery');
-      for (const s of sightings) grid.append(renderShot(s));
-      recentEl.append(grid);
-    }
-
-    function renderShot(s) {
-      const fig = el('button', 'shot');
-      fig.type = 'button';
-      const img = document.createElement('img');
-      img.src = `/v1/sightings/${encodeURIComponent(s.id)}/image`;
-      img.loading = 'lazy';
-      img.decoding = 'async';
-      img.alt = s.caption ? s.caption : 'A strawberry sticker someone spotted';
-      fig.append(img);
-      if (s.caption) fig.append(el('div', null, s.caption));
-      if (s.submitter_name) fig.append(el('div', 'by', `— ${s.submitter_name}`));
-      fig.addEventListener('click', () => select('sighting', s.id, { pan: true }));
-      fig.dataset.key = key('sighting', s.id);
-      return fig;
-    }
-
-    function renderMarkers() {
-      markers.clear();
-      const points = [];
-
-      const place = (kind, k, lat, lng, label, size, node) => {
-        const m = L.marker([lat, lng], {
-          icon: L.divIcon({ className: '', html: '', iconSize: size,
-                            iconAnchor: [size[0] / 2, size[1] / 2] }),
-          title: label, alt: label, keyboard: true
-        }).addTo(map);
-        // Build the marker's inner node directly rather than passing an
-        // HTML string to divIcon, so nothing goes through innerHTML.
-        m.getElement().replaceChildren(node);
-        m.on('click', () => select(kind, k, { pan: false }));
-        markers.set(key(kind, k), m);
-        points.push([lat, lng]);
-      };
-
-      for (const s of sightings) {
-        place('sighting', s.id, s.latitude, s.longitude,
-              s.caption || 'Sighting', [16, 16], el('div', 'pin'));
-      }
-      for (const e of events) {
-        place('event', e.id, e.latitude, e.longitude, e.name,
-              [14, 14], el('div', 'pin-event'));
-      }
-
-      if (points.length === 1) {
-        map.setView(points[0], 16);
-      } else if (points.length > 1) {
-        map.fitBounds(points, { padding: [36, 36], maxZoom: 16 });
-      }
-    }
-
-    function markActive(activeK) {
-      for (const [k, m] of markers) {
-        const glyph = m.getElement() && m.getElement().firstElementChild;
-        if (glyph) glyph.classList.toggle('active', k === activeK);
-      }
-      for (const node of document.querySelectorAll('[data-key]')) {
-        node.setAttribute('aria-current', String(node.dataset.key === activeK));
-      }
-    }
-
-    // ── Selection + detail ────────────────────────────────
-
-    function select(kind, k, opts) {
-      const item = kind === 'sighting'
-        ? sightings.find(x => x.id === k)
-        : events.find(x => x.id === k);
-      if (!item) return;
-
-      activeKey = key(kind, k);
-      markActive(activeKey);
-      if (opts && opts.pan) map.panTo([item.latitude, item.longitude]);
-
-      if (kind === 'sighting') renderSightingDetail(item);
-      else renderEventDetail(item);
-
-      detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    function mapsLink(lat, lng) {
-      const p = el('p', 'detail-hint');
-      const a = el('a', null, 'Open in Maps →');
-      a.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.style.color = 'var(--ink)';
-      p.append(a);
-      return p;
-    }
-
-    function renderSightingDetail(s) {
-      detailEl.classList.remove('hidden');
-      detailEl.replaceChildren();
-
-      detailEl.append(el('div', 'label', 'sighting'));
-      detailEl.append(el('h2', null, s.caption || 'A sticker, spotted'));
-      if (s.submitter_name) detailEl.append(el('p', 'detail-hint', `Spotted by ${s.submitter_name}`));
-      detailEl.append(el('p', 'detail-hint',
-        new Date(s.submitted_at).toLocaleDateString(undefined,
-          { year: 'numeric', month: 'long', day: 'numeric' })));
-      detailEl.append(mapsLink(s.latitude, s.longitude));
-
-      const img = document.createElement('img');
-      img.className = 'detail-photo';
-      img.src = `/v1/sightings/${encodeURIComponent(s.id)}/image`;
-      img.loading = 'lazy';
-      img.alt = s.caption ? s.caption : 'A strawberry sticker someone spotted';
-      detailEl.append(img);
-    }
-
-    function renderEventDetail(e) {
-      detailEl.classList.remove('hidden');
-      detailEl.replaceChildren();
-
-      detailEl.append(el('div', 'label', 'event'));
-      detailEl.append(el('h2', null, e.name));
-      detailEl.append(el('p', 'detail-hint', e.host_name));
-      detailEl.append(el('p', 'detail-hint', new Date(e.starts_at).toLocaleString(undefined, {
-        weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
-      })));
-      detailEl.append(el('p', 'detail-hint', e.address));
-
-      const p = el('p', 'detail-hint');
-      const a = el('a', null, 'All events →');
-      a.href = '/events';
-      a.style.color = 'var(--ink)';
-      p.append(a);
-      detailEl.append(p);
-    }
-
-    // ── Adding a sighting ─────────────────────────────────
-
-    let pickMap = null;
-    let pickMarker = null;
-    let picked = null;   // {lat, lng}
-
-    const fileEl    = document.getElementById('add-file');
-    const captionEl = document.getElementById('add-caption');
-    const nameEl    = document.getElementById('add-name');
-    const addMsg    = document.getElementById('add-msg');
-    const pickNote  = document.getElementById('pick-note');
-
-    document.getElementById('open-add').addEventListener('click', openAdd);
-    document.getElementById('add-cancel').addEventListener('click', closeAdd);
-    document.getElementById('add-send').addEventListener('click', sendSighting);
-
-    function openAdd() {
-      addEl.classList.remove('hidden');
-      if (!pickMap) initPickMap();
-      // Leaflet measures its container on creation; a map built while
-      // hidden comes out zero-sized, so it has to be told to remeasure
-      // once the section is visible.
-      setTimeout(() => pickMap.invalidateSize(), 0);
-      addEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    function closeAdd() {
-      addEl.classList.add('hidden');
-      setMsg(addMsg, 'ok', '');
-    }
-
-    function initPickMap() {
-      pickMap = L.map('pick-map', { scrollWheelZoom: false })
-                 .setView(map.getCenter(), Math.max(map.getZoom(), 13));
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-      }).addTo(pickMap);
-
-      pickMap.on('click', (ev) => {
-        picked = { lat: ev.latlng.lat, lng: ev.latlng.lng };
-        if (pickMarker) {
-          pickMarker.setLatLng(ev.latlng);
-        } else {
-          pickMarker = L.marker(ev.latlng, {
-            icon: L.divIcon({ className: '', html: '', iconSize: [16, 16], iconAnchor: [8, 8] })
-          }).addTo(pickMap);
-          pickMarker.getElement().replaceChildren(el('div', 'pin'));
-        }
-        pickNote.className = 'pick-note set';
-        pickNote.textContent =
-          `Pin dropped at ${picked.lat.toFixed(5)}, ${picked.lng.toFixed(5)}. Tap again to move it.`;
-      });
-    }
-
-    async function sendSighting() {
-      const btn = document.getElementById('add-send');
-      if (!picked) {
-        setMsg(addMsg, 'err', 'Tap the map to say where you saw it.');
-        return;
-      }
-      if (!fileEl.files || !fileEl.files[0]) {
-        setMsg(addMsg, 'err', 'Pick a photo first.');
-        return;
-      }
-      btn.disabled = true;
-      setMsg(addMsg, 'ok', 'preparing…');
+    // The "Next · date · name →" teaser, and the only thing on this
+    // page that talks to the server. /v1/events returns published
+    // events with ends_at >= now ordered by starts_at, so events[0]
+    // is the one we want. Silent no-op when there are none — the line
+    // simply stays hidden.
+    (async () => {
       try {
-        const blob = await downscale(fileEl.files[0]);
-        setMsg(addMsg, 'ok', 'uploading…');
-
-        const fd = new FormData();
-        fd.append('image', blob, 'sighting.jpg');
-        fd.append('latitude', String(picked.lat));
-        fd.append('longitude', String(picked.lng));
-        if (captionEl.value.trim()) fd.append('caption', captionEl.value.trim());
-        if (nameEl.value.trim()) fd.append('submitter_name', nameEl.value.trim());
-
-        const r = await fetch('/v1/sightings', { method: 'POST', body: fd });
-        if (!r.ok) {
-          let detail = 'http ' + r.status;
-          try {
-            const body = await r.json();
-            detail = body.message || body.error || detail;
-          } catch (_) { /* non-JSON error body; keep the status */ }
-          throw new Error(detail);
-        }
-        fileEl.value = '';
-        captionEl.value = '';
-        nameEl.value = '';
-        setMsg(addMsg, 'ok', 'Got it — thanks. It will appear on the map once reviewed.');
-      } catch (err) {
-        console.error(err);
-        setMsg(addMsg, 'err', String(err.message || err));
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    function setMsg(node, kind, text) {
-      node.className = 'form-msg ' + kind;
-      node.textContent = text;
-    }
-
-    // Draw the picked file to a canvas and re-encode as JPEG.
-    //
-    // This does three jobs at once:
-    //   1. Shrinks a 4 MB phone photo to a few hundred KB.
-    //   2. Converts HEIC/HEIF — which Safari can decode but most
-    //      browsers cannot display — into JPEG, which is why the
-    //      server's allowlist does not need to include it.
-    //   3. Drops EXIF, including the GPS tag recording where the
-    //      photographer was standing. A canvas re-encode carries no
-    //      metadata across, which is why the pin comes from the map
-    //      tap rather than from the photo.
-    //
-    // The server re-derives the content type from magic bytes and
-    // enforces the size cap regardless, so none of this is trusted.
-    async function downscale(file) {
-      const bitmap = await loadBitmap(file);
-      const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-      const w = Math.max(1, Math.round(bitmap.width * scale));
-      const h = Math.max(1, Math.round(bitmap.height * scale));
-
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      if (bitmap.close) bitmap.close();
-
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
-      if (!blob) throw new Error('could not read that image');
-      return blob;
-    }
-
-    // createImageBitmap honours EXIF orientation with the option below
-    // and handles HEIC where the platform decoder does. The <img> path
-    // is the fallback for older browsers.
-    async function loadBitmap(file) {
-      if (window.createImageBitmap) {
-        try {
-          return await createImageBitmap(file, { imageOrientation: 'from-image' });
-        } catch (_) { /* fall through to the <img> decoder */ }
-      }
-      const url = URL.createObjectURL(file);
-      try {
-        const img = new Image();
-        img.src = url;
-        await img.decode();
-        return img;
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    }
-
+        const r = await fetch('/v1/events');
+        if (!r.ok) return;
+        const events = await r.json();
+        if (!events.length) return;
+        const next = events[0];
+        document.getElementById('next-date').textContent =
+          new Date(next.starts_at).toLocaleDateString(undefined, {
+            weekday: 'short', month: 'short', day: 'numeric',
+          });
+        document.getElementById('next-name').textContent = next.name;
+        document.getElementById('next-event').classList.add('visible');
+      } catch { /* silent — the line simply does not appear */ }
+    })();
   })();
   </script>
 </body>

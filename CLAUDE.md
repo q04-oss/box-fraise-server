@@ -12,13 +12,11 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::sightings` (the map).
+  `domain::pairings`.
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
-- **One endpoint accepts unauthenticated writes:**
-  `POST /v1/sightings`. Everything about the `sightings` policies
-  exists to bound it — see "The public write boundary" below before
-  changing anything in `domain::sightings`.
+- **No endpoint accepts unauthenticated writes.** Every mutating
+  route requires a bearer token resolved by the auth middleware.
 
 ## Architecture in three layers
 
@@ -91,13 +89,10 @@ security policy"* — even though the insert itself is permitted. The
 message points at WITH CHECK and sends you looking in the wrong
 place.
 
-This bites exactly where a write path is deliberately blind:
-`sightings`. The public submit inserts a `pending` row that
-`sightings_public_select` hides, so
-`repository::insert_sighting` generates the UUID in Rust and inserts it
-explicitly instead of reading one back. If you add another
-write-without-read path, do the same — do not "fix" it by widening
-the SELECT policy.
+It bit twice here, on tables since dropped, and the fix both times was
+the same: generate the UUID in Rust and insert it explicitly rather
+than reading one back. If you add a write-without-read path, do that —
+do not "fix" it by widening the SELECT policy.
 
 **Sessions-table SELECT is intentionally wide.** The auth middleware
 has to resolve `Bearer <token>` → identity before any user context
@@ -149,58 +144,6 @@ filters by `token_hash`. Do not add other read paths there.
   `VerifyingKey::verify` still hash the message with SHA-256 by
   default (they do as of 0.13).
 
-## The public write boundary (sightings)
-
-`POST /v1/sightings` takes a photo and a pair of coordinates from
-anyone, with no token. The containment is four independent layers, and the feature is
-only safe while all four hold:
-
-1. **RLS pins the status.** `sightings_public_insert` has
-   `WITH CHECK (status = 'pending' AND reviewed_at IS NULL AND
-   reviewed_by_admin_id IS NULL)`. A
-   submitter cannot self-publish or forge a review trail. The service
-   also hardcodes `'pending'` rather than reading it from the request,
-   so there are two independent barriers, not one.
-2. **RLS hides the row.** `sightings_public_select` admits
-   `status = 'approved'` only. A pending photo is invisible to every
-   public read path including the byte-serving endpoint, so guessing a
-   UUID gains nothing.
-3. **The content type comes from the bytes.** `sniff_content_type`
-   reads magic bytes and ignores what the client declared. The
-   allowlist is JPEG/PNG/WebP. **SVG is excluded on purpose** — it is
-   a script container, and serving one from our origin would be stored
-   XSS. Do not add it.
-4. **Size is capped three times** — `DefaultBodyLimit` on the route,
-   `MAX_IMAGE_BYTES` in the service, and the `sightings_size_cap`
-   CHECK. Change one, change all three.
-
-Two things this does *not* do, deliberately: it never decodes the
-image (magic bytes + length only, so a well-headed garbage file is
-storable and the moderation queue is what catches it), and it does not
-strip EXIF server-side. The map page re-encodes through a canvas
-before upload, which drops GPS tags for every normal browser
-submission, but a crafted client can still post EXIF-bearing JPEG.
-If that matters, re-encode server-side with the `image` crate.
-
-The only rate limiting is `MAX_PENDING`, a global cap enforced through
-the `bf_pending_sighting_count` SECURITY DEFINER function — needed
-because a public transaction cannot see pending rows to count them. Do
-not replace it by opening an `AdminRlsTransaction` on a public
-request.
-
-Be honest about what that cap is: it bounds how much unreviewed image
-data can pile up, not abuse. A determined flooder can reach the cap
-and, while the queue is full, keep honest submissions out. Moderation
-throughput is the real control.
-
-**The coordinates are submitter-supplied.** They come from the
-uploader tapping a map, not from their device, which is deliberate —
-a stated location is a decision, a captured one is data taken from
-someone. The consequence is that a pin can be anywhere on Earth until
-a human looks at it, so the moderation queue shows the coordinates and
-links out to them. Do not treat a pending sighting's location as
-meaningful.
-
 ## Audit
 
 `audit::write` always takes the pool, never a transaction. This is
@@ -212,16 +155,14 @@ Whenever you add a new mutating endpoint, add a matching `audit::write`
 call on the success path. Use the actor_type / action conventions
 that already exist (`user.register`, `challenge.issued`, `user.verify`,
 `event.create`, `admin.login`, `maintenance.prune`,
-`sighting.submit`, `sighting.approve`, `sighting.reject`).
+`pairing.created`, `pairing.decided`).
 
 `actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
-was added in migration 0012 for anonymous photo submissions — an
-actor that is none of the other three. Use it rather than mislabelling
-an anonymous action as `'system'`.
-
-Note `sighting.reject` is the audit trail for a *deletion*: the
-row and its bytes are gone, and this entry is the only remaining
-record that the submission ever existed.
+was added in 0012 for anonymous photo submissions and nothing writes
+it any more — 0017 dropped the last unauthenticated write path. The
+value stays in the CHECK constraint because `audit_events` is
+append-only and historical rows carry it. If a genuinely anonymous
+action ever returns, use it rather than mislabelling it `'system'`.
 
 ## When you change a table
 

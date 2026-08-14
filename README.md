@@ -53,17 +53,10 @@ On boot, the server will:
 | `POST /v1/admin/events`                      | admin     | Create an event                                    |
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
-| `GET  /v1/sightings`                         | public    | Approved sightings (the map pins)                  |
-| `POST /v1/sightings`                         | **none**  | Multipart: photo + lat/lng → 202 pending           |
-| `GET  /v1/sightings/{id}/image`              | public    | Image bytes; approved only                         |
-| `GET  /v1/admin/sightings/pending`           | admin     | Moderation queue                                   |
-| `GET  /v1/admin/sightings/{id}/image`        | admin     | Preview an unapproved sighting                     |
-| `POST /v1/admin/sightings/{id}/approve`      | admin     | Publish it → 204, 409 if already reviewed          |
-| `POST /v1/admin/sightings/{id}/reject`       | admin     | Delete it (bytes included) → 204                   |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
-| `GET  /`                                     | public    | The sticker map — homepage (`web/index.html`), and fallback for unmatched paths |
-| `GET  /stickers`                             | public    | 308 → `/` (the map used to live here; printed stickers may carry the old path) |
+| `GET  /`                                     | public    | Homepage (`web/index.html`), and fallback for unmatched paths |
+| `GET  /stickers`                             | public    | 308 → `/` (kept because printed stickers carry the old path) |
 
 Auth is `Authorization: Bearer <token>`. Only `sha256(token)` is
 persisted server-side.
@@ -94,7 +87,6 @@ to grant camera permission.
 - **Verification is in-person.** Pending users sit on a 30-day TTL
   unless an admin scans their QR at a real event. No remote
   self-verification path exists.
-- **Exactly one unauthenticated write.** `POST /v1/sightings`
   accepts a photo plus coordinates from anyone. RLS pins
   the inserted row to `status = 'pending'` and hides it from every
   public read until an admin approves it, the content type is derived
@@ -119,9 +111,8 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
-consultation lifecycle, and the sighting moderation boundary
-(pending rows invisible, self-approval refused, approve race,
-non-image bytes rejected).
+consultation lifecycle, and the pairing boundary (silent decline,
+cooling period, peer name resolution across the RLS edge).
 
 Note the default `DATABASE_URL` in the test file points at port 5432;
 this project's Postgres is on **5434**, so pass it explicitly as
@@ -144,14 +135,13 @@ src/
   domain/admin/        — admin login
   domain/onboarding/   — register, challenge, verify, me
   domain/events/       — public list/get + admin list/create/count
-  domain/sightings/    — public sighting submit + moderation
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0012_stickers.sql    — (superseded by 0014)
-  0013_hosts_and_sites.sql — sites table (sticker.host superseded)
-  0014_sightings.sql   — sightings; drops the placed-sticker tables
-web/index.html         — the homepage: the map + submit flow (Leaflet
-                         vendored in web/js)
+  0002..0017           — applied in filename order; later files drop
+                         what earlier ones added (stickers → sightings
+                         → gone). Read them forward, not in isolation.
+web/                   — the marketing site (static; /scan is the
+                         advertisement reader, all in-browser)
 admin/index.html       — single-file admin tool
 docker-compose.yml     — Postgres (init script creates bf_app)
 docker/init/01-roles.sql

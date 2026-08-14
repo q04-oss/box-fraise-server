@@ -21,11 +21,9 @@ pub enum AppError {
     #[error("{0}")]
     BadRequest(String),
 
-    /// Used by the public sticker-photo submit path when a pin's
-    /// moderation queue is already full. Not a general rate limiter —
-    /// there is no rate-limiting middleware — just a backpressure
-    /// signal on the one endpoint an unauthenticated caller can write
-    /// through.
+    /// Backpressure on a specific action, not a general rate limiter —
+    /// there is no rate-limiting middleware. Currently raised by
+    /// `pairings` when a user has too many open requests.
     #[error("{0}")]
     TooManyRequests(String),
 

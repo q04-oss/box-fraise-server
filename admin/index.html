@@ -118,19 +118,6 @@
         <div class="muted">Refreshes every 5 seconds.</div>
       </fieldset>
 
-      <fieldset>
-        <legend>Sightings awaiting review</legend>
-        <div class="row">
-          <div class="muted" id="pending-meta">—</div>
-          <button class="secondary" id="refresh-pending">Refresh</button>
-        </div>
-        <p class="muted" style="margin-top: 10px;">
-          Submitted by the public from the front page and invisible on the map
-          until approved. Rejecting deletes the image.
-        </p>
-        <div id="pending-list"></div>
-        <div id="pending-msg"></div>
-      </fieldset>
 
 
 
@@ -194,7 +181,6 @@
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
-      loadPending();
     } else {
       $('login').classList.remove('hidden');
       $('dashboard').classList.add('hidden');
@@ -412,133 +398,6 @@
       setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
     }
   }
-
-  // ── Photo moderation ─────────────────────────────────────────────
-
-  // Object URLs for the previews currently on screen. An <img src> can
-  // carry no Authorization header, so each pending image is fetched
-  // through api-style auth and turned into a blob URL. They must be
-  // revoked on every re-render or the tool leaks a few hundred KB per
-  // refresh.
-  let previewUrls = [];
-
-  function releasePreviews() {
-    for (const u of previewUrls) URL.revokeObjectURL(u);
-    previewUrls = [];
-  }
-
-  async function authedImageUrl(path) {
-    const headers = {};
-    if (token) headers['Authorization'] = 'Bearer ' + token;
-    const r = await fetch('/v1' + path, { headers });
-    if (!r.ok) throw new Error('http ' + r.status);
-    const url = URL.createObjectURL(await r.blob());
-    previewUrls.push(url);
-    return url;
-  }
-
-  async function loadPending() {
-    const list = $('pending-list');
-    try {
-      const pending = await api('/admin/sightings/pending');
-      releasePreviews();
-      list.replaceChildren();
-      $('pending-meta').textContent =
-        pending.length ? `${pending.length} awaiting review` : 'queue empty';
-      for (const p of pending) list.append(renderPendingRow(p));
-    } catch (e) {
-      $('pending-meta').textContent = 'could not load queue';
-    }
-  }
-
-  function renderPendingRow(p) {
-    const wrap = document.createElement('div');
-    wrap.style.borderTop = '1px solid var(--rule)';
-    wrap.style.padding = '14px 0';
-
-    const img = document.createElement('img');
-    img.alt = 'Pending submission';
-    img.style.maxWidth = '100%';
-    img.style.maxHeight = '260px';
-    img.style.display = 'block';
-    img.style.background = '#eee';
-    img.style.borderRadius = '4px';
-    authedImageUrl(`/admin/sightings/${encodeURIComponent(p.id)}/image`)
-      .then(u => { img.src = u; })
-      .catch(() => { img.alt = 'preview unavailable'; });
-    wrap.append(img);
-
-    const meta = document.createElement('div');
-    meta.className = 'muted';
-    meta.style.margin = '8px 0';
-    const kb = Math.round(p.byte_size / 1024);
-    // Anonymous free text — textContent only.
-    meta.textContent = `${p.latitude.toFixed(5)}, ${p.longitude.toFixed(5)}`
-      + ` · ${p.content_type} · ${kb} KB · ${new Date(p.submitted_at).toLocaleString()}`;
-    wrap.append(meta);
-
-    // The coordinates are submitter-supplied, so check the pin lands
-    // somewhere plausible before approving it onto the public map.
-    const where = document.createElement('div');
-    where.style.margin = '4px 0';
-    const wl = document.createElement('a');
-    wl.href = `https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`;
-    wl.target = '_blank';
-    wl.rel = 'noopener noreferrer';
-    wl.textContent = 'Check this location →';
-    where.append(wl);
-    wrap.append(where);
-
-    if (p.caption) {
-      const cap = document.createElement('div');
-      cap.style.margin = '6px 0';
-      cap.textContent = `“${p.caption}”`;
-      wrap.append(cap);
-    }
-    if (p.submitter_name) {
-      const by = document.createElement('div');
-      by.className = 'muted';
-      by.textContent = `— ${p.submitter_name}`;
-      wrap.append(by);
-    }
-
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.style.marginTop = '10px';
-
-    const ok = document.createElement('button');
-    ok.textContent = 'Approve';
-    const no = document.createElement('button');
-    no.className = 'secondary';
-    no.textContent = 'Reject (deletes)';
-
-    ok.addEventListener('click', () => review(p, 'approve', [ok, no]));
-    no.addEventListener('click', () => {
-      if (!window.confirm('Reject and permanently delete this photo?')) return;
-      review(p, 'reject', [ok, no]);
-    });
-
-    row.append(ok, no);
-    wrap.append(row);
-    return wrap;
-  }
-
-  async function review(p, action, buttons) {
-    for (const b of buttons) b.disabled = true;
-    try {
-      await api(`/admin/sightings/${encodeURIComponent(p.id)}/${action}`, { method: 'POST' });
-      setMsg($('pending-msg'), 'ok',
-        `${action === 'approve' ? 'Approved' : 'Rejected'} · sighting`);
-      // Reload rather than splice the row out, so the queue reflects
-      // anything another admin reviewed in the meantime.
-      loadPending();
-    } catch (e) {
-      setMsg($('pending-msg'), 'err', escape(e.message));
-      for (const b of buttons) b.disabled = false;
-    }
-  }
-
-  $('refresh-pending').addEventListener('click', () => loadPending());
 
   // ── Boot ─────────────────────────────────────────────────────────
   render();
