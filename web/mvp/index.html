@@ -113,13 +113,14 @@
       position: absolute;
       inset: 0;
       background: #fff;
-      border: 1px solid #cfcfcf;
       border-radius: 22px;
       overflow: hidden;
-      box-shadow: 22px 26px 44px rgba(0,0,0,0.16);
+      box-shadow: inset 0 0 0 1px #cfcfcf, 22px 26px 44px rgba(0,0,0,0.16);
     }
     .bar {
+      position: relative;
       height: 52px;
+      background: #fff;
       border-bottom: 1px solid var(--rule);
       display: flex;
       align-items: center;
@@ -245,6 +246,97 @@
     }
     .amt-note { font-size: 14px; line-height: 1.45; color: var(--muted); }
 
+    /* ── The map demo ─────────────────────────────────────────────
+       Same phone, same 12s loop. The route draws while the runner
+       walks it, then two kilometres of it get bought.
+
+       The runner rides the identical path string the SVG draws, via
+       offset-path, so the pin cannot drift off the line. If you edit
+       the path, edit it in BOTH places. */
+    .mapart { position: absolute; inset: 0; }
+    .run-line {
+      fill: none;
+      stroke: var(--ink);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 100 100;
+      animation: draw 12s ease-in-out infinite;
+    }
+    @keyframes draw {
+      0%, 3%   { stroke-dashoffset: 100 }
+      45%, 90% { stroke-dashoffset: 0 }
+      95%,100% { stroke-dashoffset: 100 }
+    }
+    /* Each sold kilometre is the same path with a single dash showing
+       through at the right offset. */
+    .km {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 6;
+      stroke-linecap: butt;
+    }
+    .km-1 { stroke-dasharray: 10 100; stroke-dashoffset: -32; animation: segIn1 12s ease-out infinite; }
+    .km-2 { stroke-dasharray: 10 100; stroke-dashoffset: -64; animation: segIn2 12s ease-out infinite; }
+    @keyframes segIn1 { 0%, 50% { opacity: 0 } 57%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
+    @keyframes segIn2 { 0%, 68% { opacity: 0 } 75%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
+
+    .runner {
+      position: absolute;
+      top: 0; left: 0;
+      width: 15px; height: 15px;
+      margin: -7.5px 0 0 -7.5px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 3.5px #fff, 0 2px 6px rgba(0,0,0,0.3);
+      offset-path: path('M 38 448 L 38 372 L 96 372 L 96 288 L 168 288 L 168 214 L 110 214 L 110 140 L 202 140');
+      offset-rotate: 0deg;
+      animation: runAlong 12s ease-in-out infinite;
+    }
+    @keyframes runAlong {
+      0%, 3%   { offset-distance: 0%;   opacity: 0 }
+      6%       { offset-distance: 3%;   opacity: 1 }
+      45%, 92% { offset-distance: 100%; opacity: 1 }
+      100%     { offset-distance: 100%; opacity: 0 }
+    }
+
+    /* The receipts, stacked at the bottom of the screen. */
+    .chips { position: absolute; left: 12px; right: 12px; bottom: 14px; }
+    .chip {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 11px 12px;
+      margin-top: 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+    }
+    .chip-km {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--accent); flex: 0 0 auto;
+    }
+    .chip-who { font-size: 13px; line-height: 1.2; text-align: right; }
+    .chip-1 { animation: chipIn1 12s cubic-bezier(0.2,0.8,0.2,1) infinite; }
+    .chip-2 { animation: chipIn2 12s cubic-bezier(0.2,0.8,0.2,1) infinite; }
+    @keyframes chipIn1 {
+      0%, 52%  { opacity: 0; transform: translateY(10px) }
+      59%, 90% { opacity: 1; transform: none }
+      95%,100% { opacity: 0; transform: translateY(10px) }
+    }
+    @keyframes chipIn2 {
+      0%, 70%  { opacity: 0; transform: translateY(10px) }
+      77%, 90% { opacity: 1; transform: none }
+      95%,100% { opacity: 0; transform: translateY(10px) }
+    }
+    /* The distance only means anything once the line is drawn. */
+    .dist { animation: distIn 12s ease-out infinite; color: var(--ink); }
+    @keyframes distIn { 0%, 42% { opacity: 0 } 48%, 92% { opacity: 1 } 96%, 100% { opacity: 0 } }
+
     figcaption {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
@@ -256,15 +348,19 @@
       line-height: 1.7;
     }
 
-    /* Motion is the whole point of this figure, so with reduced
-       motion preferred it holds the finished state instead: the
-       payout landed, the balance already up. */
+    /* Motion is the whole point of these figures, so with reduced
+       motion preferred they hold the finished state instead: the
+       payout landed and the balance up, the route drawn and its
+       kilometres sold. */
     @media (prefers-reduced-motion: reduce) {
-      .prism, .r1, .r2, .r3, .card.tap, .sheet, .bal .a, .bal .b { animation: none; }
+      .prism, .r1, .r2, .r3, .card.tap, .sheet, .bal .a, .bal .b,
+      .run-line, .km-1, .km-2, .runner, .chip-1, .chip-2, .dist { animation: none; }
       .bal .a { opacity: 0; }
       .bal .b { opacity: 1; }
       .card.tap { background: #fdf2f2; border-color: var(--accent); }
       .finger { display: none; }
+      .run-line { stroke-dashoffset: 0; }
+      .runner { offset-distance: 100%; }
     }
   </style>
 </head>
@@ -339,6 +435,64 @@
 
         <figcaption>Businesses ask. You decide. You are paid when you say yes.
         The businesses shown are invented.</figcaption>
+      </figure>
+
+      <p>After that, the app. A map, and a runner is a pin. The run is geotagged, so a
+      business can buy a kilometre of it.</p>
+
+      <figure class="demo">
+        <div class="stage" aria-hidden="true">
+          <div class="prism">
+            <div class="screen">
+              <svg class="mapart" width="252" height="496" viewBox="0 0 252 496"
+                   xmlns="http://www.w3.org/2000/svg">
+                <rect width="252" height="496" fill="#f2f1ed"/>
+                <rect x="118" y="300" width="86" height="74" fill="#e6ede2"/>
+                <rect x="14" y="150" width="66" height="52" fill="#e6ede2"/>
+                <g stroke="#ffffff" stroke-width="9" stroke-linecap="round">
+                  <path d="M 38 96 L 38 470"/>
+                  <path d="M 96 96 L 96 470"/>
+                  <path d="M 168 96 L 168 470"/>
+                  <path d="M 110 96 L 110 470"/>
+                  <path d="M 202 96 L 202 470"/>
+                  <path d="M 8 140 L 244 140"/>
+                  <path d="M 8 214 L 244 214"/>
+                  <path d="M 8 288 L 244 288"/>
+                  <path d="M 8 372 L 244 372"/>
+                  <path d="M 8 448 L 244 448"/>
+                </g>
+                <!-- Same path string as .runner's offset-path. -->
+                <path class="run-line" pathLength="100"
+                      d="M 38 448 L 38 372 L 96 372 L 96 288 L 168 288 L 168 214 L 110 214 L 110 140 L 202 140"/>
+                <path class="km km-1" pathLength="100"
+                      d="M 38 448 L 38 372 L 96 372 L 96 288 L 168 288 L 168 214 L 110 214 L 110 140 L 202 140"/>
+                <path class="km km-2" pathLength="100"
+                      d="M 38 448 L 38 372 L 96 372 L 96 288 L 168 288 L 168 214 L 110 214 L 110 140 L 202 140"/>
+              </svg>
+
+              <div class="bar">
+                <span>Saturday run</span>
+                <span class="dist">5.2 km</span>
+              </div>
+
+              <div class="runner"></div>
+
+              <div class="chips">
+                <div class="chip chip-1">
+                  <span class="chip-km">km 2 · sold</span>
+                  <span class="chip-who">Ferngrove Bakery</span>
+                </div>
+                <div class="chip chip-2">
+                  <span class="chip-km">km 4 · sold</span>
+                  <span class="chip-who">Norlight Coffee</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <figcaption>The run is the advertising space, and the runner owns it.
+        This app does not exist yet.</figcaption>
       </figure>
     </div>
   </main>
