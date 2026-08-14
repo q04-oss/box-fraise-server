@@ -39,23 +39,23 @@
     }
     .backlink:hover { color: var(--ink); }
 
-    /* Same treatment as the homepage statement: runs the width of the
-       page rather than sitting in a column. */
+    /* Deliberately smaller than the homepage statement — this page
+       states a condition, it does not open the magazine. */
     h1 {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(38px, 9vw, 108px);
-      letter-spacing: -0.035em;
-      line-height: 0.98;
-      margin: 0 0 32px;
+      font-size: clamp(28px, 4.5vw, 52px);
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      margin: 0 0 28px;
       text-wrap: balance;
     }
     p {
       max-width: 60ch;
-      font-size: clamp(19px, 2.5vw, 24px);
-      line-height: 1.5;
-      margin: 0;
+      font-size: 18px;
+      line-height: 1.65;
+      margin: 0 0 18px;
     }
     a.inline {
       color: var(--ink); text-decoration: underline;
@@ -71,8 +71,12 @@
 
     <h1>Without community, nothing can be built.</h1>
 
-    <p>The <a class="inline" href="/scan">scannable advertisement</a> is functioning and
-    out in public.</p>
+    <p>The core technology of the platform is the
+    <a class="inline" href="/scan">scannable advertisement</a>, and it is already
+    functioning in the wild.</p>
+
+    <p>There is no code printed on it. You point your camera at the whole page and the
+    platform recognises it.</p>
   </main>
 </body>
 </html>
