@@ -73,6 +73,14 @@
     }
     .how p:last-child { margin-bottom: 0; }
     .note { font-size: 15px; color: var(--muted); margin-top: 26px; }
+    a.inline {
+      color: var(--ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -81,7 +89,7 @@
 
     <h1>Donations</h1>
 
-    <p>Two ways to put money into Box Fraise. Both in person, both cash.</p>
+    <p>Two ways to put money into Box Fraise. Both in person and both cash, at the <a class="inline" href="/run">run club</a> on Saturday mornings.</p>
 
     <div class="how">
       <p><strong>Buy a strawberry sticker.</strong> $5. Put it wherever you like.</p>
