@@ -169,6 +169,42 @@
     }
     .dept-go:hover { border-color: var(--accent); }
 
+    /* An actual page of the magazine, shown rather than described.
+       Capped narrow: it is an example, not the hero. */
+    .page { margin: 0 0 20px; }
+    .page img {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+      border: 1px solid var(--rule);
+    }
+
+    /* The one red thing on the page, because it is the one thing the
+       page wants you to do. */
+    a.scan {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      padding: 17px 28px;
+      transition: opacity 120ms ease;
+    }
+    a.scan:hover { opacity: 0.85; }
+    a.scan .lens {
+      width: 13px; height: 13px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
     @media (max-width: 640px) {
       .dept { grid-template-columns: 1fr; gap: 12px; padding-top: 26px; }
       .dept-label { padding-top: 0; }
@@ -406,10 +442,12 @@
     <section class="dept">
       <div class="dept-label">the pages</div>
       <div class="dept-body">
-        <h2>Scan an advertisement</h2>
-        <p>Every advertisement is a page of the magazine, and there is no code printed on
-        it. The whole page is the thing you scan. That is the part that is new.</p>
-        <a class="dept-go" href="/scan">Open the camera →</a>
+        <figure class="page">
+          <img src="/ads/run-club.jpg" width="360" height="482" loading="lazy"
+               alt="Box Fraise advertisement — a portrait, with the line: Meet Austin. He started a run club in Edmonton.">
+        </figure>
+        <p>This is a page. Find one in the world and point your camera at it.</p>
+        <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan the ad</a>
       </div>
     </section>
 
@@ -420,7 +458,7 @@
         <p>The question at the top of this page is not rhetorical, and the running is not
         a metaphor. Every Saturday it goes along Whyte Avenue, out to the Canadian Pacific
         railyard and back — across the community the question is about. The people who
-        turn up are the answer.</p>
+        turn up are the answer. Stickers are $5 there.</p>
         <a class="dept-go" href="/run">Where, and why →</a>
       </div>
     </section>
@@ -429,8 +467,10 @@
       <div class="dept-label">in the wild</div>
       <div class="dept-body">
         <h2>The sticker map</h2>
-        <p>Strawberry stickers are the same advertising, off the page. $5 at the run club,
-        and they end up wherever people put them. Spot one and put it on the map.</p>
+        <p>The stickers leave with whoever bought them at the run, and end up wherever
+        those people go. Somebody spots one, photographs it, and it lands here — which is
+        how the next person finds the run. The advertising is the community advertising
+        itself, and the map is what that looks like.</p>
         <button class="submit" id="open-add" type="button">I saw a sticker</button>
       </div>
     </section>
