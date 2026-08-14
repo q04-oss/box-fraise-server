@@ -99,10 +99,8 @@
     .next-event:hover .next-name { color: var(--accent); }
     .next-event:hover .next-arrow { color: var(--ink); }
 
-    /* The page is one publication, not three products. A cover line,
-       a standfirst that says what the thing is, then departments —
-       the same furniture a magazine uses to make unrelated pages read
-       as one issue. */
+    /* A cover line the width of the page, then one column of prose
+       beneath it. Magazine furniture, minus the section dividers. */
     .coverline {
       font-family: 'Newsreader', serif;
       font-style: italic;
@@ -118,45 +116,20 @@
          the page. Wrapping is left to the measure itself. */
       text-wrap: balance;
     }
-    .standfirst {
-      font-size: clamp(18px, 2.4vw, 22px);
-      line-height: 1.55;
-      margin: 0 0 44px;
-      max-width: 56ch;
+    /* One column of prose under a full-width cover line. The page
+       reads top to bottom as a single statement rather than a set of
+       sections, so there are no labels and no sub-headings to break
+       it up — the measure and the type sizes carry the hierarchy. */
+    .intro { max-width: 60ch; margin: 0 0 40px; }
+    .intro p { font-size: 17.5px; line-height: 1.65; margin: 0 0 20px; color: var(--muted); }
+    .intro .standfirst {
+      font-size: clamp(19px, 2.5vw, 24px);
+      line-height: 1.5;
       color: var(--ink);
+      margin: 0 0 26px;
+      max-width: none;
     }
-
-    /* Department: a label in the margin, content beside it. The label
-       column is what ties the sections together — each one announces
-       which part of the magazine you are in. */
-    .dept {
-      display: grid;
-      grid-template-columns: 150px 1fr;
-      gap: 28px;
-      border-top: 1px solid var(--rule);
-      padding: 30px 0 6px;
-    }
-    .dept:first-of-type { border-top: 2px solid var(--ink); }
-    .dept-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: var(--accent);
-      padding-top: 8px;
-    }
-    .dept-body { max-width: 58ch; }
-    .dept-body h2 {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-weight: 500;
-      font-size: clamp(24px, 3.6vw, 31px);
-      letter-spacing: -0.02em;
-      line-height: 1.15;
-      margin: 0 0 12px;
-    }
-    .dept-body p { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; }
-    .dept-go {
+    .intro a.inline {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px;
       text-transform: uppercase;
@@ -164,10 +137,12 @@
       color: var(--ink);
       text-decoration: none;
       border-bottom: 1px solid var(--rule);
-      padding-bottom: 3px;
+      padding-bottom: 2px;
+      white-space: nowrap;
       transition: border-color 120ms ease;
     }
-    .dept-go:hover { border-color: var(--accent); }
+    .intro a.inline:hover { border-color: var(--accent); }
+
 
     /* The two camera actions, side by side: scan an advertisement, or
        report a sticker. Same height and weight so they read as a
@@ -198,11 +173,6 @@
       border-radius: 50%;
       display: inline-block;
       flex: 0 0 auto;
-    }
-
-    @media (max-width: 640px) {
-      .dept { grid-template-columns: 1fr; gap: 12px; padding-top: 26px; }
-      .dept-label { padding-top: 0; }
     }
 
     /* ── Buttons ─────────────────────────────────────────────────── */
@@ -424,45 +394,31 @@
   <main>
     <p class="coverline">Do you have what it takes to run this country?</p>
 
-    <p class="standfirst">Playboy was the most advanced advertising machine ever built.
-    Box Fraise is the next generation of it — a magazine whose pages are advertisements
-    you scan, and whose question is answered by running across the community it is
-    asking about.</p>
+    <div class="intro">
+      <p class="standfirst">Playboy was the most advanced advertising machine ever built.
+      Box Fraise is the next generation of it — a magazine whose question is answered by
+      running across the community it is asking about.</p>
 
-    <a class="next-event" id="next-event" href="/events">
-      <span class="next-label">Next · <span id="next-date"></span></span>
-      <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
-    </a>
+      <a class="next-event" id="next-event" href="/events">
+        <span class="next-label">Next · <span id="next-date"></span></span>
+        <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
+      </a>
 
-    <section class="dept">
-      <div class="dept-label">the question</div>
-      <div class="dept-body">
-        <h2>Run club, Saturdays at 8</h2>
-        <p>The question at the top of this page is not rhetorical, and the running is not
-        a metaphor. Every Saturday it goes along Whyte Avenue, out to the Canadian Pacific
-        railyard and back — across the community the question is about. The people who
-        turn up are the answer. Stickers are $5 there.</p>
-        <a class="dept-go" href="/run">Where, and why →</a>
+      <p>That happens every Saturday at 8 on Whyte Avenue — out to the Canadian Pacific
+      railyard and back, across the place the question is about. The running is not a
+      metaphor and the question is not rhetorical: the people who turn up are the answer.
+      Stickers are $5 there. <a class="inline" href="/run">Where, and why →</a></p>
+
+      <p>Everything the magazine makes goes out into the world for you to point a camera
+      at. An advertisement is a page of it, scanned whole, with no code printed on it. A
+      sticker is a pin on the map below — which is how the next person finds the run. The
+      advertising is the community advertising itself.</p>
+
+      <div class="actions">
+        <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan an ad</a>
+        <button class="submit" id="open-add" type="button">I saw a sticker</button>
       </div>
-    </section>
-
-    <section class="dept" aria-label="Sticker map">
-      <div class="dept-label">in the wild</div>
-      <div class="dept-body">
-        <h2>Point your camera at it</h2>
-        <p>Box Fraise puts two things into the world: advertisements, and strawberry
-        stickers. Both are for pointing a camera at. An advertisement is a page of the
-        magazine — there is no code printed on it, the whole page is what you scan. A
-        sticker goes on the map below, which is how the next person finds the run.</p>
-        <p>The stickers leave with whoever bought one at the run and end up wherever those
-        people go. So the advertising is the community advertising itself, and the map is
-        what that looks like.</p>
-        <div class="actions">
-          <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan an ad</a>
-          <button class="submit" id="open-add" type="button">I saw a sticker</button>
-        </div>
-      </div>
-    </section>
+    </div>
 
     <div id="map" role="application" aria-label="Map of sticker sightings and events"></div>
     <div class="map-key">
