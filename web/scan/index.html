@@ -85,6 +85,15 @@
        "keep going" rather than "broken". */
     .meter { width: min(240px, 70vw); height: 2px; background: rgba(255,255,255,0.25); margin: 12px auto 0; }
     .meter > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width 180ms ease; }
+    /* The live score against the threshold. On screen because an
+       approximate matcher that fails silently is impossible to tune —
+       this is the number to report when it does not fire. */
+    .readout {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; letter-spacing: 0.14em;
+      color: rgba(255,255,255,0.55);
+      margin-top: 8px; min-height: 12px;
+    }
     .escape {
       display: inline-block; margin-top: 18px;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -130,9 +139,10 @@
     </div>
 
     <div class="foot">
-      <p class="instruction" id="instruction">Fill the frame with the ad.</p>
+      <p class="instruction" id="instruction">Line the ad up with the box — edge to edge.</p>
       <div class="status" id="status">starting the camera…</div>
       <div class="meter"><i id="meter"></i></div>
+      <div class="readout" id="readout"></div>
       <a class="escape" href="/run">Can't scan? Go to the run club →</a>
     </div>
   </div>
@@ -167,11 +177,15 @@
     // Two agreeing frames in a row, so a single fluke does not fire.
     const CONFIRMATIONS = 2;
     const INTERVAL_MS = 220;
+    // Sizes to try around the guide rectangle, so imperfect framing
+    // still lands on the picture rather than on the wall behind it.
+    const CROP_SCALES = [0.78, 0.9, 1, 1.12, 1.3];
 
     const video   = document.getElementById('cam');
     const guide   = document.getElementById('guide');
     const statusEl = document.getElementById('status');
     const meter   = document.getElementById('meter');
+    const readout = document.getElementById('readout');
     const hint    = document.getElementById('hint');
 
     let referenceHash = null;
@@ -220,9 +234,9 @@
 
     function tick() {
       if (done || !video.videoWidth) return;
-      const hash = hashGuideRegion();
-      if (!hash) return;
-      const d = hamming(hash, referenceHash);
+      const d = bestDistance();
+      if (d === null) return;
+      readout.textContent = d + ' / ' + MAX_DISTANCE;
 
       // Show the working: how close, as a bar.
       const closeness = Math.max(0, Math.min(1, 1 - d / (BITS * 0.5)));
@@ -253,14 +267,36 @@
     }
 
     /**
-     * Fingerprint the part of the video inside the framing guide.
+     * Try the guide rectangle and a few sizes around it, and keep the
+     * best score.
+     *
+     * Nobody frames a poster exactly. Without this, an ad that sits a
+     * little inside the guide — or overflows it slightly — is hashed
+     * together with whatever surrounds it, and the fingerprint is of
+     * the wall rather than the picture. Sampling a spread of scales
+     * makes near-enough framing good enough.
+     */
+    function bestDistance() {
+      let best = null;
+      for (const scale of CROP_SCALES) {
+        const hash = hashGuideRegion(scale);
+        if (!hash) continue;
+        const d = hamming(hash, referenceHash);
+        if (best === null || d < best) best = d;
+      }
+      return best;
+    }
+
+    /**
+     * Fingerprint the part of the video inside the framing guide,
+     * optionally grown or shrunk about its centre.
      *
      * The guide is drawn over a `object-fit: cover` video, so the
      * visible feed is a centre-crop of the real frame. Both are mapped
      * back to source pixels here, otherwise the region sampled is not
      * the region the person is aiming with.
      */
-    function hashGuideRegion() {
+    function hashGuideRegion(cropScale) {
       const vw = video.videoWidth, vh = video.videoHeight;
       const rect = guide.getBoundingClientRect();
       const stageW = window.innerWidth, stageH = window.innerHeight;
@@ -271,10 +307,23 @@
       const dispW = vw * scale, dispH = vh * scale;
       const offX = (dispW - stageW) / 2, offY = (dispH - stageH) / 2;
 
-      const sx = (rect.left + offX) / scale;
-      const sy = (rect.top + offY) / scale;
-      const sw = rect.width / scale;
-      const sh = rect.height / scale;
+      let sx = (rect.left + offX) / scale;
+      let sy = (rect.top + offY) / scale;
+      let sw = rect.width / scale;
+      let sh = rect.height / scale;
+
+      // Grow or shrink about the centre.
+      const k = cropScale || 1;
+      const cx = sx + sw / 2, cy = sy + sh / 2;
+      sw *= k; sh *= k;
+      sx = cx - sw / 2; sy = cy - sh / 2;
+
+      // Clamp inside the frame, or drawImage samples transparent
+      // pixels at the edges and poisons the fingerprint.
+      sx = Math.max(0, Math.min(sx, vw - 1));
+      sy = Math.max(0, Math.min(sy, vh - 1));
+      sw = Math.min(sw, vw - sx);
+      sh = Math.min(sh, vh - sy);
       if (sw < 8 || sh < 8) return null;
 
       wctx.drawImage(video, sx, sy, sw, sh, 0, 0, HASH_W, HASH_H);

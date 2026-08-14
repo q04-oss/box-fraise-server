@@ -104,20 +104,61 @@
       max-width: 48ch;
     }
 
-    /* The hero. The ad tells people to scan it "at fraise.box", so
-       the first thing on the page has to be the way to do that —
-       before the map, before anything. */
-    .hero { margin: 0 0 34px; max-width: 52ch; }
-    .hero h2 {
+    /* The tagline owns the top of the page. Everything else is a
+       band underneath it. */
+    .tagline {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(30px, 6vw, 46px);
+      font-size: clamp(34px, 7.5vw, 68px);
+      letter-spacing: -0.03em;
+      line-height: 1.02;
+      margin: 0 0 30px;
+      max-width: 15ch;
+    }
+
+    /* The page does three unrelated things — scan an ad, run on a
+       Saturday, map stickers. Rather than blend them, each gets its
+       own band with a heavy rule above it, so it is obvious where one
+       ends and the next begins. */
+    .band {
+      border-top: 2px solid var(--ink);
+      padding-top: 26px;
+      margin-top: 46px;
+    }
+    .band:first-of-type { margin-top: 38px; }
+    .band-no {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .band h2 {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      font-size: clamp(27px, 5vw, 38px);
       letter-spacing: -0.02em;
-      line-height: 1.08;
+      line-height: 1.1;
       margin: 0 0 14px;
     }
-    .hero p { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 22px; }
+    .band-lede { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; max-width: 52ch; }
+    .band-body { font-size: 17px; line-height: 1.65; margin: 0 0 18px; max-width: 52ch; }
+    .band-link {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 2px;
+      transition: border-color 120ms ease;
+    }
+    .band-link:hover { border-color: var(--accent); }
+    .band .submit { margin-top: 4px; }
     a.scan {
       display: inline-flex;
       align-items: center;
@@ -439,39 +480,41 @@
   </header>
 
   <main>
+    <p class="tagline">Do you have what it takes to run this country?</p>
+
     <a class="next-event" id="next-event" href="/events">
       <span class="next-label">Next · <span id="next-date"></span></span>
       <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
     </a>
 
-    <section class="hero" aria-label="Scan the ad">
+    <section class="band" aria-label="Scan the ad">
+      <div class="band-no">one</div>
       <h2>Seen the ad?</h2>
-      <p>Point your camera at it. No code to find — the whole advertisement is the thing you scan.</p>
+      <p class="band-lede">Point your camera at it. There is no code to find — the whole
+      advertisement is the thing you scan.</p>
       <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan the ad</a>
     </section>
 
-    <section class="runclub" aria-label="Run club">
-      <div class="runclub-label">every saturday</div>
-      <h2>Run club at Coffee Bureau</h2>
-      <p>12316 102 Avenue, Edmonton. You do not need to be fast and you do not
-      need to know anyone.</p>
-      <div class="times">
-        7:40 — check in, outside<br>
-        8:00 — the cafe opens<br>
-        8:30 — the run begins
-      </div>
-      <p style="margin-top:12px;"><a href="/run">More about the run club →</a></p>
+    <section class="band" aria-label="Run club">
+      <div class="band-no">two</div>
+      <h2>Run club, Saturdays at 8</h2>
+      <p class="band-lede">On Whyte Avenue. You do not need to be fast and you do not need
+      to know anyone.</p>
+      <p class="band-body">The run goes along Whyte, out to the Canadian Pacific railyard,
+      and back to where it started. It is an argument for closing Whyte Avenue to cars —
+      and the railyard is the reason that has not happened.</p>
+      <p><a class="band-link" href="/run">Why we run at the railyard →</a></p>
     </section>
 
-    <p class="rules">
-      Strawberry stickers are sold at Box Fraise events for $5, and people put
-      them wherever they like. If you spot one out in the world, photograph it
-      and add it to the map.
-    </p>
+    <section class="band" aria-label="Sticker map">
+      <div class="band-no">three</div>
+      <h2>The sticker map</h2>
+      <p class="band-lede">Strawberry stickers are sold at Box Fraise events for $5, and
+      people put them wherever they like. Spot one and put it on the map.</p>
 
-    <p style="margin: 0 0 30px;">
-      <button class="submit" id="open-add" type="button">I saw a sticker</button>
-    </p>
+      <p style="margin: 0 0 30px;">
+        <button class="submit" id="open-add" type="button">I saw a sticker</button>
+      </p>
 
     <div id="map" role="application" aria-label="Map of sticker sightings, strawberry sites and events"></div>
     <div class="map-key">
@@ -509,7 +552,8 @@
     <section class="section" id="recent"></section>
     <section class="section" id="sites"></section>
 
-    <section id="detail" class="hidden" aria-live="polite"></section>
+      <section id="detail" class="hidden" aria-live="polite"></section>
+    </section>
   </main>
 
   <!-- Camera view. Lives outside <main> because it covers the whole
