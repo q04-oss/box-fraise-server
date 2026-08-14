@@ -115,18 +115,88 @@
     }
     .icon.third.revoked .glyph { opacity: 0.4; }
 
-    /* A third-party window: what it may pull, what it has pulled,
-       what that paid you, and the switch. */
+    /* A third-party window shows the product first and the metering
+       underneath, the way an operating system would. Revoke it and
+       the product degrades — which is the trade made visible. */
     .pw-what { font-size: 14px; color: var(--muted); }
+    .appui.hide { display: none; }
+    .degraded {
+      font-size: 13px; line-height: 1.5; color: var(--muted);
+      background: #faf9f7; border: 1px dashed var(--rule);
+      border-radius: 8px; padding: 12px;
+    }
+    .degraded.hide { display: none; }
+    .pw-meta { border-top: 1px solid var(--rule); margin-top: 14px; padding-top: 12px; }
     .pw-stats {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 12px;
     }
     .pw-stats .num {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 18px; font-variant-numeric: tabular-nums;
     }
     .pw-stats .num.accent { color: var(--accent); }
+
+    /* weather.app */
+    .wx-place {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted);
+    }
+    .wx-temp { font-style: italic; font-size: 40px; line-height: 1; margin: 4px 0 2px; }
+    .wx-cond { font-size: 14px; color: var(--muted); }
+    .wx-days { display: flex; gap: 8px; margin-top: 12px; }
+    .wx-day {
+      flex: 1; text-align: center;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+    }
+    .wx-day b { display: block; font-family: 'Newsreader', serif; font-size: 15px;
+                font-weight: 500; color: var(--ink); margin-top: 4px; }
+
+    /* transit.app */
+    .tr-row {
+      display: flex; align-items: baseline; gap: 10px;
+      border-bottom: 1px solid var(--rule); padding: 9px 0;
+    }
+    .tr-no {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; color: var(--accent); width: 30px; flex: 0 0 auto;
+    }
+    .tr-to { font-size: 13.5px; flex: 1; }
+    .tr-when {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; flex: 0 0 auto;
+    }
+
+    /* ticketing.app */
+    .tk { border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+          border-radius: 8px; padding: 12px 13px; }
+    .tk-name { font-size: 15px; line-height: 1.2; }
+    .tk-when { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+    .tk-seat {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--accent); margin-top: 9px;
+    }
+
+    /* dating.app */
+    .dt { display: flex; align-items: center; gap: 12px; }
+    .dt-av { width: 46px; height: 46px; border-radius: 50%; background: #efeeea; flex: 0 0 auto; }
+    .dt-nm { font-size: 15px; }
+    .dt-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+    /* radio.app */
+    .rd { display: flex; align-items: center; gap: 12px; }
+    .rd-eq { display: flex; align-items: flex-end; gap: 2px; height: 24px; flex: 0 0 auto; }
+    .rd-eq i { width: 3px; background: var(--accent); display: block; animation: eq 1.1s ease-in-out infinite; }
+    .rd-eq i:nth-child(2) { animation-delay: .15s }
+    .rd-eq i:nth-child(3) { animation-delay: .3s }
+    .rd-eq i:nth-child(4) { animation-delay: .45s }
+    .rd-eq i:nth-child(5) { animation-delay: .6s }
+    @keyframes eq { 0%, 100% { height: 5px } 50% { height: 22px } }
+    .rd-nm { font-size: 14.5px; }
+    .rd-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+    @media (prefers-reduced-motion: reduce) { .rd-eq i { animation: none; height: 13px } }
 
     /* ── Windows ─────────────────────────────────────────────────── */
     .win {
@@ -344,19 +414,20 @@
     <section class="win" id="win-activity" style="left:300px; top:74px; width:430px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Activity Monitor</span></header>
       <div class="body">
-        <p class="kv">Processes pulling on box fraise</p>
+        <p class="kv">Products pulling on you</p>
         <table class="procs">
           <thead><tr><th>Process</th><th class="r">Pulls</th><th class="r">Paid to you</th></tr></thead>
           <tbody id="proclist"></tbody>
         </table>
         <div class="totals">
-          <div class="tot wide"><p class="kv">Server pulls today</p><div class="num" id="pulls">0</div></div>
+          <div class="tot wide"><p class="kv">Pulls about you today</p><div class="num" id="pulls">0</div></div>
           <div class="tot you"><p class="kv">Paid to you &middot; 70%</p><div class="num" id="paid">$0.00</div></div>
           <div class="tot cut"><p class="kv">Box Fraise cut &middot; 30%</p><div class="num" id="cut">$0.00</div></div>
         </div>
-        <p class="note">These are products other companies built. Each one pulls only
-        what you granted it, and every pull pays you. Box Fraise keeps thirty percent
-        for holding the identity and the consent &mdash; <a href="#" data-open="win-perms">revoke
+        <p class="note">These are products other companies built, doing their own job. Each
+        pulls only what you granted, only when it needs the answer, and every pull
+        pays you. Box Fraise keeps thirty percent for holding the identity and the
+        consent &mdash; <a href="#" data-open="win-perms">revoke
         any of it</a> and both stop.</p>
       </div>
     </section>
@@ -486,21 +557,64 @@
     const nf = new Intl.NumberFormat('en-CA');
 
     // ── Products other companies built ─────────────────────────────
-    // These run ON box fraise. Each pulls only what it was granted,
-    // and every pull pays the user 70% and box fraise 30%.
-    const RATE_PER_PULL = 0.01;
+    // These run ON box fraise and do their actual job; the pull is
+    // incidental to using them. Counts are pulls about YOU today, so
+    // they are small — a few dozen, not a few hundred thousand. One
+    // pull happens when the app needs the answer, not on a clock.
+    const RATE_PER_PULL = 0.05;
     const USER_SHARE    = 0.70;
     const PROCS = [
-      { id: 'weather',   name: 'weather.app',   glyph: '☂',
-        what: 'Verified adult · postal code',     base: 41200, rate: 26, on: true },
-      { id: 'transit',   name: 'transit.app',   glyph: '⇄',
-        what: 'Location while running',           base: 33850, rate: 19, on: true },
+      { id: 'weather', name: 'weather.app', glyph: '☂',
+        what: 'Verified adult · postal code', base: 34, chance: 0.05,
+        on: true,
+        ui: '<div class="wx-place">Edmonton · T6E</div>' +
+            '<div class="wx-temp">14°</div>' +
+            '<div class="wx-cond">Cloudy, clearing by eight</div>' +
+            '<div class="wx-days">' +
+              '<div class="wx-day">Sat<b>17°</b></div>' +
+              '<div class="wx-day">Sun<b>19°</b></div>' +
+              '<div class="wx-day">Mon<b>15°</b></div>' +
+              '<div class="wx-day">Tue<b>12°</b></div>' +
+            '</div>',
+        off: 'No postal code, so no forecast. Type one in every time instead.' },
+
+      { id: 'transit', name: 'transit.app', glyph: '⇄',
+        what: 'Location while running', base: 22, chance: 0.04,
+        on: true,
+        ui: '<div class="tr-row"><span class="tr-no">9</span><span class="tr-to">Southgate</span><span class="tr-when">4 min</span></div>' +
+            '<div class="tr-row"><span class="tr-no">4</span><span class="tr-to">Capilano</span><span class="tr-when">11 min</span></div>' +
+            '<div class="tr-row"><span class="tr-no">106</span><span class="tr-to">University</span><span class="tr-when">18 min</span></div>',
+        off: 'It cannot tell where you are, so it cannot tell you what is coming.' },
+
       { id: 'ticketing', name: 'ticketing.app', glyph: '▢',
-        what: 'Verified adult',                   base: 27410, rate: 11, on: true },
-      { id: 'dating',    name: 'dating.app',    glyph: '♡',
-        what: 'Verified in person · contactable', base: 18930, rate:  7, on: true },
-      { id: 'radio',     name: 'radio.app',     glyph: '≋',
-        what: 'Nothing but the count',            base:  7060, rate:  3, on: true },
+        what: 'Verified adult', base: 3, chance: 0.01,
+        on: true,
+        ui: '<div class="tk">' +
+              '<div class="tk-name">Princess Theatre</div>' +
+              '<div class="tk-when">Friday · 20:00 · late show</div>' +
+              '<div class="tk-seat">Row F · 12–13 · age confirmed</div>' +
+            '</div>',
+        off: 'It cannot confirm you are old enough, so it will not sell you the seat.' },
+
+      { id: 'dating', name: 'dating.app', glyph: '♡',
+        what: 'Verified in person · contactable', base: 11, chance: 0.03,
+        on: true,
+        ui: '<div class="dt"><div class="dt-av"></div><div>' +
+              '<div class="dt-nm">Sam</div>' +
+              '<div class="dt-sub">Verified in person, at a run club.<br>' +
+              'Three days before the channel opens.</div>' +
+            '</div></div>',
+        off: 'Everyone here was verified in a room. Without that it has nobody to show you.' },
+
+      { id: 'radio', name: 'radio.app', glyph: '≋',
+        what: 'Nothing but the count', base: 2, chance: 0.02,
+        on: true,
+        ui: '<div class="rd">' +
+              '<div class="rd-eq"><i></i><i></i><i></i><i></i><i></i></div>' +
+              '<div><div class="rd-nm">CJSR · overnight</div>' +
+              '<div class="rd-sub">1,204 listening</div></div>' +
+            '</div>',
+        off: 'Still playing. It only ever counted listeners, so it barely notices.' },
     ];
 
     const APPS = [
@@ -526,21 +640,26 @@
         '<header class="titlebar"><button class="dot close" aria-label="Close"></button>' +
         '<span class="title"></span></header>' +
         '<div class="body">' +
-          '<p class="kv">Built by another company &middot; runs on box fraise</p>' +
-          '<p class="pw-what"></p>' +
-          '<div class="pw-stats">' +
-            '<div><p class="kv">Pulls</p><div class="num" data-pulls></div></div>' +
-            '<div><p class="kv">Paid to you</p><div class="num accent" data-paid></div></div>' +
+          '<div class="appui">' + p.ui + '</div>' +
+          '<div class="degraded hide"></div>' +
+          '<div class="pw-meta">' +
+            '<p class="pw-what"></p>' +
+            '<div class="pw-stats">' +
+              '<div><p class="kv">Pulls today</p><div class="num" data-pulls></div></div>' +
+              '<div><p class="kv">Paid to you</p><div class="num accent" data-paid></div></div>' +
+            '</div>' +
+            '<button class="tog" data-on="1">Granted</button>' +
           '</div>' +
-          '<button class="tog" data-on="1">Granted</button>' +
-          '<p class="note" style="margin-top:12px">It never holds who you are. It asks, and box fraise answers only this much.</p>' +
         '</div>';
-      w.querySelector('.title').textContent   = p.name;
-      w.querySelector('.pw-what').textContent = 'May pull: ' + p.what;
+      w.querySelector('.title').textContent     = p.name;
+      w.querySelector('.pw-what').textContent   = 'May pull: ' + p.what;
+      w.querySelector('.degraded').textContent  = p.off;
       desktop.appendChild(w);
-      p.win    = w;
-      p.wPulls = w.querySelector('[data-pulls]');
-      p.wPaid  = w.querySelector('[data-paid]');
+      p.win     = w;
+      p.wUi     = w.querySelector('.appui');
+      p.wOff    = w.querySelector('.degraded');
+      p.wPulls  = w.querySelector('[data-pulls]');
+      p.wPaid   = w.querySelector('[data-paid]');
       p.toggles = [w.querySelector('.tog')];
     });
 
@@ -643,6 +762,10 @@
       });
       p.row.classList.toggle('off', !on);
       if (p.icon) p.icon.classList.toggle('revoked', !on);
+      // The product stops doing its job, which is the cost of the
+      // trade and the reason it is worth showing.
+      p.wUi.classList.toggle('hide', !on);
+      p.wOff.classList.toggle('hide', on);
       paint();
     }
 
@@ -670,7 +793,7 @@
       let total = 0;
       PROCS.forEach(p => {
         total += p.base;
-        const pulls = nf.format(Math.round(p.base));
+        const pulls = nf.format(p.base);
         const paid  = money(p.base * RATE_PER_PULL * USER_SHARE);
         p.cPulls.textContent = pulls;
         p.cPaid.textContent  = paid;
@@ -679,7 +802,7 @@
       });
       const gross = total * RATE_PER_PULL;
       const toYou = gross * USER_SHARE;
-      elPulls.textContent = nf.format(Math.round(total));
+      elPulls.textContent = nf.format(total);
       elPaid.textContent  = money(toYou);
       elCut.textContent   = money(gross - toYou);
       elAds.textContent   = money(adEarnings);
@@ -705,10 +828,13 @@
 
     if (!still) {
       setInterval(() => {
-        // Only granted processes pull, and the jitter keeps the
-        // columns from ticking in lockstep.
-        PROCS.forEach(p => { if (p.on) p.base += p.rate * (0.6 + Math.random() * 0.9); });
-        paint();
+        // A pull is a whole event that happens when an app needs an
+        // answer, so it lands at random rather than accruing.
+        let moved = false;
+        PROCS.forEach(p => {
+          if (p.on && Math.random() < p.chance) { p.base += 1; moved = true; }
+        });
+        if (moved) paint();
       }, 900);
     }
 
