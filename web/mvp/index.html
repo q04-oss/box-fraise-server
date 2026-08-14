@@ -69,6 +69,203 @@
       transition: text-decoration-color 120ms ease;
     }
     a.inline:hover { text-decoration-color: var(--accent); }
+
+    /* ── The inbox demo ───────────────────────────────────────────
+       One 12s loop, pure CSS, no script: three businesses arrive in
+       the inbox, a finger taps one, the payout lands and the balance
+       goes up. Every element runs its own keyframes over the same
+       12s so the percentages below read as a single timeline.
+
+       The prism is a real 3D box — a rotated front face plus a side
+       face standing at 90° — rather than a drawn rectangle, so it
+       reads as an object holding a screen. */
+    .demo { margin: 34px 0 0; }
+    .stage {
+      width: 268px;
+      height: 496px;
+      perspective: 1400px;
+    }
+    .prism {
+      position: relative;
+      width: 252px;
+      height: 496px;
+      transform-style: preserve-3d;
+      transform: rotateY(-17deg) rotateX(3deg);
+      animation: float 12s ease-in-out infinite;
+    }
+    /* The side face, giving the box its depth. */
+    .prism::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 16px;
+      height: 100%;
+      background: linear-gradient(#d8d8d8, #bcbcbc);
+      transform-origin: right center;
+      transform: rotateY(90deg);
+    }
+    @keyframes float {
+      0%, 100% { transform: rotateY(-17deg) rotateX(3deg) translateY(0); }
+      50%      { transform: rotateY(-17deg) rotateX(3deg) translateY(-9px); }
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      border: 1px solid #cfcfcf;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 22px 26px 44px rgba(0,0,0,0.16);
+    }
+    .bar {
+      height: 52px;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+    /* Two balances stacked in the same spot; the animation crossfades
+       them at the moment the payout lands. */
+    .bal { position: relative; width: 42px; height: 14px; }
+    .bal span {
+      position: absolute;
+      inset: 0;
+      text-align: right;
+      color: var(--ink);
+    }
+    .bal .b { color: var(--accent); }
+    .bal .a { animation: balA 12s linear infinite; }
+    .bal .b { animation: balB 12s linear infinite; }
+    @keyframes balA { 0%, 46% { opacity: 1 } 50%, 92% { opacity: 0 } 96%, 100% { opacity: 1 } }
+    @keyframes balB { 0%, 46% { opacity: 0 } 50%, 92% { opacity: 1 } 96%, 100% { opacity: 0 } }
+
+    .list { padding: 14px 14px 0; }
+    .row { margin-bottom: 10px; }
+    .r1 { animation: rowIn1 12s ease-out infinite; }
+    .r2 { animation: rowIn2 12s ease-out infinite; }
+    .r3 { animation: rowIn3 12s ease-out infinite; }
+    @keyframes rowIn1 {
+      0%, 3%   { opacity: 0; transform: translateY(10px) }
+      9%, 92%  { opacity: 1; transform: none }
+      97%,100% { opacity: 0; transform: translateY(-6px) }
+    }
+    @keyframes rowIn2 {
+      0%, 10%  { opacity: 0; transform: translateY(10px) }
+      16%, 92% { opacity: 1; transform: none }
+      97%,100% { opacity: 0; transform: translateY(-6px) }
+    }
+    @keyframes rowIn3 {
+      0%, 17%  { opacity: 0; transform: translateY(10px) }
+      23%, 92% { opacity: 1; transform: none }
+      97%,100% { opacity: 0; transform: translateY(-6px) }
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      background: #fff;
+      padding: 13px 12px;
+    }
+    .mark {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+      background: #f0f0f0;
+      flex: 0 0 auto;
+    }
+    .who { font-size: 14px; line-height: 1.25; }
+    .what {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    /* The tapped card. Press, then hold the accent until reset. */
+    .card.tap { animation: press 12s ease-out infinite; }
+    @keyframes press {
+      0%, 36%  { transform: none; background: #fff; border-color: var(--rule) }
+      38%      { transform: scale(0.975); background: #fdf2f2; border-color: var(--accent) }
+      42%, 88% { transform: none; background: #fdf2f2; border-color: var(--accent) }
+      93%,100% { transform: none; background: #fff; border-color: var(--rule) }
+    }
+
+    /* Positioned over the middle card. The transform carries it in
+       from below-right; the scale dip at 38% is the tap itself, timed
+       to the card's press. */
+    .finger {
+      position: absolute;
+      top: 148px; left: 154px;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--ink);
+      background: rgba(255,255,255,0.55);
+      animation: tapIn 12s ease-out infinite;
+    }
+    @keyframes tapIn {
+      0%, 25%  { opacity: 0; transform: translate(46px, 74px) scale(1) }
+      30%      { opacity: 1; transform: translate(24px, 38px) scale(1) }
+      36%      { opacity: 1; transform: translate(0,0) scale(1) }
+      38%      { opacity: 1; transform: translate(0,0) scale(0.72) }
+      43%, 52% { opacity: 1; transform: translate(0,0) scale(1) }
+      60%,100% { opacity: 0; transform: translate(30px, 52px) scale(1) }
+    }
+
+    /* The payout, as a sheet up from the bottom of the screen. */
+    .sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      border-top: 1px solid var(--rule);
+      background: #fff;
+      padding: 22px 18px 26px;
+      animation: sheetUp 12s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+    @keyframes sheetUp {
+      0%, 42%  { opacity: 0; transform: translateY(100%) }
+      49%, 87% { opacity: 1; transform: none }
+      93%,100% { opacity: 0; transform: translateY(100%) }
+    }
+    .amt {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-size: 40px;
+      line-height: 1;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .amt-note { font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+    figcaption {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      color: var(--muted);
+      margin-top: 22px;
+      max-width: 42ch;
+      line-height: 1.7;
+    }
+
+    /* Motion is the whole point of this figure, so with reduced
+       motion preferred it holds the finished state instead: the
+       payout landed, the balance already up. */
+    @media (prefers-reduced-motion: reduce) {
+      .prism, .r1, .r2, .r3, .card.tap, .sheet, .bal .a, .bal .b { animation: none; }
+      .bal .a { opacity: 0; }
+      .bal .b { opacity: 1; }
+      .card.tap { background: #fdf2f2; border-color: var(--accent); }
+      .finger { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -90,6 +287,59 @@
 
       <p>The fee a business pays covers the platform and gives a few dollars to everybody
       who witnesses the advertisement. Box Fraise is promoting consensual advertising.</p>
+
+      <figure class="demo">
+        <div class="stage" aria-hidden="true">
+          <div class="prism">
+            <div class="screen">
+              <div class="bar">
+                <span>Inbox</span>
+                <span class="bal"><span class="a">$12</span><span class="b">$15</span></span>
+              </div>
+
+              <div class="list">
+                <div class="row r1">
+                  <div class="card">
+                    <div class="mark"></div>
+                    <div>
+                      <div class="who">Ferngrove Bakery</div>
+                      <div class="what">Wants to advertise · $3</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row r2">
+                  <div class="card tap">
+                    <div class="mark"></div>
+                    <div>
+                      <div class="who">Hale &amp; Co. Cycles</div>
+                      <div class="what">Wants to advertise · $3</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row r3">
+                  <div class="card">
+                    <div class="mark"></div>
+                    <div>
+                      <div class="who">Norlight Coffee</div>
+                      <div class="what">Wants to advertise · $3</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="finger"></div>
+
+              <div class="sheet">
+                <div class="amt">+$3.00</div>
+                <div class="amt-note">Paid to you for choosing to watch.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <figcaption>Businesses ask. You decide. You are paid when you say yes.
+        The businesses shown are invented.</figcaption>
+      </figure>
     </div>
   </main>
 </body>
