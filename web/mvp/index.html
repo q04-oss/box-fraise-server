@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MVP — box fraise</title>
+  <meta name="description" content="The minimum viable product: what Box Fraise actually is right now, and what it is the minimum of.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em;
+      line-height: 1.1; margin: 0 0 18px;
+    }
+    .lede { font-size: 19px; line-height: 1.6; margin: 0 0 34px; max-width: 46ch; }
+    p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; }
+    p strong { font-weight: 500; }
+
+    /* Each piece of the product, with a status in the margin. The
+       point of the page is that you can see what is real. */
+    .part {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 22px;
+      border-top: 1px solid var(--rule);
+      padding: 22px 0;
+      align-items: baseline;
+    }
+    .part:first-of-type { border-top: 2px solid var(--ink); }
+    .part-state {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--accent);
+    }
+    .part-state.pending { color: var(--muted); }
+    .part-body p { margin: 0; }
+    .part-body p + p { margin-top: 8px; color: var(--muted); font-size: 16px; }
+    @media (max-width: 560px) {
+      .part { grid-template-columns: 1fr; gap: 6px; }
+    }
+
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 15px; margin-top: 34px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>MVP</h1>
+    <p class="lede">The smallest version of Box Fraise that is actually a version of Box Fraise. Everything listed as live is live now, on this website, today.</p>
+
+    <div class="part">
+      <div class="part-state">live</div>
+      <div class="part-body">
+        <p><strong>The magazine.</strong></p>
+        <p>One advertisement so far, and you read it by <a class="inline" href="/scan">pointing your camera at it</a>. No code printed on it — the whole page is what gets scanned.</p>
+      </div>
+    </div>
+
+    <div class="part">
+      <div class="part-state">live</div>
+      <div class="part-body">
+        <p><strong>The run club.</strong></p>
+        <p>Every Saturday at 8 on Whyte Avenue. <a class="inline" href="/run">Where and why</a>.</p>
+      </div>
+    </div>
+
+    <div class="part">
+      <div class="part-state">live</div>
+      <div class="part-body">
+        <p><strong>The sticker map.</strong></p>
+        <p>Stickers are $5 at the run club. Spot one anywhere and add it to the map on the front page.</p>
+      </div>
+    </div>
+
+    <div class="part">
+      <div class="part-state pending">not yet</div>
+      <div class="part-body">
+        <p><strong>The app.</strong></p>
+        <p>It will look like Maps and it will ask the question of anyone, anywhere. It does not exist because the founder cannot afford a Macintosh, and you cannot build for iPhone without one.</p>
+      </div>
+    </div>
+
+    <p class="closer">The website is the whole product for now, which has turned out to be the right constraint: nobody has to install anything to take part. <a class="inline" href="/about">What all of it is for</a>.</p>
+  </main>
+</body>
+</html>
