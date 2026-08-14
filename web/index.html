@@ -107,11 +107,16 @@
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(36px, 8vw, 76px);
-      letter-spacing: -0.03em;
-      line-height: 1;
-      margin: 0 0 26px;
-      max-width: 14ch;
+      /* Sized to fill the measure rather than sit in a column. The
+         viewport term does the work on phones; the ceiling stops it
+         outgrowing the 940px container on a desktop. */
+      font-size: clamp(38px, 9.2vw, 94px);
+      letter-spacing: -0.035em;
+      line-height: 0.98;
+      margin: 0 0 30px;
+      /* No max-width: the whole point is that it runs the width of
+         the page. Wrapping is left to the measure itself. */
+      text-wrap: balance;
     }
     .standfirst {
       font-size: clamp(18px, 2.4vw, 21px);
