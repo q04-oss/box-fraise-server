@@ -63,6 +63,10 @@
       transition: color 120ms ease;
     }
     .links a:hover { color: var(--ink); }
+    /* The scanner is the one thing in the nav that does something
+       rather than explains something, so it carries the accent. */
+    .links a.scan { color: var(--accent); }
+    .links a.scan:hover { color: var(--accent); opacity: 0.75; }
 
     main {
       max-width: 1140px;
@@ -178,6 +182,7 @@
       <a href="/about">About</a>
       <a href="/mvp">MVP</a>
       <a href="/donations">Donations</a>
+      <a class="scan" href="/scan">Scan</a>
     </nav>
   </header>
 
