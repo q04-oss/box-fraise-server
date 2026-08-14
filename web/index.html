@@ -97,13 +97,6 @@
     .next-event:hover .next-name { color: var(--accent); }
     .next-event:hover .next-arrow { color: var(--ink); }
 
-    .rules {
-      font-size: 19px;
-      line-height: 1.6;
-      margin: 0 0 26px;
-      max-width: 48ch;
-    }
-
     /* The tagline owns the top of the page. Everything else is a
        band underneath it. */
     .tagline {
@@ -117,110 +110,90 @@
       max-width: 15ch;
     }
 
-    /* The page does three unrelated things — scan an ad, run on a
-       Saturday, map stickers. Rather than blend them, each gets its
-       own band with a heavy rule above it, so it is obvious where one
-       ends and the next begins. */
-    .band {
-      border-top: 2px solid var(--ink);
-      padding-top: 26px;
-      margin-top: 46px;
+    /* Two things you can do, side by side and obviously tappable.
+       Stacked prose blocks made everything look like reading matter;
+       a card that is entirely a link does not. */
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin: 0 0 56px;
     }
-    .band:first-of-type { margin-top: 38px; }
-    .band-no {
+    @media (max-width: 700px) {
+      .cards { grid-template-columns: 1fr; gap: 14px; }
+    }
+    a.card {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--rule);
+      padding: 26px 26px 24px;
+      text-decoration: none;
+      color: var(--ink);
+      background: #fff;
+      transition: border-color 140ms ease, transform 140ms ease;
+    }
+    a.card:hover { border-color: var(--ink); transform: translateY(-2px); }
+    a.card:hover .card-go { color: var(--accent); }
+    .card-label {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.18em;
       color: var(--muted);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
+      display: block;
     }
-    .band h2 {
+    .card-title {
       font-family: 'Newsreader', serif;
       font-style: italic;
       font-weight: 500;
-      font-size: clamp(27px, 5vw, 38px);
+      font-size: clamp(26px, 4.4vw, 34px);
       letter-spacing: -0.02em;
       line-height: 1.1;
-      margin: 0 0 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .band-lede { font-size: 18px; line-height: 1.6; color: var(--muted); margin: 0 0 18px; max-width: 52ch; }
-    .band-body { font-size: 17px; line-height: 1.65; margin: 0 0 18px; max-width: 52ch; }
-    .band-link {
+    .card-note {
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--muted);
+      /* Pushes the call to action to the bottom so both cards line
+         up regardless of how much text each carries. */
+      flex: 1;
+      margin-bottom: 20px;
+    }
+    .card-go {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       color: var(--ink);
-      text-decoration: none;
-      border-bottom: 1px solid var(--rule);
-      padding-bottom: 2px;
-      transition: border-color 120ms ease;
+      transition: color 140ms ease;
     }
-    .band-link:hover { border-color: var(--accent); }
-    .band .submit { margin-top: 4px; }
-    a.scan {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      background: var(--accent);
-      color: #fff;
-      text-decoration: none;
-      padding: 18px 28px;
-      transition: opacity 120ms ease;
-    }
-    a.scan:hover { opacity: 0.85; }
-    a.scan .lens {
+    .card-title .lens {
       width: 13px; height: 13px;
-      border: 2px solid #fff;
+      border: 2px solid var(--accent);
       border-radius: 50%;
       display: inline-block;
       flex: 0 0 auto;
     }
 
-    /* The standing weekly thing, above the stickers, because it
-       happens every week and the stickers are wherever they are. */
-    .runclub {
-      border: 1px solid var(--rule);
-      border-left: 2px solid var(--accent);
-      padding: 20px 22px;
-      margin: 0 0 30px;
-      background: #fafafa;
-      max-width: 52ch;
+    /* The map gets a light heading rather than another heavy band,
+       and its intro sits beside the button instead of above it. */
+    .map-section { border-top: 1px solid var(--rule); padding-top: 28px; }
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 26px;
     }
-    .runclub-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-    .runclub h2 {
-      font-size: 21px;
-      font-weight: 500;
-      line-height: 1.3;
-      margin: 0 0 8px;
-    }
-    .runclub p { font-size: 16px; line-height: 1.6; margin: 0 0 10px; }
-    .runclub .times {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 12px;
-      color: var(--ink);
-      line-height: 1.7;
-    }
-    .runclub a {
-      color: var(--ink);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      text-decoration-color: var(--rule);
-      transition: text-decoration-color 120ms ease;
-    }
-    .runclub a:hover { text-decoration-color: var(--accent); }
+    .section-head-text { flex: 1 1 340px; }
+    .map-intro { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0; max-width: 46ch; }
+    .section-head .submit { flex: 0 0 auto; }
 
     /* ── Buttons ─────────────────────────────────────────────────── */
     button.submit {
@@ -487,34 +460,33 @@
       <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
     </a>
 
-    <section class="band" aria-label="Scan the ad">
-      <div class="band-no">one</div>
-      <h2>Seen the ad?</h2>
-      <p class="band-lede">Point your camera at it. There is no code to find — the whole
-      advertisement is the thing you scan.</p>
-      <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan the ad</a>
-    </section>
+    <div class="cards">
+      <a class="card" href="/scan">
+        <span class="card-label">seen the ad?</span>
+        <span class="card-title">Scan it<span class="lens" aria-hidden="true"></span></span>
+        <span class="card-note">Point your camera at the whole advertisement. There is no
+        code to find.</span>
+        <span class="card-go">Open the camera →</span>
+      </a>
 
-    <section class="band" aria-label="Run club">
-      <div class="band-no">two</div>
-      <h2>Run club, Saturdays at 8</h2>
-      <p class="band-lede">On Whyte Avenue. You do not need to be fast and you do not need
-      to know anyone.</p>
-      <p class="band-body">The run goes along Whyte, out to the Canadian Pacific railyard,
-      and back to where it started. It is an argument for closing Whyte Avenue to cars —
-      and the railyard is the reason that has not happened.</p>
-      <p><a class="band-link" href="/run">Why we run at the railyard →</a></p>
-    </section>
+      <a class="card" href="/run">
+        <span class="card-label">saturdays at 8</span>
+        <span class="card-title">Run club</span>
+        <span class="card-note">On Whyte Avenue. We run to the railyard and back, making
+        the case for a Whyte without cars.</span>
+        <span class="card-go">Where, and why →</span>
+      </a>
+    </div>
 
-    <section class="band" aria-label="Sticker map">
-      <div class="band-no">three</div>
-      <h2>The sticker map</h2>
-      <p class="band-lede">Strawberry stickers are sold at Box Fraise events for $5, and
-      people put them wherever they like. Spot one and put it on the map.</p>
-
-      <p style="margin: 0 0 30px;">
+    <section class="map-section" aria-label="Sticker map">
+      <div class="section-head">
+        <div class="section-head-text">
+          <span class="card-label">the sticker map</span>
+          <p class="map-intro">Stickers are $5 at events and end up wherever people put
+          them. Spot one out in the world and put it on the map.</p>
+        </div>
         <button class="submit" id="open-add" type="button">I saw a sticker</button>
-      </p>
+      </div>
 
     <div id="map" role="application" aria-label="Map of sticker sightings, strawberry sites and events"></div>
     <div class="map-key">
