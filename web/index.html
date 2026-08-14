@@ -169,31 +169,26 @@
     }
     .dept-go:hover { border-color: var(--accent); }
 
-    /* An actual page of the magazine, shown rather than described.
-       Capped narrow: it is an example, not the hero. */
-    .page { margin: 0 0 20px; }
-    .page img {
-      display: block;
-      width: 100%;
-      max-width: 300px;
-      height: auto;
-      border: 1px solid var(--rule);
+    /* The two camera actions, side by side: scan an advertisement, or
+       report a sticker. Same height and weight so they read as a
+       pair — red for the one that is new, ink for the familiar one. */
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: stretch;
+      margin-top: 4px;
     }
-
-    /* The one red thing on the page, because it is the one thing the
-       page wants you to do. */
+    .actions > * { padding: 15px 24px; font-size: 11px; letter-spacing: 0.14em; }
     a.scan {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
+      gap: 11px;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 0.16em;
       background: var(--accent);
       color: #fff;
       text-decoration: none;
-      padding: 17px 28px;
       transition: opacity 120ms ease;
     }
     a.scan:hover { opacity: 0.85; }
@@ -440,18 +435,6 @@
     </a>
 
     <section class="dept">
-      <div class="dept-label">the pages</div>
-      <div class="dept-body">
-        <figure class="page">
-          <img src="/ads/run-club.jpg" width="360" height="482" loading="lazy"
-               alt="Box Fraise advertisement — a portrait, with the line: Meet Austin. He started a run club in Edmonton.">
-        </figure>
-        <p>This is a page. Find one in the world and point your camera at it.</p>
-        <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan the ad</a>
-      </div>
-    </section>
-
-    <section class="dept">
       <div class="dept-label">the question</div>
       <div class="dept-body">
         <h2>Run club, Saturdays at 8</h2>
@@ -466,12 +449,18 @@
     <section class="dept" aria-label="Sticker map">
       <div class="dept-label">in the wild</div>
       <div class="dept-body">
-        <h2>The sticker map</h2>
-        <p>The stickers leave with whoever bought them at the run, and end up wherever
-        those people go. Somebody spots one, photographs it, and it lands here — which is
-        how the next person finds the run. The advertising is the community advertising
-        itself, and the map is what that looks like.</p>
-        <button class="submit" id="open-add" type="button">I saw a sticker</button>
+        <h2>Point your camera at it</h2>
+        <p>Box Fraise puts two things into the world: advertisements, and strawberry
+        stickers. Both are for pointing a camera at. An advertisement is a page of the
+        magazine — there is no code printed on it, the whole page is what you scan. A
+        sticker goes on the map below, which is how the next person finds the run.</p>
+        <p>The stickers leave with whoever bought one at the run and end up wherever those
+        people go. So the advertising is the community advertising itself, and the map is
+        what that looks like.</p>
+        <div class="actions">
+          <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan an ad</a>
+          <button class="submit" id="open-add" type="button">I saw a sticker</button>
+        </div>
       </div>
     </section>
 
