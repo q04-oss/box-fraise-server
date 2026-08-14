@@ -260,14 +260,9 @@
       stroke-width: 3;
       stroke-linecap: round;
       stroke-linejoin: round;
-      stroke-dasharray: 100 100;
-      animation: draw 12s ease-in-out infinite;
+      animation: routeIn 12s ease-out infinite;
     }
-    @keyframes draw {
-      0%, 3%   { stroke-dashoffset: 100 }
-      45%, 90% { stroke-dashoffset: 0 }
-      95%,100% { stroke-dashoffset: 100 }
-    }
+    @keyframes routeIn { 0% { opacity: 0 } 4%, 92% { opacity: 1 } 97%, 100% { opacity: 0 } }
     /* Each sold kilometre is the same path with a single dash showing
        through at the right offset. */
     .km {
@@ -278,8 +273,8 @@
     }
     .km-1 { stroke-dasharray: 10 100; stroke-dashoffset: -32; animation: segIn1 12s ease-out infinite; }
     .km-2 { stroke-dasharray: 10 100; stroke-dashoffset: -64; animation: segIn2 12s ease-out infinite; }
-    @keyframes segIn1 { 0%, 50% { opacity: 0 } 57%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
-    @keyframes segIn2 { 0%, 68% { opacity: 0 } 75%, 90% { opacity: 1 } 95%, 100% { opacity: 0 } }
+    @keyframes segIn1 { 0%, 8%  { opacity: 0 } 15%, 92% { opacity: 1 } 97%, 100% { opacity: 0 } }
+    @keyframes segIn2 { 0%, 20% { opacity: 0 } 27%, 92% { opacity: 1 } 97%, 100% { opacity: 0 } }
 
     .runner {
       position: absolute;
@@ -294,9 +289,9 @@
       animation: runAlong 12s ease-in-out infinite;
     }
     @keyframes runAlong {
-      0%, 3%   { offset-distance: 0%;   opacity: 0 }
-      6%       { offset-distance: 3%;   opacity: 1 }
-      45%, 92% { offset-distance: 100%; opacity: 1 }
+      0%, 36%  { offset-distance: 0%;   opacity: 0 }
+      40%      { offset-distance: 3%;   opacity: 1 }
+      86%, 92% { offset-distance: 100%; opacity: 1 }
       100%     { offset-distance: 100%; opacity: 0 }
     }
 
@@ -324,18 +319,18 @@
     .chip-1 { animation: chipIn1 12s cubic-bezier(0.2,0.8,0.2,1) infinite; }
     .chip-2 { animation: chipIn2 12s cubic-bezier(0.2,0.8,0.2,1) infinite; }
     @keyframes chipIn1 {
-      0%, 52%  { opacity: 0; transform: translateY(10px) }
-      59%, 90% { opacity: 1; transform: none }
-      95%,100% { opacity: 0; transform: translateY(10px) }
+      0%, 10%  { opacity: 0; transform: translateY(10px) }
+      18%, 92% { opacity: 1; transform: none }
+      97%,100% { opacity: 0; transform: translateY(10px) }
     }
     @keyframes chipIn2 {
-      0%, 70%  { opacity: 0; transform: translateY(10px) }
-      77%, 90% { opacity: 1; transform: none }
-      95%,100% { opacity: 0; transform: translateY(10px) }
+      0%, 22%  { opacity: 0; transform: translateY(10px) }
+      30%, 92% { opacity: 1; transform: none }
+      97%,100% { opacity: 0; transform: translateY(10px) }
     }
-    /* The distance only means anything once the line is drawn. */
+    /* The distance is a property of the preconfigured route. */
     .dist { animation: distIn 12s ease-out infinite; color: var(--ink); }
-    @keyframes distIn { 0%, 42% { opacity: 0 } 48%, 92% { opacity: 1 } 96%, 100% { opacity: 0 } }
+    @keyframes distIn { 0%, 2% { opacity: 0 } 7%, 92% { opacity: 1 } 97%, 100% { opacity: 0 } }
 
     figcaption {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -359,7 +354,7 @@
       .bal .b { opacity: 1; }
       .card.tap { background: #fdf2f2; border-color: var(--accent); }
       .finger { display: none; }
-      .run-line { stroke-dashoffset: 0; }
+      .run-line { opacity: 1; }
       .runner { offset-distance: 100%; }
     }
   </style>
@@ -437,8 +432,8 @@
         The businesses shown are invented.</figcaption>
       </figure>
 
-      <p>After that, the app. A map, and a runner is a pin. The run is geotagged, so a
-      business can buy a kilometre of it.</p>
+      <p>After that, the app. A map, and a runner is a pin. The route is set in advance
+      and geotagged, so a business can buy a kilometre of it before anyone runs it.</p>
 
       <figure class="demo">
         <div class="stage" aria-hidden="true">
