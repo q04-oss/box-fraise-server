@@ -376,6 +376,80 @@
     .tiprow .nm { font-size: 17px; }
     .tiprow .why { font-size: 13.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
+    /* ── The advertisement ────────────────────────────────────────
+       Saying yes hands the whole screen over. It sits above every
+       window and the menu bar, so nothing underneath can be reached
+       until it finishes — which is the deal the user just accepted,
+       and the reason they are paid for it. It runs seven seconds and
+       shows a bar, so it is never a trap, only a spectacle. */
+    .adwrap { position: fixed; inset: 0; z-index: 99999; display: none; }
+    .adwrap.on { display: block; }
+    .adfield {
+      position: absolute; inset: 0;
+      background: radial-gradient(1200px 800px at 30% 20%, #c92222, var(--accent) 70%);
+      color: #fff; display: grid; place-items: center; text-align: center;
+      padding: 7vw 6vw; overflow: hidden;
+    }
+    .adkicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.34em;
+      opacity: 0.75;
+    }
+    .adname {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(44px, 9vw, 148px); line-height: 0.94;
+      letter-spacing: -0.035em; margin: 20px 0 18px; text-wrap: balance;
+      animation: adIn 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .adline {
+      font-size: clamp(17px, 2.1vw, 27px); line-height: 1.4;
+      max-width: 26ch; margin: 0 auto; opacity: 0.92;
+      animation: adIn 1100ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes adIn {
+      from { opacity: 0; transform: translateY(14px) scale(1.05) }
+      to   { opacity: 1; transform: none }
+    }
+    .adfoot {
+      position: absolute; left: 0; right: 0; bottom: 52px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10.5px; letter-spacing: 0.22em; opacity: 0.8;
+      animation: adIn 900ms 620ms ease-out both;
+    }
+    .adheld {
+      position: absolute; left: 0; right: 0; top: 26px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      opacity: 0.62;
+    }
+    .adcount {
+      position: absolute; right: 26px; bottom: 44px;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; font-variant-numeric: tabular-nums; opacity: 0.8;
+    }
+    .adbar {
+      position: absolute; left: 0; bottom: 0; height: 5px;
+      background: #fff; width: 0;
+    }
+    .adwrap.on .adbar { animation: adBar 7s linear both; }
+    @keyframes adBar { from { width: 0 } to { width: 100% } }
+    /* The payoff, once it has run its full length. */
+    .adpaid {
+      position: absolute; inset: 0; display: none; place-items: center;
+      background: var(--ink); color: #fff; text-align: center;
+    }
+    .adwrap.done .adfield { display: none; }
+    .adwrap.done .adpaid  { display: grid; }
+    .adpaid .amt { font-style: italic; font-size: clamp(44px, 8vw, 110px); line-height: 1; }
+    .adpaid .sub {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+      opacity: 0.7; margin-top: 16px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .adname, .adline, .adfoot { animation: none; }
+    }
+
     @media (max-width: 900px) {
       body { overflow: auto; }
       .desktop { display: none; }
@@ -542,6 +616,26 @@
         <p><a href="/">← back to box fraise</a></p>
       </div>
     </section>
+  </div>
+
+  <div class="adwrap" id="adwrap" role="dialog" aria-modal="true" aria-label="Advertisement">
+    <div class="adfield">
+      <div class="adheld">The operating system is held until this finishes &mdash; you are being paid for it</div>
+      <div>
+        <div class="adkicker">Advertisement</div>
+        <div class="adname" id="ad-name"></div>
+        <div class="adline" id="ad-line"></div>
+      </div>
+      <div class="adfoot" id="ad-foot"></div>
+      <div class="adcount" id="ad-count"></div>
+      <div class="adbar"></div>
+    </div>
+    <div class="adpaid">
+      <div>
+        <div class="amt">+$3.00</div>
+        <div class="sub">Paid to your account</div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -811,14 +905,66 @@
       elMenu.textContent  = money(toYou + adEarnings);
     }
 
-    document.querySelectorAll('[data-ad] .yes').forEach(btn => {
+    // The spectacle. Saying yes hands over the screen for its full
+    // length; the money arrives when it has finished, not when the
+    // button was pressed.
+    const AD_MS = 7000;
+    const ADS = [
+      { name: 'Ferngrove Bakery', line: 'Bread, since five this morning.',
+        foot: 'FERNGROVE · 104 STREET · OPEN AT SEVEN' },
+      { name: 'Hale & Co. Cycles', line: 'Everything you own should be repairable.',
+        foot: 'HALE & CO. · WHYTE AVENUE · REPAIRS WHILE YOU WAIT' },
+      { name: 'Norlight Coffee', line: 'Awake is a decision.',
+        foot: 'NORLIGHT · JASPER AVENUE · NO TIPPING' },
+    ];
+
+    const adwrap = document.getElementById('adwrap');
+    const adName = document.getElementById('ad-name');
+    const adLine = document.getElementById('ad-line');
+    const adFoot = document.getElementById('ad-foot');
+    const adCount = document.getElementById('ad-count');
+    let playing = false;
+
+    function playAd(ad, done) {
+      if (playing) return;
+      playing = true;
+      adName.textContent = ad.name;
+      adLine.textContent = ad.line;
+      adFoot.textContent = ad.foot;
+      adwrap.classList.remove('done');
+      adwrap.classList.add('on');
+
+      let left = Math.round(AD_MS / 1000);
+      adCount.textContent = left + 's';
+      const countdown = setInterval(() => {
+        left -= 1;
+        adCount.textContent = Math.max(left, 0) + 's';
+      }, 1000);
+
+      setTimeout(() => {
+        clearInterval(countdown);
+        adwrap.classList.add('done');
+        done();
+        setTimeout(() => {
+          adwrap.classList.remove('on', 'done');
+          playing = false;
+        }, 1400);
+      }, AD_MS);
+    }
+
+    document.querySelectorAll('[data-ad] .yes').forEach((btn, i) => {
       btn.addEventListener('click', () => {
         if (btn.disabled) return;
+        const ad = ADS[i];
+        if (!ad) return;
         btn.disabled = true;
-        btn.textContent = '+' + money(3);
-        btn.closest('[data-ad]').classList.add('on');
-        adEarnings += 3;
-        paint();
+        btn.textContent = 'Playing';
+        playAd(ad, () => {
+          btn.textContent = '+' + money(3);
+          btn.closest('[data-ad]').classList.add('on');
+          adEarnings += 3;
+          paint();
+        });
       });
     });
 
