@@ -27,6 +27,7 @@ use box_fraise::{
             service as pairings_service,
             types::{ClaimRequest, DecisionRequest, SetDisplayNameRequest},
         },
+        submissions::{service as submissions_service, types::SubmissionUpload},
     },
     error::AppError,
 };
@@ -1306,4 +1307,216 @@ async fn ios_signature_fixture_round_trips() {
     let sig: Signature = sk.sign(msg.as_bytes());
     let der = sig.to_der().as_bytes().to_vec();
     verify_p256_signature(&pk_sec1, msg, &der).expect("ios fixture must verify");
+}
+
+// ── Submissions ─────────────────────────────────────────────────────
+
+/// A 1x1 JPEG. Real magic bytes, so it passes the sniffer.
+fn tiny_jpeg() -> Vec<u8> {
+    let mut v = vec![0xFF, 0xD8, 0xFF, 0xE0];
+    // Padded past MIN_IMAGE_BYTES; the sniffer only reads the head.
+    v.extend(std::iter::repeat_n(0x20, 1024));
+    v
+}
+
+fn column(text: &str) -> SubmissionUpload {
+    SubmissionUpload {
+        title: None,
+        body: Some(text.into()),
+        image_bytes: None,
+        submitter_name: None,
+        submitter_contact: None,
+    }
+}
+
+/// The public write lands, and lands as 'pending' — never as anything
+/// the sender chose. `status` is hardcoded in the repository and the
+/// RLS WITH CHECK enforces it independently.
+#[tokio::test]
+async fn submission_is_accepted_as_pending() {
+    let pool = test_pool().await;
+    let r = submissions_service::submit(
+        &pool,
+        column("A column about the railyard, long enough to count as one."),
+    )
+    .await
+    .unwrap();
+    assert_eq!(r.status, "pending");
+
+    let admin_id = seed_test_admin(&pool).await;
+    let queue = submissions_service::list_pending(&pool).await.unwrap();
+    assert!(queue.iter().any(|s| s.id == r.id));
+    submissions_service::reject(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+}
+
+/// A pending submission is invisible to every non-admin read path.
+/// Unlike the old sightings table there is no 'approved' state that
+/// opens it up either — `submissions` has no non-admin SELECT policy at
+/// all, so a plain transaction sees nothing in any state.
+#[tokio::test]
+async fn submissions_are_invisible_without_admin() {
+    let pool = test_pool().await;
+    let r = submissions_service::submit(
+        &pool,
+        column("Another column, once again long enough to be a column."),
+    )
+    .await
+    .unwrap();
+
+    // No GUCs set: exactly what an unauthenticated request looks like.
+    let mut tx = pool.begin().await.unwrap();
+    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM submissions WHERE id = $1")
+        .bind(r.id)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(seen, 0, "a submission must not be readable without admin");
+
+    let admin_id = seed_test_admin(&pool).await;
+    submissions_service::reject(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+}
+
+/// Nothing at all is not a submission, and a title is not a column.
+#[tokio::test]
+async fn empty_submission_is_refused() {
+    let pool = test_pool().await;
+    let empty = SubmissionUpload {
+        title: None,
+        body: None,
+        image_bytes: None,
+        submitter_name: Some("nobody".into()),
+        submitter_contact: None,
+    };
+    assert!(matches!(
+        submissions_service::submit(&pool, empty).await,
+        Err(AppError::BadRequest(_))
+    ));
+
+    // Too short to be a column.
+    assert!(matches!(
+        submissions_service::submit(&pool, column("hi")).await,
+        Err(AppError::BadRequest(_))
+    ));
+}
+
+/// The content type is decided by the bytes, never by what the caller
+/// claims. HTML dressed as a JPEG is the stored-XSS-via-upload shape.
+#[tokio::test]
+async fn non_image_bytes_are_refused() {
+    let pool = test_pool().await;
+    let html = SubmissionUpload {
+        title: None,
+        body: None,
+        image_bytes: Some(
+            b"<html><script>alert(1)</script></html>"
+                .repeat(40)
+                .to_vec(),
+        ),
+        submitter_name: None,
+        submitter_contact: None,
+    };
+    assert!(matches!(
+        submissions_service::submit(&pool, html).await,
+        Err(AppError::BadRequest(_))
+    ));
+}
+
+/// A photograph with no writing is a whole submission.
+#[tokio::test]
+async fn photograph_alone_is_a_submission() {
+    let pool = test_pool().await;
+    let r = submissions_service::submit(
+        &pool,
+        SubmissionUpload {
+            title: None,
+            body: None,
+            image_bytes: Some(tiny_jpeg()),
+            submitter_name: Some("Photographer".into()),
+            submitter_contact: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let admin_id = seed_test_admin(&pool).await;
+    let img = submissions_service::image_admin(&pool, r.id).await.unwrap();
+    assert_eq!(img.content_type, "image/jpeg");
+    submissions_service::reject(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+}
+
+/// Two editors accepting the same submission: exactly one UPDATE
+/// touches a row, the loser gets a Conflict rather than a silent
+/// double-accept.
+#[tokio::test]
+async fn accepting_twice_conflicts() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let r = submissions_service::submit(
+        &pool,
+        column("A column that will be accepted exactly once, no matter what."),
+    )
+    .await
+    .unwrap();
+
+    submissions_service::accept(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+    assert!(matches!(
+        submissions_service::accept(&pool, admin_id, r.id).await,
+        Err(AppError::Conflict)
+    ));
+}
+
+/// Rejection deletes the row and its bytes. The audit entry is the only
+/// remaining record that the submission existed.
+#[tokio::test]
+async fn rejection_deletes_the_submission() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let r = submissions_service::submit(
+        &pool,
+        SubmissionUpload {
+            title: Some("Doomed".into()),
+            body: Some("A column that is about to be turned down by the editor.".into()),
+            image_bytes: Some(tiny_jpeg()),
+            submitter_name: None,
+            submitter_contact: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    submissions_service::reject(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let left: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM submissions WHERE id = $1")
+        .bind(r.id)
+        .fetch_one(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(left, 0, "a rejected submission must be gone, bytes and all");
+
+    // audit_events is admin-select-only, so this read needs the admin
+    // GUC — under no context RLS hides the row and the assertion would
+    // fail for the wrong reason.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let audited: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM audit_events WHERE action = 'submission.rejected' AND target = $1",
+    )
+    .bind(r.id.to_string())
+    .fetch_one(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(audited, 1, "the rejection must leave a record behind");
 }

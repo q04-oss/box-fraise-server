@@ -54,6 +54,11 @@ On boot, the server will:
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
+| `POST /v1/submissions`                       | public    | Send in a column and/or a photograph (multipart)   |
+| `GET  /v1/admin/submissions/pending`         | admin     | The editor's queue                                 |
+| `GET  /v1/admin/submissions/{id}/image`      | admin     | The submitted photograph                           |
+| `POST /v1/admin/submissions/{id}/accept`     | admin     | Keep it                                            |
+| `POST /v1/admin/submissions/{id}/reject`     | admin     | Delete it, bytes and all                           |
 | `GET  /health`                               | public    | Liveness — returns `"ok"` if the process is up     |
 | `GET  /`                                     | public    | Homepage (`web/index.html`), and fallback for unmatched paths |
 | `GET  /stickers`                             | public    | 308 → `/` (kept because printed stickers carry the old path) |
@@ -107,12 +112,14 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-29 tests, one ignored (the iOS-fixture slot — swap in a real
+35 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
-consultation lifecycle, and the pairing boundary (silent decline,
-cooling period, peer name resolution across the RLS edge).
+consultation lifecycle, the pairing boundary (silent decline, cooling
+period, peer name resolution across the RLS edge), and the submission
+boundary (pending rows invisible without admin, non-image bytes
+refused, accept race, rejection deletes).
 
 Note the default `DATABASE_URL` in the test file points at port 5432;
 this project's Postgres is on **5434**, so pass it explicitly as
@@ -137,7 +144,7 @@ src/
   domain/events/       — public list/get + admin list/create/count
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0002..0017           — applied in filename order; later files drop
+  0002..0018           — applied in filename order; later files drop
                          what earlier ones added (stickers → sightings
                          → gone). Read them forward, not in isolation.
 web/                   — the marketing site (static; /scan is the

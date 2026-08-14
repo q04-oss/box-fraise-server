@@ -376,6 +376,44 @@
     .tiprow .nm { font-size: 17px; }
     .tiprow .why { font-size: 13.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
 
+    /* ── gurgle.app ───────────────────────────────────────────────
+       The only window here that touches the server. It posts to
+       /v1/submissions, which is the one unauthenticated write in the
+       system — see migration 0018. */
+    .gg-note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0 0 14px; }
+    .gg label {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--muted); margin: 12px 0 5px;
+    }
+    .gg input[type=text], .gg textarea {
+      width: 100%; font: inherit; font-size: 14px;
+      border: 1px solid var(--rule); border-radius: 6px;
+      padding: 9px 10px; background: #fff; color: var(--ink);
+      resize: vertical;
+    }
+    .gg textarea { min-height: 130px; line-height: 1.5; }
+    .gg input[type=text]:focus, .gg textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .gg input[type=file] { font-size: 12px; max-width: 100%; }
+    .gg .count {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; letter-spacing: 0.1em; color: var(--muted);
+      text-align: right; margin-top: 4px;
+    }
+    .gg .send {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      padding: 11px 18px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; margin-top: 16px;
+    }
+    .gg .send[disabled] { background: #ccc; cursor: default; }
+    .gg .msg { font-size: 13px; line-height: 1.5; margin-top: 12px; }
+    .gg .msg.ok  { color: var(--accent); }
+    .gg .msg.err { color: #444; }
+
     /* ── The advertisement ────────────────────────────────────────
        Saying yes hands the whole screen over. It sits above every
        window and the menu bar, so nothing underneath can be reached
@@ -602,6 +640,38 @@
       </div>
     </section>
 
+    <!-- ── gurgle.app ── -->
+    <section class="win" id="win-gurgle" style="left:250px; top:120px; width:390px;">
+      <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">gurgle.app</span></header>
+      <div class="body gg">
+        <p class="kv">Send something in</p>
+        <p class="gg-note">Columns and photographs for the magazine. This one is real —
+        it goes to the editor and nobody else can read it. Send writing, a photograph,
+        or both.</p>
+
+        <form id="gg-form">
+          <label for="gg-title">Title</label>
+          <input type="text" id="gg-title" maxlength="140" autocomplete="off">
+
+          <label for="gg-body">Column</label>
+          <textarea id="gg-body" maxlength="20000"></textarea>
+          <div class="count" id="gg-count">0</div>
+
+          <label for="gg-image">Photograph</label>
+          <input type="file" id="gg-image" accept="image/*">
+
+          <label for="gg-name">Your name</label>
+          <input type="text" id="gg-name" maxlength="80" autocomplete="name">
+
+          <label for="gg-contact">How to reach you</label>
+          <input type="text" id="gg-contact" maxlength="200" autocomplete="email">
+
+          <button type="submit" class="send" id="gg-send">Send it in</button>
+          <div class="msg" id="gg-msg"></div>
+        </form>
+      </div>
+    </section>
+
     <!-- ── Read me ── -->
     <section class="win" id="win-readme" style="left:520px; top:150px; width:360px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Read me</span></header>
@@ -609,6 +679,9 @@
         <p class="lead">This is a mock.</p>
         <p>None of it is running. There is no kernel, no processes, no meter — the
         numbers are made up and count nothing. It is a picture of an idea.</p>
+
+        <p>With one exception. <a href="#" data-open="win-gurgle">gurgle.app</a> is real:
+        what you send through it reaches the editor, and nobody else can read it.</p>
         <p>The idea: other companies build products on top, they pull only what you
         granted, and every pull pays you seventy percent. Box Fraise holds the identity
         and the consent, and keeps thirty. What is real today is
@@ -719,6 +792,7 @@
       { id: 'win-scan',     name: 'Scan',        glyph: '◉' },
       { id: 'win-run',      name: 'Run club',    glyph: '▲' },
       { id: 'win-tip',      name: 'Tip',         glyph: '★' },
+      { id: 'win-gurgle',   name: 'gurgle.app',  glyph: '✍' },
       { id: 'win-readme',   name: 'Read me',     glyph: '?' },
     ];
 
@@ -983,6 +1057,110 @@
         if (moved) paint();
       }, 900);
     }
+
+    // ── gurgle.app ─────────────────────────────────────────────────
+    // The only code on this page that talks to the server.
+    const ggForm = document.getElementById('gg-form');
+    const ggBody = document.getElementById('gg-body');
+    const ggMsg  = document.getElementById('gg-msg');
+    const ggSend = document.getElementById('gg-send');
+    const ggCount = document.getElementById('gg-count');
+    const MIN_BODY = 40;
+
+    ggBody.addEventListener('input', () => {
+      const n = ggBody.value.trim().length;
+      ggCount.textContent = n === 0 ? '0'
+        : n < MIN_BODY ? n + ' — a column needs ' + MIN_BODY
+        : n + '';
+    });
+
+    // Photographs go through a canvas before they are sent: it caps
+    // the long edge, drops the file well under the 8 MB ceiling, and
+    // turns anything the browser can decode — HEIC on Safari included
+    // — into the JPEG the server will accept.
+    const MAX_EDGE = 2000;
+    function prepareImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
+          const c = document.createElement('canvas');
+          c.width  = Math.round(img.width  * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          c.toBlob(b => b ? resolve(b) : reject(new Error('could not read that image')),
+                   'image/jpeg', 0.85);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('that image could not be read — try a JPEG or PNG'));
+        };
+        img.src = url;
+      });
+    }
+
+    ggForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const body  = ggBody.value.trim();
+      const file  = document.getElementById('gg-image').files[0];
+      const title = document.getElementById('gg-title').value.trim();
+
+      // Say no here rather than making the server say it.
+      if (!body && !file) {
+        ggMsg.className = 'msg err';
+        ggMsg.textContent = 'Send a column, a photograph, or both.';
+        return;
+      }
+      if (body && body.length < MIN_BODY) {
+        ggMsg.className = 'msg err';
+        ggMsg.textContent = 'A column needs at least ' + MIN_BODY + ' characters.';
+        return;
+      }
+      if (title && !body) {
+        ggMsg.className = 'msg err';
+        ggMsg.textContent = 'A title needs a column under it.';
+        return;
+      }
+
+      ggSend.disabled = true;
+      ggMsg.className = 'msg err';
+      ggMsg.textContent = file ? 'Preparing the photograph…' : 'Sending…';
+
+      try {
+        const fd = new FormData();
+        if (title) fd.append('title', title);
+        if (body)  fd.append('body', body);
+        const name = document.getElementById('gg-name').value.trim();
+        const contact = document.getElementById('gg-contact').value.trim();
+        if (name)    fd.append('submitter_name', name);
+        if (contact) fd.append('submitter_contact', contact);
+        if (file) {
+          const blob = await prepareImage(file);
+          fd.append('image', blob, 'photograph.jpg');
+        }
+
+        ggMsg.textContent = 'Sending…';
+        const r = await fetch('/v1/submissions', { method: 'POST', body: fd });
+        const text = await r.text();
+        let parsed = null;
+        if (text) { try { parsed = JSON.parse(text); } catch { /* leave null */ } }
+        if (!r.ok) {
+          throw new Error((parsed && (parsed.message || parsed.error)) || text || ('http ' + r.status));
+        }
+
+        ggForm.reset();
+        ggCount.textContent = '0';
+        ggMsg.className = 'msg ok';
+        ggMsg.textContent = 'Sent. It is with the editor now.';
+      } catch (err) {
+        ggMsg.className = 'msg err';
+        ggMsg.textContent = err.message || 'It did not send. Try again in a moment.';
+      } finally {
+        ggSend.disabled = false;
+      }
+    });
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');

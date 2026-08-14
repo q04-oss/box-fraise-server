@@ -12,11 +12,16 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::pairings`.
+  `domain::pairings`, `domain::submissions`.
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
-- **No endpoint accepts unauthenticated writes.** Every mutating
-  route requires a bearer token resolved by the auth middleware.
+- **One endpoint accepts unauthenticated writes:**
+  `POST /v1/submissions`, where columns and photographs are sent in
+  for the magazine. Everything about the `submissions` policies exists
+  to bound it — read migration 0018 before changing anything in
+  `domain::submissions`. The short version: INSERT is open but only as
+  `status = 'pending'`, and there is no non-admin SELECT policy at
+  all, so nothing public can read the table in any state.
 
 ## Architecture in three layers
 
@@ -89,10 +94,12 @@ security policy"* — even though the insert itself is permitted. The
 message points at WITH CHECK and sends you looking in the wrong
 place.
 
-It bit twice here, on tables since dropped, and the fix both times was
-the same: generate the UUID in Rust and insert it explicitly rather
-than reading one back. If you add a write-without-read path, do that —
-do not "fix" it by widening the SELECT policy.
+This bites exactly where a write path is deliberately blind:
+`submissions`. Nothing public may read that table, so
+`repository::insert_submission` generates the UUID in Rust and inserts
+it explicitly instead of reading one back. If you add another
+write-without-read path, do the same — do not "fix" it by widening
+the SELECT policy.
 
 **Sessions-table SELECT is intentionally wide.** The auth middleware
 has to resolve `Bearer <token>` → identity before any user context
@@ -158,11 +165,13 @@ that already exist (`user.register`, `challenge.issued`, `user.verify`,
 `pairing.created`, `pairing.decided`).
 
 `actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
-was added in 0012 for anonymous photo submissions and nothing writes
-it any more — 0017 dropped the last unauthenticated write path. The
-value stays in the CHECK constraint because `audit_events` is
-append-only and historical rows carry it. If a genuinely anonymous
-action ever returns, use it rather than mislabelling it `'system'`.
+is what `submission.received` is written as: no user, no admin, no
+server. Use it for anything else genuinely anonymous rather than
+mislabelling it `'system'`.
+
+Note `submission.rejected` is the audit trail for a *deletion*: the
+row, the writing and any photograph are gone, and this entry is the
+only remaining record that the submission ever existed.
 
 ## When you change a table
 

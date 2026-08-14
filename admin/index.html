@@ -41,6 +41,25 @@
     video { width: 100%; max-height: 60vh; background: #000; border-radius: 6px; display: block; }
     .hidden { display: none !important; }
     code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; background: #eee5d8; padding: 1px 4px; border-radius: 3px; }
+    /* Submissions queue. The writing is shown in full — the point of
+       the queue is to read it, not to preview it. */
+    .sub {
+      border: 1px solid #ddd; border-left: 3px solid #b21b1b;
+      border-radius: 6px; padding: 12px 14px; margin-bottom: 12px;
+    }
+    .sub h4 { margin: 0 0 4px; font-size: 15px; }
+    .sub .who { font-size: 12px; color: #666; margin-bottom: 8px; }
+    .sub .body {
+      white-space: pre-wrap; font-size: 14px; line-height: 1.55;
+      max-height: 260px; overflow: auto;
+      background: #fafafa; border: 1px solid #eee; border-radius: 4px;
+      padding: 10px; margin-bottom: 10px;
+    }
+    .sub img {
+      display: block; max-width: 100%; max-height: 320px;
+      border: 1px solid #eee; border-radius: 4px; margin-bottom: 10px;
+    }
+    .sub .acts { display: flex; gap: 8px; }
   </style>
 </head>
 <body>
@@ -118,6 +137,16 @@
         <div class="muted">Refreshes every 5 seconds.</div>
       </fieldset>
 
+      <fieldset>
+        <legend>Submissions <span id="sub-count" class="muted"></span></legend>
+        <div class="muted">Columns and photographs sent in through gurgle.app.
+        Nobody but you can read these — there is no public read path.</div>
+        <div id="sub-list" style="margin-top: 14px;"></div>
+        <div style="margin-top: 10px;">
+          <button id="sub-refresh" class="secondary">Refresh</button>
+        </div>
+      </fieldset>
+
 
 
 
@@ -178,6 +207,7 @@
       $('login').classList.add('hidden');
       $('dashboard').classList.remove('hidden');
       loadEvents().catch(e => setMsg($('login-msg'), 'err', e.message));
+      loadSubmissions();
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
@@ -398,6 +428,127 @@
       setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
     }
   }
+
+  // ── Submissions ──────────────────────────────────────────────────
+  // Everything the sender typed is untrusted, so every field goes in
+  // through textContent. The image is fetched as a blob because the
+  // endpoint is admin-authed — a plain <img src> carries no bearer
+  // token and would 401.
+  let subBlobs = [];
+
+  // Called on sign-out. Object URLs outlive the nodes that used
+  // them, so they have to be handed back explicitly.
+  function releasePreviews() {
+    subBlobs.forEach(URL.revokeObjectURL);
+    subBlobs = [];
+  }
+
+  async function loadSubmissions() {
+    const list = document.getElementById('sub-list');
+    const count = document.getElementById('sub-count');
+    if (!list || !token) return;
+
+    // Release the previous batch's object URLs before dropping the
+    // nodes that referenced them, or the blobs leak for the life of
+    // the page.
+    subBlobs.forEach(URL.revokeObjectURL);
+    subBlobs = [];
+
+    let rows;
+    try {
+      rows = await api('/admin/submissions/pending');
+    } catch (e) {
+      list.textContent = 'Could not load submissions: ' + e.message;
+      return;
+    }
+
+    count.textContent = rows.length ? '· ' + rows.length + ' waiting' : '· none waiting';
+    list.textContent = '';
+    if (!rows.length) {
+      const p = document.createElement('div');
+      p.className = 'muted';
+      p.textContent = 'Nothing waiting.';
+      list.appendChild(p);
+      return;
+    }
+
+    rows.forEach(row => {
+      const card = document.createElement('div');
+      card.className = 'sub';
+
+      if (row.title) {
+        const h = document.createElement('h4');
+        h.textContent = row.title;
+        card.appendChild(h);
+      }
+
+      const who = document.createElement('div');
+      who.className = 'who';
+      const bits = [];
+      bits.push(row.submitter_name ? row.submitter_name : 'no name given');
+      if (row.submitter_contact) bits.push(row.submitter_contact);
+      bits.push(new Date(row.submitted_at).toLocaleString());
+      who.textContent = bits.join(' · ');
+      card.appendChild(who);
+
+      if (row.body) {
+        const b = document.createElement('div');
+        b.className = 'body';
+        b.textContent = row.body;
+        card.appendChild(b);
+      }
+
+      if (row.has_image) {
+        const img = document.createElement('img');
+        img.alt = 'Submitted photograph';
+        card.appendChild(img);
+        fetch('/v1/admin/submissions/' + row.id + '/image',
+              { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(r => r.ok ? r.blob() : Promise.reject(new Error('http ' + r.status)))
+          .then(blob => {
+            const url = URL.createObjectURL(blob);
+            subBlobs.push(url);
+            img.src = url;
+          })
+          .catch(() => { img.replaceWith(document.createTextNode('Image failed to load.')); });
+      }
+
+      const acts = document.createElement('div');
+      acts.className = 'acts';
+
+      const keep = document.createElement('button');
+      keep.textContent = 'Accept';
+      keep.addEventListener('click', () => decide(row.id, 'accept', keep, acts));
+
+      const drop = document.createElement('button');
+      drop.className = 'secondary';
+      drop.textContent = 'Reject';
+      drop.addEventListener('click', () => {
+        // Rejection deletes the row and its bytes. There is no undo,
+        // so it asks first.
+        if (!confirm('Reject and delete this submission? The writing and any photograph go with it.')) return;
+        decide(row.id, 'reject', drop, acts);
+      });
+
+      acts.appendChild(keep);
+      acts.appendChild(drop);
+      card.appendChild(acts);
+      list.appendChild(card);
+    });
+  }
+
+  async function decide(id, verb, btn, acts) {
+    acts.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    try {
+      await api('/admin/submissions/' + id + '/' + verb, { method: 'POST' });
+      await loadSubmissions();
+    } catch (e) {
+      acts.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      alert('Could not ' + verb + ': ' + e.message);
+    }
+  }
+
+  document.getElementById('sub-refresh').addEventListener('click', loadSubmissions);
 
   // ── Boot ─────────────────────────────────────────────────────────
   render();
