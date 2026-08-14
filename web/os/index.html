@@ -81,7 +81,16 @@
       display: flex; flex-direction: row; gap: 14px; align-items: flex-start;
       z-index: 10;
     }
-    .group { display: flex; flex-direction: column; gap: 6px; }
+    .group {
+      display: flex;
+      /* Wraps into a second column rather than running off the
+         bottom of a short window — nine icons is taller than a
+         laptop viewport. */
+      flex-flow: column wrap;
+      align-content: flex-start;
+      max-height: calc(100vh - 96px);
+      gap: 6px;
+    }
     .grouplabel {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
@@ -641,7 +650,7 @@
     </section>
 
     <!-- ── gurgle.app ── -->
-    <section class="win" id="win-gurgle" style="left:250px; top:120px; width:390px;">
+    <section class="win" id="win-gurgle" style="left:232px; top:262px; width:384px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">gurgle.app</span></header>
       <div class="body gg">
         <p class="kv">Send something in</p>
@@ -785,6 +794,7 @@
     ];
 
     const APPS = [
+      { id: 'win-gurgle',   name: 'gurgle.app',  glyph: '✍' },
       { id: 'win-activity', name: 'Activity',    glyph: '▤' },
       { id: 'win-perms',    name: 'Permissions', glyph: '⚿' },
       { id: 'win-inbox',    name: 'Inbox',       glyph: '✉' },
@@ -792,7 +802,6 @@
       { id: 'win-scan',     name: 'Scan',        glyph: '◉' },
       { id: 'win-run',      name: 'Run club',    glyph: '▲' },
       { id: 'win-tip',      name: 'Tip',         glyph: '★' },
-      { id: 'win-gurgle',   name: 'gurgle.app',  glyph: '✍' },
       { id: 'win-readme',   name: 'Read me',     glyph: '?' },
     ];
 
@@ -1043,8 +1052,8 @@
     });
 
     paint();
-    ['win-activity', 'win-readme', 'win-inbox'].forEach(open);
-    focus(win('win-readme'));
+    ['win-activity', 'win-inbox', 'win-readme', 'win-gurgle'].forEach(open);
+    focus(win('win-gurgle'));
 
     if (!still) {
       setInterval(() => {
