@@ -122,6 +122,7 @@
        it up — the measure and the type sizes carry the hierarchy. */
     .intro { max-width: 60ch; margin: 0 0 40px; }
     .intro p { font-size: 17.5px; line-height: 1.65; margin: 0 0 20px; color: var(--muted); }
+    .intro p strong { color: var(--ink); font-weight: 500; }
     .intro .standfirst {
       font-size: clamp(19px, 2.5vw, 24px);
       line-height: 1.5;
@@ -144,9 +145,10 @@
     .intro a.inline:hover { border-color: var(--accent); }
 
 
-    /* The two camera actions, side by side: scan an advertisement, or
-       report a sticker. Same height and weight so they read as a
-       pair — red for the one that is new, ink for the familiar one. */
+    /* The two things you can point a camera at, side by side but not
+       equal: scanning is the invitation the printed advertisements
+       send people here to accept, so it is the loud one. Reporting a
+       sticker is for people already holding one. */
     .actions {
       display: flex;
       gap: 14px;
@@ -154,19 +156,31 @@
       align-items: stretch;
       margin-top: 4px;
     }
-    .actions > * { padding: 15px 24px; font-size: 11px; letter-spacing: 0.14em; }
+    /* Scanning is the primary invitation, so it is the larger, red
+       one; reporting a sticker sits beside it as the quieter option. */
     a.scan {
       display: inline-flex;
       align-items: center;
-      gap: 11px;
+      gap: 12px;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px;
       text-transform: uppercase;
+      letter-spacing: 0.15em;
       background: var(--accent);
       color: #fff;
       text-decoration: none;
-      transition: opacity 120ms ease;
+      padding: 19px 30px;
+      transition: opacity 120ms ease, transform 120ms ease;
     }
-    a.scan:hover { opacity: 0.85; }
+    a.scan:hover { opacity: 0.9; transform: translateY(-1px); }
+    .actions .submit { padding: 19px 26px; }
+    .actions-note {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 14px 0 0;
+      max-width: 46ch;
+    }
     a.scan .lens {
       width: 13px; height: 13px;
       border: 2px solid #fff;
@@ -404,10 +418,11 @@
         <span class="next-name" id="next-name"></span><span class="next-arrow">→</span>
       </a>
 
-      <p>That happens every Saturday at 8 on Whyte Avenue — out to the Canadian Pacific
-      railyard and back, across the place the question is about. The running is not a
-      metaphor and the question is not rhetorical: the people who turn up are the answer.
-      Stickers are $5 there. <a class="inline" href="/run">Where, and why →</a></p>
+      <p><strong>There is a run club, and anyone can join it.</strong> Every Saturday at 8
+      on Whyte Avenue, out to the Canadian Pacific railyard and back — across the place
+      the question is about. You do not need to be fast and you do not need to know
+      anyone. Turn up and run. The people who turn up are the answer, and stickers are $5
+      there. <a class="inline" href="/run">Where, and why →</a></p>
 
       <p>Everything the magazine makes goes out into the world for you to point a camera
       at. An advertisement is a page of it, scanned whole, with no code printed on it. A
@@ -415,9 +430,13 @@
       advertising is the community advertising itself.</p>
 
       <div class="actions">
-        <a class="scan" href="/scan"><span class="lens" aria-hidden="true"></span>Scan an ad</a>
-        <button class="submit" id="open-add" type="button">I saw a sticker</button>
+        <a class="scan" href="/scan">
+          <span class="lens" aria-hidden="true"></span>Scan an advertisement
+        </a>
+        <button class="submit ghost" id="open-add" type="button">I saw a sticker</button>
       </div>
+      <p class="actions-note">Found one of our advertisements out there? The button opens
+      your camera — point it at the whole page, there is nothing on it to find.</p>
     </div>
 
     <div id="map" role="application" aria-label="Map of sticker sightings and events"></div>
