@@ -12,8 +12,7 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::sightings` (the map), `domain::sites` (strawberry
-  camera spots).
+  `domain::sightings` (the map).
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
 - **One endpoint accepts unauthenticated writes:**
@@ -202,31 +201,6 @@ a human looks at it, so the moderation queue shows the coordinates and
 links out to them. Do not treat a pending sighting's location as
 meaningful.
 
-## Sites, and the location that is never collected
-
-`sites` are places a visitor can stand and see a strawberry through
-their phone camera. The table holds only where the sites are.
-
-**There is deliberately no check-in table, and no column anywhere
-recording who went where.** Whether a visitor is close enough is
-decided in their browser: the page reads a position from the
-Geolocation API, compares it to the site's published coordinates, and
-discards it. Nothing is transmitted, so nothing can leak, be
-subpoenaed, or need a retention policy. If a future feature seems to
-need "who visited", that is a design change with a privacy cost, not a
-missing column — treat it as such.
-
-The corollary: the proximity check is **not a security boundary**.
-Anyone with devtools can fake a position. That is acceptable because
-nothing is at stake — there is no reward, no account, and no record.
-Do not build anything on top of it that assumes the visitor really was
-there.
-
-Sites are stored separately from sightings because they are not the
-same thing at all: a sighting is a photo someone submitted, a site is
-a place the operator published. Sites have no image and no moderation
-state; sightings have no label and no slug.
-
 ## Audit
 
 `audit::write` always takes the pool, never a transaction. This is
@@ -238,8 +212,7 @@ Whenever you add a new mutating endpoint, add a matching `audit::write`
 call on the success path. Use the actor_type / action conventions
 that already exist (`user.register`, `challenge.issued`, `user.verify`,
 `event.create`, `admin.login`, `maintenance.prune`,
-`sighting.submit`, `sighting.approve`, `sighting.reject`,
-`site.create`).
+`sighting.submit`, `sighting.approve`, `sighting.reject`).
 
 `actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
 was added in migration 0012 for anonymous photo submissions — an

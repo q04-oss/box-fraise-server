@@ -5,4 +5,3 @@ pub mod events;
 pub mod onboarding;
 pub mod pairings;
 pub mod sightings;
-pub mod sites;

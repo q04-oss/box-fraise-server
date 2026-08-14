@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise</title>
-  <meta name="description" content="Spot a strawberry sticker in Edmonton? Photograph it and put it on the map.">
+  <meta name="description" content="Do you have what it takes to run this country? A run club on Whyte Avenue, and a map of strawberry stickers.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -240,9 +240,6 @@
       transition: transform 120ms ease;
     }
     .pin.active { transform: scale(1.45); }
-    .pin-site { width: 22px; height: 26px; transition: transform 120ms ease; }
-    .pin-site svg { width: 100%; height: 100%; display: block; }
-    .pin-site.active { transform: scale(1.3); }
     .pin-event {
       width: 14px; height: 14px;
       background: var(--ink);
@@ -270,7 +267,6 @@
       width: 9px; height: 9px; display: inline-block;
       background: var(--accent); border-radius: 50%;
     }
-    .map-key i.site  { border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; }
     .map-key i.event { background: var(--ink); border-radius: 0; transform: rotate(45deg); }
 
     .label {
@@ -398,41 +394,6 @@
     .form-msg.err { color: var(--accent); }
     .fineprint { font-size: 13px; line-height: 1.6; color: var(--muted); margin-top: 16px; }
 
-    /* ── Camera view ─────────────────────────────────────────────── */
-    #camera { position: fixed; inset: 0; z-index: 1000; background: #000; display: none; }
-    #camera.open { display: block; }
-    #camera video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .berry {
-      position: absolute; top: 50%; left: 50%;
-      width: min(38vw, 190px);
-      margin: -19vh 0 0 -19vw;
-      pointer-events: none;
-      animation: bob 3.4s ease-in-out infinite;
-      filter: drop-shadow(0 10px 22px rgba(0,0,0,0.45));
-    }
-    .berry svg { width: 100%; height: auto; display: block; }
-    @keyframes bob {
-      0%, 100% { transform: translate3d(0, -8px, 0) rotate(-3deg); }
-      50%      { transform: translate3d(0, 10px, 0) rotate(3deg); }
-    }
-    @media (prefers-reduced-motion: reduce) { .berry { animation: none; } }
-    .camera-bar {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      padding: 18px 20px calc(18px + env(safe-area-inset-bottom));
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
-      background: linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0));
-    }
-    .camera-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
-      color: #fff; opacity: 0.85;
-    }
-    .camera-close {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
-      background: #fff; color: var(--ink); border: 0; padding: 12px 18px; cursor: pointer;
-    }
-
     @media (max-width: 600px) {
       .masthead { padding: 22px 22px 0; }
       main { padding: 28px 22px 80px; }
@@ -486,10 +447,9 @@
         <button class="submit" id="open-add" type="button">I saw a sticker</button>
       </div>
 
-    <div id="map" role="application" aria-label="Map of sticker sightings, strawberry sites and events"></div>
+    <div id="map" role="application" aria-label="Map of sticker sightings and events"></div>
     <div class="map-key">
       <span><i></i> sightings</span>
-      <span><i class="site"></i> strawberries</span>
       <span><i class="event"></i> events</span>
     </div>
 
@@ -520,22 +480,10 @@
     </section>
 
     <section class="section" id="recent"></section>
-    <section class="section" id="sites"></section>
 
       <section id="detail" class="hidden" aria-live="polite"></section>
     </section>
   </main>
-
-  <!-- Camera view. Lives outside <main> because it covers the whole
-       viewport when open. -->
-  <div id="camera" role="dialog" aria-modal="true" aria-label="Camera view">
-    <video id="camera-video" autoplay muted playsinline></video>
-    <div class="berry" id="berry"></div>
-    <div class="camera-bar">
-      <span class="camera-label" id="camera-label"></span>
-      <button class="camera-close" id="camera-close" type="button">Close</button>
-    </div>
-  </div>
 
   <script src="/js/leaflet.js"></script>
   <script>
@@ -553,20 +501,14 @@
     const DEFAULT_CENTER = [53.5461, -113.4938];
     const DEFAULT_ZOOM = 12;
 
-    // How close you have to be to a strawberry site to see it, in
-    // metres. "Human scale" — near enough that you are plainly at the
-    // spot, loose enough to survive a city GPS fix.
-    const NEAR_METRES = 40;
 
     const mapEl    = document.getElementById('map');
     const recentEl = document.getElementById('recent');
-    const sitesEl  = document.getElementById('sites');
     const detailEl = document.getElementById('detail');
     const addEl    = document.getElementById('add');
 
     let map = null;
     let sightings = [];
-    let sites = [];
     let events = [];
     const markers = new Map();   // "kind:id" -> L.Marker
     let activeKey = null;
@@ -590,11 +532,10 @@
     }
 
     // Three sources, fetched together. Sightings are the only required
-    // one — if sites or events fail, the map still works without them.
+    // one — if events fail, the map still works without them.
     async function load() {
-      const [sightingRes, siteRes, eventRes] = await Promise.allSettled([
+      const [sightingRes, eventRes] = await Promise.allSettled([
         fetchJson('/v1/sightings'),
-        fetchJson('/v1/sites'),
         fetchJson('/v1/events'),
       ]);
 
@@ -604,14 +545,11 @@
         return;
       }
       sightings = sightingRes.value;
-      sites  = siteRes.status  === 'fulfilled' ? siteRes.value  : [];
       events = eventRes.status === 'fulfilled' ? eventRes.value : [];
-      if (siteRes.status  !== 'fulfilled') console.error(siteRes.reason);
       if (eventRes.status !== 'fulfilled') console.error(eventRes.reason);
 
       renderNextEvent();
       renderRecent();
-      renderSites();
       renderMarkers();
     }
 
@@ -685,23 +623,6 @@
       return fig;
     }
 
-    function renderSites() {
-      sitesEl.replaceChildren();
-      if (!sites.length) return;
-      sitesEl.append(el('div', 'label',
-        `${sites.length} strawberr${sites.length === 1 ? 'y' : 'ies'} to find`));
-      for (const s of sites) {
-        const row = el('button', 'pin-row');
-        row.type = 'button';
-        row.append(el('div', 'pin-label', s.label));
-        if (s.blurb) row.append(el('div', 'pin-hint', s.blurb));
-        row.append(el('div', 'pin-count', 'stand here to see it'));
-        row.dataset.key = key('site', s.slug);
-        row.addEventListener('click', () => select('site', s.slug, { pan: true }));
-        sitesEl.append(row);
-      }
-    }
-
     function renderMarkers() {
       markers.clear();
       const points = [];
@@ -723,11 +644,6 @@
       for (const s of sightings) {
         place('sighting', s.id, s.latitude, s.longitude,
               s.caption || 'Sighting', [16, 16], el('div', 'pin'));
-      }
-      for (const s of sites) {
-        const glyph = el('div', 'pin-site');
-        glyph.append(berrySvg(true));
-        place('site', s.slug, s.latitude, s.longitude, s.label, [22, 26], glyph);
       }
       for (const e of events) {
         place('event', e.id, e.latitude, e.longitude, e.name,
@@ -754,9 +670,9 @@
     // ── Selection + detail ────────────────────────────────
 
     function select(kind, k, opts) {
-      const item = kind === 'sighting' ? sightings.find(x => x.id === k)
-                 : kind === 'site'     ? sites.find(x => x.slug === k)
-                 :                       events.find(x => x.id === k);
+      const item = kind === 'sighting'
+        ? sightings.find(x => x.id === k)
+        : events.find(x => x.id === k);
       if (!item) return;
 
       activeKey = key(kind, k);
@@ -764,7 +680,6 @@
       if (opts && opts.pan) map.panTo([item.latitude, item.longitude]);
 
       if (kind === 'sighting') renderSightingDetail(item);
-      else if (kind === 'site') renderSiteDetail(item);
       else renderEventDetail(item);
 
       detailEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -799,41 +714,6 @@
       img.loading = 'lazy';
       img.alt = s.caption ? s.caption : 'A strawberry sticker someone spotted';
       detailEl.append(img);
-    }
-
-    function renderSiteDetail(s) {
-      detailEl.classList.remove('hidden');
-      detailEl.replaceChildren();
-
-      detailEl.append(el('div', 'label', 'strawberry'));
-      detailEl.append(el('h2', null, s.label));
-      if (s.blurb) detailEl.append(el('p', 'detail-hint', s.blurb));
-      detailEl.append(mapsLink(s.latitude, s.longitude));
-
-      const wrap = document.createElement('div');
-      wrap.style.marginTop = '26px';
-      const btn = el('button', 'submit', 'Look for it');
-      btn.type = 'button';
-      const msg = el('div', 'form-msg');
-      wrap.append(btn, msg);
-
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        setMsg(msg, 'ok', 'checking you are here…');
-        try {
-          await requireNear(s);
-          setMsg(msg, 'ok', '');
-          await openCamera(s);
-        } catch (err) {
-          setMsg(msg, 'err', String(err.message || err));
-        } finally {
-          btn.disabled = false;
-        }
-      });
-
-      detailEl.append(wrap);
-      detailEl.append(el('p', 'fineprint',
-        'Your location is checked in your browser and never sent to us — we only know where the strawberries are, not where you are.'));
     }
 
     function renderEventDetail(e) {
@@ -1012,155 +892,6 @@
       }
     }
 
-    // ── Being there ───────────────────────────────────────
-    //
-    // The one privacy-relevant thing on this page, so to be explicit:
-    // the browser gives us a position, we compare it to the site's
-    // published coordinates right here, and we throw it away. It is
-    // never sent to the server, never stored, never written to disk.
-    // There is no check-in table on the backend because there is
-    // nothing to put in one.
-    //
-    // This is not a security boundary — anyone who opens devtools can
-    // fake a position. Nothing is at stake if they do.
-    function requireNear(site) {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('This browser cannot work out where you are.'));
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const d = metresBetween(
-              pos.coords.latitude, pos.coords.longitude, site.latitude, site.longitude);
-            // Be generous by however uncertain the fix is: a phone
-            // reporting ±25m downtown should not be told it is in the
-            // wrong place when it is standing right there.
-            const slack = Math.min(pos.coords.accuracy || 0, 60);
-            if (d - slack <= NEAR_METRES) resolve();
-            else reject(new Error(`You are about ${formatDistance(d)} away. Get closer and try again.`));
-          },
-          (err) => {
-            reject(new Error(
-              err.code === err.PERMISSION_DENIED
-                ? 'Location permission is needed to check you are standing here. Nothing is sent to us.'
-                : 'Could not work out where you are. Try again outdoors.'
-            ));
-          },
-          { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-        );
-      });
-    }
-
-    // Haversine. Good to well under a metre at these distances.
-    function metresBetween(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
-      const toRad = deg => deg * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2
-              + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(a));
-    }
-
-    function formatDistance(m) {
-      return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
-    }
-
-    // ── Camera ────────────────────────────────────────────
-
-    const cameraEl = document.getElementById('camera');
-    const videoEl  = document.getElementById('camera-video');
-    const berryEl  = document.getElementById('berry');
-    let cameraStream = null;
-
-    async function openCamera(site) {
-      // getUserMedia requires a secure context: HTTPS, or localhost in
-      // development. On a plain-http host the browser refuses outright,
-      // the same constraint the admin QR scanner documents.
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('This browser cannot open the camera. Try Chrome or Safari.');
-      }
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } }, audio: false,
-        });
-      } catch (err) {
-        throw new Error(err && err.name === 'NotAllowedError'
-          ? 'Camera permission was refused.'
-          : 'Could not open the camera.');
-      }
-
-      cameraStream = stream;
-      videoEl.srcObject = stream;
-      berryEl.replaceChildren(berrySvg(false));
-      document.getElementById('camera-label').textContent = site.label;
-      cameraEl.classList.add('open');
-      document.body.style.overflow = 'hidden';
-      // iOS Safari will not start the feed without an explicit play()
-      // even with autoplay set; muted + playsinline on the element is
-      // what makes that play() permitted.
-      try { await videoEl.play(); } catch { /* autoplay policy; feed still shows */ }
-    }
-
-    function closeCamera() {
-      cameraEl.classList.remove('open');
-      document.body.style.overflow = '';
-      if (cameraStream) {
-        for (const track of cameraStream.getTracks()) track.stop();
-        cameraStream = null;
-      }
-      videoEl.srcObject = null;
-      berryEl.replaceChildren();
-    }
-
-    document.getElementById('camera-close').addEventListener('click', closeCamera);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && cameraEl.classList.contains('open')) closeCamera();
-    });
-    // Releasing the camera when the tab is hidden avoids leaving the
-    // recording indicator lit on a backgrounded phone.
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && cameraEl.classList.contains('open')) closeCamera();
-    });
-
-    // The strawberry, drawn rather than loaded — no image asset to
-    // host, and it stays crisp at any size. `small` trims the detail
-    // for the 22px map marker.
-    function berrySvg(small) {
-      const NS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('viewBox', '0 0 100 124');
-      svg.setAttribute('aria-hidden', 'true');
-
-      const body = document.createElementNS(NS, 'path');
-      body.setAttribute('d',
-        'M50 120 C26 100 10 76 10 54 C10 32 28 18 50 18 C72 18 90 32 90 54 C90 76 74 100 50 120 Z');
-      body.setAttribute('fill', '#b21b1b');
-      svg.append(body);
-
-      if (!small) {
-        const seeds = [[34,44],[50,38],[66,44],[27,62],[43,58],[59,58],[73,62],
-                       [36,78],[52,74],[64,78],[45,94],[57,92]];
-        for (const [cx, cy] of seeds) {
-          const seed = document.createElementNS(NS, 'ellipse');
-          seed.setAttribute('cx', cx); seed.setAttribute('cy', cy);
-          seed.setAttribute('rx', '2.6'); seed.setAttribute('ry', '3.8');
-          seed.setAttribute('fill', '#ffd9d9');
-          seed.setAttribute('opacity', '0.85');
-          svg.append(seed);
-        }
-      }
-
-      const calyx = document.createElementNS(NS, 'path');
-      calyx.setAttribute('d',
-        'M50 4 L58 18 L76 10 L68 24 L86 28 L66 32 L50 26 L34 32 L14 28 L32 24 L24 10 L42 18 Z');
-      calyx.setAttribute('fill', '#2f6b3a');
-      svg.append(calyx);
-
-      return svg;
-    }
   })();
   </script>
 </body>

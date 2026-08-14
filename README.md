@@ -53,9 +53,6 @@ On boot, the server will:
 | `POST /v1/admin/events`                      | admin     | Create an event                                    |
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
-| `GET  /v1/sites`                             | public    | Strawberry sites (published)                       |
-| `GET  /v1/admin/sites`                       | admin     | Includes unpublished sites                         |
-| `POST /v1/admin/sites`                       | admin     | Add a site                                         |
 | `GET  /v1/sightings`                         | public    | Approved sightings (the map pins)                  |
 | `POST /v1/sightings`                         | **none**  | Multipart: photo + lat/lng → 202 pending           |
 | `GET  /v1/sightings/{id}/image`              | public    | Image bytes; approved only                         |
@@ -148,7 +145,6 @@ src/
   domain/onboarding/   — register, challenge, verify, me
   domain/events/       — public list/get + admin list/create/count
   domain/sightings/    — public sighting submit + moderation
-  domain/sites/        — strawberry sites (camera spots)
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
   0012_stickers.sql    — (superseded by 0014)
