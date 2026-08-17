@@ -1473,6 +1473,18 @@ async fn accepting_twice_conflicts() {
         submissions_service::accept(&pool, admin_id, r.id).await,
         Err(AppError::Conflict)
     ));
+
+    // Clean up in SQL rather than through the service: reject() only
+    // touches pending rows, so once a submission is accepted there is
+    // no service path that removes it. Without this the row survives
+    // every run and the editor's table fills with test columns.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(r.id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
 }
 
 /// Rejection deletes the row and its bytes. The audit entry is the only
