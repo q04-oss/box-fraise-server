@@ -128,6 +128,21 @@ boundary (pending rows invisible without admin, non-image bytes
 refused, accept race, rejection deletes), and the taste-line boundary
 (drafts invisible and never drawn, withdraw race).
 
+Each run seeds its own admins, users and events and leaves them there —
+about 19 admin rows a run. They are harmless, and when they pile up:
+
+```bash
+docker exec -i box-fraise-postgres-1 \
+  psql -U postgres -d box_fraise -v ON_ERROR_STOP=1 \
+  < scripts/clean-test-data.sql
+```
+
+It only ever touches rows reachable from an admin whose email ends
+`@test.local` or a device key with `key_id = 'test-device'`, neither of
+which exists outside a test run. It is deliberately not wired into the
+suite: cleanup inside a parallel run races with tests still using the
+rows.
+
 Note the default `DATABASE_URL` in the test file points at port 5432;
 this project's Postgres is on **5434**, so pass it explicitly as
 above or the suite will run against whatever else is on 5432.
