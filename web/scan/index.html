@@ -208,8 +208,15 @@
 
     // The marks this page knows how to recognise.
     const MARKS = [
-      { id: 'ad',         src: '/ads/run-club.jpg',     act: 'go', to: '/run' },
-      { id: 'strawberry', src: '/marks/strawberry.jpg', act: 'line' },
+      { id: 'ad',        src: '/ads/run-club.jpg',           act: 'go', to: '/run' },
+      // Two references for one sticker, on purpose. The guide box is
+      // portrait — it was drawn for the advertisement — and a landscape
+      // sticker can be framed two ways inside it: fitted by width with
+      // paper above and below, or pushed in close so the sides run off
+      // the edge. Those hash very differently, so both are listed and
+      // either one is a match.
+      { id: 'strawberry',       src: '/marks/strawberry.jpg',       act: 'line' },
+      { id: 'strawberry-tight', src: '/marks/strawberry-tight.jpg', act: 'line' },
     ];
     // Reference artwork is small on purpose: it is only ever used to
     // compute a fingerprint, never displayed.
