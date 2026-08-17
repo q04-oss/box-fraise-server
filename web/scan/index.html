@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scan the ad — box fraise</title>
-  <meta name="description" content="Point your camera at the Box Fraise ad.">
+  <title>Scan — box fraise</title>
+  <meta name="description" content="Point your camera at a Box Fraise advertisement or a strawberry.">
   <meta name="theme-color" content="#000000">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,7 +37,8 @@
       background: #000;
     }
 
-    /* Framing guide. Same proportions as the ad (2000 × 2680), which
+    /* Framing guide. Same proportions as the ad (2000 × 2680). Every
+       mark is referenced in this shape, including the strawberry, which
        is what makes an approximate matcher workable: it pins scale and
        position so the fingerprint is taken of roughly the same crop
        every time. */
@@ -181,11 +182,11 @@
 
     <div class="hud">
       <a href="/">← box fraise</a>
-      <span id="hint">point at the ad</span>
+      <span id="hint">ad or strawberry</span>
     </div>
 
     <div class="foot">
-      <p class="instruction" id="instruction">Line the ad up with the box — edge to edge.</p>
+      <p class="instruction" id="instruction">An advertisement, or a strawberry. Line it up with the box, edge to edge.</p>
       <div class="status" id="status">starting the camera…</div>
       <div class="meter"><i id="meter"></i></div>
       <div class="readout" id="readout"></div>
