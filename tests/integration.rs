@@ -1326,7 +1326,7 @@ fn column(text: &str) -> SubmissionUpload {
         body: Some(text.into()),
         image_bytes: None,
         submitter_name: None,
-        submitter_contact: None,
+        submitter_email: "writer@test.local".into(),
     }
 }
 
@@ -1391,7 +1391,7 @@ async fn empty_submission_is_refused() {
         body: None,
         image_bytes: None,
         submitter_name: Some("nobody".into()),
-        submitter_contact: None,
+        submitter_email: "writer@test.local".into(),
     };
     assert!(matches!(
         submissions_service::submit(&pool, empty).await,
@@ -1419,7 +1419,7 @@ async fn non_image_bytes_are_refused() {
                 .to_vec(),
         ),
         submitter_name: None,
-        submitter_contact: None,
+        submitter_email: "writer@test.local".into(),
     };
     assert!(matches!(
         submissions_service::submit(&pool, html).await,
@@ -1438,7 +1438,7 @@ async fn photograph_alone_is_a_submission() {
             body: None,
             image_bytes: Some(tiny_jpeg()),
             submitter_name: Some("Photographer".into()),
-            submitter_contact: None,
+            submitter_email: "writer@test.local".into(),
         },
     )
     .await
@@ -1500,7 +1500,7 @@ async fn rejection_deletes_the_submission() {
             body: Some("A column that is about to be turned down by the editor.".into()),
             image_bytes: Some(tiny_jpeg()),
             submitter_name: None,
-            submitter_contact: None,
+            submitter_email: "writer@test.local".into(),
         },
     )
     .await
@@ -1656,4 +1656,58 @@ async fn line_validation_holds() {
         lines_service::create(&pool, admin_id, bad_source).await,
         Err(AppError::BadRequest(_))
     ));
+}
+
+/// Posting requires an address, and it has to look like one. The
+/// service refuses before the DB does; the `submissions_email_shape`
+/// CHECK is the backstop.
+#[tokio::test]
+async fn a_submission_needs_a_real_looking_email() {
+    let pool = test_pool().await;
+
+    let with_email = |email: &str| SubmissionUpload {
+        title: None,
+        body: Some("A column long enough to count as a column, sent for checking.".into()),
+        image_bytes: None,
+        submitter_name: None,
+        submitter_email: email.into(),
+    };
+
+    for bad in [
+        "",
+        "   ",
+        "nobody",
+        "@fraise.box",
+        "someone@",
+        "two@@at.com",
+        "a b@c.com",
+    ] {
+        assert!(
+            matches!(
+                submissions_service::submit(&pool, with_email(bad)).await,
+                Err(AppError::BadRequest(_))
+            ),
+            "{bad:?} should have been refused"
+        );
+    }
+
+    // Addresses are stored lowercased, so the same person is the same
+    // handle whatever their keyboard did.
+    let admin_id = seed_test_admin(&pool).await;
+    let r = submissions_service::submit(&pool, with_email("  Writer@Fraise.Box  "))
+        .await
+        .unwrap();
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let stored: String =
+        sqlx::query_scalar("SELECT submitter_email FROM submissions WHERE id = $1")
+            .bind(r.id)
+            .fetch_one(tx.conn())
+            .await
+            .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(stored, "writer@fraise.box");
+
+    submissions_service::reject(&pool, admin_id, r.id)
+        .await
+        .unwrap();
 }

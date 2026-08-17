@@ -79,6 +79,15 @@
         msgEl.textContent = 'A title needs a column under it.';
         return;
       }
+      // Required, because it is the handle a post is claimed with.
+      // Shape only — the server checks again, and the only proof an
+      // address works is a message arriving at it.
+      const email = document.getElementById('gg-contact').value.trim();
+      if (!/^[^@s]+@[^@s]+.[^@s]+$/.test(email)) {
+        msgEl.className = 'msg err';
+        msgEl.textContent = 'An email address is needed — it is how your post gets back to you.';
+        return;
+      }
 
       sendEl.disabled = true;
       msgEl.className = 'msg err';
@@ -89,9 +98,8 @@
         if (title) fd.append('title', title);
         if (body)  fd.append('body', body);
         const name    = document.getElementById('gg-name').value.trim();
-        const contact = document.getElementById('gg-contact').value.trim();
         if (name)    fd.append('submitter_name', name);
-        if (contact) fd.append('submitter_contact', contact);
+        fd.append('submitter_email', email);
         if (file) {
           const blob = await prepareImage(file);
           fd.append('image', blob, 'photograph.jpg');

@@ -53,7 +53,7 @@ async fn submit(
         body: None,
         image_bytes: None,
         submitter_name: None,
-        submitter_contact: None,
+        submitter_email: String::new(),
     };
 
     while let Some(field) = multipart
@@ -74,7 +74,7 @@ async fn submit(
             "title" => upload.title = field.text().await.ok(),
             "body" => upload.body = field.text().await.ok(),
             "submitter_name" => upload.submitter_name = field.text().await.ok(),
-            "submitter_contact" => upload.submitter_contact = field.text().await.ok(),
+            "submitter_email" => upload.submitter_email = field.text().await.unwrap_or_default(),
             // Unknown parts are ignored rather than rejected, so an
             // extra field in a future form does not break this one.
             _ => {}

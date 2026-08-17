@@ -634,7 +634,7 @@
       who.className = 'who';
       const bits = [];
       bits.push(row.submitter_name ? row.submitter_name : 'no name given');
-      if (row.submitter_contact) bits.push(row.submitter_contact);
+      bits.push(row.submitter_email);
       bits.push(new Date(row.submitted_at).toLocaleString());
       who.textContent = bits.join(' · ');
       card.appendChild(who);

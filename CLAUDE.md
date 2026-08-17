@@ -182,11 +182,18 @@ private correspondence or let anyone write the magazine:
 
 | | write | read |
 |---|---|---|
-| `submissions` (0018) | public, only as `pending` | **admin only, in every state** |
+| `submissions` (0018, 0020) | public, only as `pending` | **`pending` admin-only; `accepted` public** |
 | `taste_lines` (0019) | **admin only** | public, only where `published` |
 
-A submission is correspondence to the editor. A published line is
-published matter. Neither table has both doors open.
+Both are moderated publication: anyone may write, nobody may publish
+themselves. 0018 originally made submissions private correspondence;
+0020 corrected that — they are posts, and the magazine is a selection
+from what is already public.
+
+`submissions.submitter_email` is the exception and stays editor-only.
+RLS is row-level, so the accepted-row policy does expose that column
+to any query the app makes — the boundary is the repository, which
+names its columns. Never `SELECT *` on a public submissions path.
 
 ## When you change a table
 

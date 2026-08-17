@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gurgle — box fraise</title>
-  <meta name="description" content="Send a column or a photograph in to the magazine. It goes to the editor and nobody else can read it.">
+  <meta name="description" content="Post a column or a photograph. Published posts are public; the magazine is made from them.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,14 +54,14 @@
       font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
       color: var(--muted); margin: 22px 0 7px;
     }
-    input[type=text], textarea {
+    input[type=text], input[type=email], textarea {
       width: 100%; font: inherit; font-size: 17px;
       border: 1px solid var(--rule); border-radius: 8px;
       padding: 13px 14px; background: #fff; color: var(--ink);
       resize: vertical;
     }
     textarea { min-height: 220px; line-height: 1.55; }
-    input[type=text]:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    input[type=text]:focus, input[type=email]:focus, textarea:focus { outline: none; border-color: var(--accent); }
     input[type=file] { font-size: 14px; max-width: 100%; }
     .count {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -98,10 +98,11 @@
     <a class="backlink" href="/">← box fraise</a>
 
     <h1>Gurgle</h1>
-    <p class="lede">Send a column or a photograph in to the magazine.</p>
-    <p class="fine">It goes to the editor and nobody else can read it — there is no public
-    version of this, in any state. If it ends up in the magazine, that is because a person
-    put it there.</p>
+    <p class="lede">Post a column or a photograph. The magazine is made from what goes up.</p>
+    <p class="fine">Everything here is read first. Once it goes up it is public, with your
+    name on it if you gave one — and the magazine is made by taking some of what is
+    already there. Your email is never published; it is how the editor reaches you, and
+    how you will claim your posts when accounts exist.</p>
 
     <form id="gg-form">
       <label for="gg-title">Title</label>
@@ -117,8 +118,8 @@
       <label for="gg-name">Your name</label>
       <input type="text" id="gg-name" maxlength="80" autocomplete="name">
 
-      <label for="gg-contact">How to reach you</label>
-      <input type="text" id="gg-contact" maxlength="200" autocomplete="email">
+      <label for="gg-contact">Email</label>
+      <input type="email" id="gg-contact" maxlength="200" autocomplete="email" required>
 
       <button type="submit" class="send" id="gg-send">Send it in</button>
       <div class="msg" id="gg-msg"></div>

@@ -13,7 +13,9 @@ pub struct SubmissionUpload {
     pub body: Option<String>,
     pub image_bytes: Option<Vec<u8>>,
     pub submitter_name: Option<String>,
-    pub submitter_contact: Option<String>,
+    /// Required. The handle a magic link would claim this post
+    /// with, and the only field on a submission that is never public.
+    pub submitter_email: String,
 }
 
 #[derive(Serialize)]
@@ -33,7 +35,7 @@ pub struct PendingSubmission {
     pub has_image: bool,
     pub byte_size: Option<i32>,
     pub submitter_name: Option<String>,
-    pub submitter_contact: Option<String>,
+    pub submitter_email: String,
     pub submitted_at: DateTime<Utc>,
 }
 

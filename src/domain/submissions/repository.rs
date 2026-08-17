@@ -20,7 +20,7 @@ pub async fn insert_submission(
     body: Option<&str>,
     image: Option<(&[u8], &str)>,
     submitter_name: Option<&str>,
-    submitter_contact: Option<&str>,
+    submitter_email: &str,
 ) -> sqlx::Result<Uuid> {
     let id = Uuid::new_v4();
     let (bytes, content_type) = match image {
@@ -30,7 +30,7 @@ pub async fn insert_submission(
     sqlx::query(
         "INSERT INTO submissions
              (id, title, body, image_bytes, content_type, byte_size,
-              submitter_name, submitter_contact, status)
+              submitter_name, submitter_email, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')",
     )
     .bind(id)
@@ -40,7 +40,7 @@ pub async fn insert_submission(
     .bind(content_type)
     .bind(bytes.map(|b| b.len() as i32))
     .bind(submitter_name)
-    .bind(submitter_contact)
+    .bind(submitter_email)
     .execute(conn)
     .await?;
     Ok(id)
@@ -61,7 +61,7 @@ pub async fn list_pending(conn: &mut PgConnection) -> sqlx::Result<Vec<PendingSu
     sqlx::query_as::<_, PendingSubmission>(
         "SELECT id, title, body,
                 (image_bytes IS NOT NULL) AS has_image,
-                byte_size, submitter_name, submitter_contact, submitted_at
+                byte_size, submitter_name, submitter_email, submitted_at
            FROM submissions
           WHERE status = 'pending'
           ORDER BY submitted_at ASC",

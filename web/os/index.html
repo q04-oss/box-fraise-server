@@ -409,14 +409,14 @@
       font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
       color: var(--muted); margin: 12px 0 5px;
     }
-    .gg input[type=text], .gg textarea {
+    .gg input[type=text], .gg input[type=email], .gg textarea {
       width: 100%; font: inherit; font-size: 14px;
       border: 1px solid var(--rule); border-radius: 6px;
       padding: 9px 10px; background: #fff; color: var(--ink);
       resize: vertical;
     }
     .gg textarea { min-height: 130px; line-height: 1.5; }
-    .gg input[type=text]:focus, .gg textarea:focus {
+    .gg input[type=text]:focus, .gg input[type=email]:focus, .gg textarea:focus {
       outline: none; border-color: var(--accent);
     }
     .gg input[type=file] { font-size: 12px; max-width: 100%; }
@@ -679,9 +679,8 @@
         <hr class="gg-rule">
 
         <p class="kv">Send something in</p>
-        <p class="gg-note">Columns and photographs for the magazine. This one is real —
-        it goes to the editor and nobody else can read it. Send writing, a photograph,
-        or both.</p>
+        <p class="gg-note">Post a column or a photograph. Read first, then public — the
+        magazine is made from what is already up. Your email is never published.</p>
 
         <form id="gg-form">
           <label for="gg-title">Title</label>
@@ -697,8 +696,8 @@
           <label for="gg-name">Your name</label>
           <input type="text" id="gg-name" maxlength="80" autocomplete="name">
 
-          <label for="gg-contact">How to reach you</label>
-          <input type="text" id="gg-contact" maxlength="200" autocomplete="email">
+          <label for="gg-contact">Email</label>
+          <input type="email" id="gg-contact" maxlength="200" autocomplete="email" required>
 
           <button type="submit" class="send" id="gg-send">Send it in</button>
           <div class="msg" id="gg-msg"></div>
@@ -716,7 +715,7 @@
 
         <p>With one exception. <a href="#" data-open="win-gurgle">gurgle.app</a> is real
         in both directions: the line in it was drawn from the published pool just now,
-        and what you send through it reaches the editor, where nobody else can read it.</p>
+        and what you post through it reaches the editor, who decides what goes up.</p>
         <p>The idea: other companies build products on top, they pull only what you
         granted, and every pull pays you seventy percent. Box Fraise holds the identity
         and the consent, and keeps thirty. What is real today is

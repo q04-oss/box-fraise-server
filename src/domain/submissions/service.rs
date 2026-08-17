@@ -33,7 +33,7 @@ const MAX_PENDING: i32 = 200;
 const MAX_TITLE_CHARS: usize = 140;
 const MAX_BODY_CHARS: usize = 20_000;
 const MAX_NAME_CHARS: usize = 80;
-const MAX_CONTACT_CHARS: usize = 200;
+const MAX_EMAIL_CHARS: usize = 200;
 /// A column of two words is a mistake or a probe, not a column.
 const MIN_BODY_CHARS: usize = 40;
 
@@ -47,8 +47,7 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
     let title = clean_optional_text(upload.title.as_deref(), MAX_TITLE_CHARS)?;
     let body = clean_optional_text(upload.body.as_deref(), MAX_BODY_CHARS)?;
     let submitter_name = clean_optional_text(upload.submitter_name.as_deref(), MAX_NAME_CHARS)?;
-    let submitter_contact =
-        clean_optional_text(upload.submitter_contact.as_deref(), MAX_CONTACT_CHARS)?;
+    let submitter_email = clean_email(&upload.submitter_email)?;
 
     if let Some(text) = body.as_deref() {
         if text.chars().count() < MIN_BODY_CHARS {
@@ -105,7 +104,7 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
         body.as_deref(),
         image,
         submitter_name.as_deref(),
-        submitter_contact.as_deref(),
+        &submitter_email,
     )
     .await?;
     tx.commit().await?;
@@ -220,6 +219,41 @@ pub fn sniff_content_type(bytes: &[u8]) -> Option<&'static str> {
         return Some("image/webp");
     }
     None
+}
+
+/// Required, and shaped like an address.
+///
+/// Deliberately loose, matching the `submissions_email_shape` CHECK:
+/// it rejects what is obviously not an address and no more. Regexes
+/// that try to encode RFC 5322 reject real addresses, and the only
+/// proof an address works is a message arriving at it.
+fn clean_email(raw: &str) -> AppResult<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Err(AppError::bad_request("an email address is needed"));
+    }
+    if trimmed.chars().count() > MAX_EMAIL_CHARS {
+        return Err(AppError::bad_request(format!(
+            "the email address exceeds {MAX_EMAIL_CHARS} characters"
+        )));
+    }
+    let mut parts = trimmed.split('@');
+    let local = parts.next().unwrap_or_default();
+    let domain = parts.next().unwrap_or_default();
+    let extra = parts.next();
+    let ok = extra.is_none()
+        && !local.is_empty()
+        && !domain.is_empty()
+        && domain.contains('.')
+        && !domain.starts_with('.')
+        && !domain.ends_with('.')
+        && !trimmed.chars().any(char::is_whitespace);
+    if !ok {
+        return Err(AppError::bad_request(
+            "that does not look like an email address",
+        ));
+    }
+    Ok(trimmed.to_lowercase())
 }
 
 /// Trim, reject over-length, and collapse empty to None so the DB
