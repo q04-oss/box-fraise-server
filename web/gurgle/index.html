@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gurgle — box fraise</title>
+  <meta name="description" content="Send a column or a photograph in to the magazine. It goes to the editor and nobody else can read it.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { max-width: 640px; margin: 0 auto; padding: 56px 24px 96px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 44px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 6vw, 54px); letter-spacing: -0.028em;
+      line-height: 1.03; margin: 0 0 20px; text-wrap: balance;
+    }
+    .lede { font-size: 19px; line-height: 1.6; margin: 0 0 12px; max-width: 46ch; }
+    .fine { font-size: 15px; line-height: 1.6; color: var(--muted); margin: 0 0 34px; max-width: 46ch; }
+
+    /* The form. Generous targets — most people arrive here on a phone,
+       having just scanned something in the street. */
+    label {
+      display: block;
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin: 22px 0 7px;
+    }
+    input[type=text], textarea {
+      width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 13px 14px; background: #fff; color: var(--ink);
+      resize: vertical;
+    }
+    textarea { min-height: 220px; line-height: 1.55; }
+    input[type=text]:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    input[type=file] { font-size: 14px; max-width: 100%; }
+    .count {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; letter-spacing: 0.1em; color: var(--muted);
+      text-align: right; margin-top: 6px;
+    }
+    .send {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em;
+      padding: 18px 30px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer;
+      margin-top: 28px; min-height: 56px;
+    }
+    .send[disabled] { background: #ccc; cursor: default; }
+    .msg { font-size: 16px; line-height: 1.55; margin-top: 14px; }
+    .msg.ok  { color: var(--accent); }
+    .msg.err { color: #444; }
+
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 40px; }
+
+    @media (max-width: 560px) {
+      main { padding: 40px 20px 72px; }
+      .send { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Gurgle</h1>
+    <p class="lede">Send a column or a photograph in to the magazine.</p>
+    <p class="fine">It goes to the editor and nobody else can read it — there is no public
+    version of this, in any state. If it ends up in the magazine, that is because a person
+    put it there.</p>
+
+    <form id="gg-form">
+      <label for="gg-title">Title</label>
+      <input type="text" id="gg-title" maxlength="140" autocomplete="off">
+
+      <label for="gg-body">Column</label>
+      <textarea id="gg-body" maxlength="20000"></textarea>
+      <div class="count" id="gg-count">0</div>
+
+      <label for="gg-image">Photograph</label>
+      <input type="file" id="gg-image" accept="image/*">
+
+      <label for="gg-name">Your name</label>
+      <input type="text" id="gg-name" maxlength="80" autocomplete="name">
+
+      <label for="gg-contact">How to reach you</label>
+      <input type="text" id="gg-contact" maxlength="200" autocomplete="email">
+
+      <button type="submit" class="send" id="gg-send">Send it in</button>
+      <div class="msg" id="gg-msg"></div>
+    </form>
+
+    <p class="closer">A column, a photograph, or both — one is enough.
+    <a class="inline" href="/scan">Scanning a strawberry</a> gives you one back.</p>
+  </main>
+
+  <script src="/js/gurgle.js"></script>
+  <script>wireGurgle();</script>
+</body>
+</html>

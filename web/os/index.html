@@ -674,7 +674,7 @@
         <p class="gg-line" id="gg-line">…</p>
         <p class="gg-who" id="gg-who"></p>
         <p class="gg-fine">One line a visit. The rest are on stickers —
-        <a href="/scan">scan one</a>.</p>
+        <a href="/scan">scan one</a>. On a phone, <a href="/gurgle">gurgle is a page</a>.</p>
 
         <hr class="gg-rule">
 
@@ -746,6 +746,7 @@
     </div>
   </div>
 
+  <script src="/js/gurgle.js"></script>
   <script>
   (() => {
     'use strict';
@@ -1094,8 +1095,13 @@
     }
 
     // ── gurgle.app ─────────────────────────────────────────────────
-    // The only code on this page that talks to the server: it draws one
-    // line, and it sends what you write.
+    // The only part of this page that talks to the server: it draws a
+    // line, and the shared /js/gurgle.js sends what you write.
+    //
+    // The form itself lives in /js/gurgle.js because /gurgle hosts the
+    // same one. Its validation and wire format have to agree with the
+    // server, and two copies of that would drift.
+    wireGurgle();
 
     // Drawn once per load, deliberately. Reopening the window must not
     // deal another — on a desktop the constraint has to be enforced in
@@ -1120,107 +1126,6 @@
         who.textContent  = '';
       }
     })();
-    const ggForm = document.getElementById('gg-form');
-    const ggBody = document.getElementById('gg-body');
-    const ggMsg  = document.getElementById('gg-msg');
-    const ggSend = document.getElementById('gg-send');
-    const ggCount = document.getElementById('gg-count');
-    const MIN_BODY = 40;
-
-    ggBody.addEventListener('input', () => {
-      const n = ggBody.value.trim().length;
-      ggCount.textContent = n === 0 ? '0'
-        : n < MIN_BODY ? n + ' — a column needs ' + MIN_BODY
-        : n + '';
-    });
-
-    // Photographs go through a canvas before they are sent: it caps
-    // the long edge, drops the file well under the 8 MB ceiling, and
-    // turns anything the browser can decode — HEIC on Safari included
-    // — into the JPEG the server will accept.
-    const MAX_EDGE = 2000;
-    function prepareImage(file) {
-      return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          const scale = Math.min(1, MAX_EDGE / Math.max(img.width, img.height));
-          const c = document.createElement('canvas');
-          c.width  = Math.round(img.width  * scale);
-          c.height = Math.round(img.height * scale);
-          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          c.toBlob(b => b ? resolve(b) : reject(new Error('could not read that image')),
-                   'image/jpeg', 0.85);
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error('that image could not be read — try a JPEG or PNG'));
-        };
-        img.src = url;
-      });
-    }
-
-    ggForm.addEventListener('submit', async e => {
-      e.preventDefault();
-      const body  = ggBody.value.trim();
-      const file  = document.getElementById('gg-image').files[0];
-      const title = document.getElementById('gg-title').value.trim();
-
-      // Say no here rather than making the server say it.
-      if (!body && !file) {
-        ggMsg.className = 'msg err';
-        ggMsg.textContent = 'Send a column, a photograph, or both.';
-        return;
-      }
-      if (body && body.length < MIN_BODY) {
-        ggMsg.className = 'msg err';
-        ggMsg.textContent = 'A column needs at least ' + MIN_BODY + ' characters.';
-        return;
-      }
-      if (title && !body) {
-        ggMsg.className = 'msg err';
-        ggMsg.textContent = 'A title needs a column under it.';
-        return;
-      }
-
-      ggSend.disabled = true;
-      ggMsg.className = 'msg err';
-      ggMsg.textContent = file ? 'Preparing the photograph…' : 'Sending…';
-
-      try {
-        const fd = new FormData();
-        if (title) fd.append('title', title);
-        if (body)  fd.append('body', body);
-        const name = document.getElementById('gg-name').value.trim();
-        const contact = document.getElementById('gg-contact').value.trim();
-        if (name)    fd.append('submitter_name', name);
-        if (contact) fd.append('submitter_contact', contact);
-        if (file) {
-          const blob = await prepareImage(file);
-          fd.append('image', blob, 'photograph.jpg');
-        }
-
-        ggMsg.textContent = 'Sending…';
-        const r = await fetch('/v1/submissions', { method: 'POST', body: fd });
-        const text = await r.text();
-        let parsed = null;
-        if (text) { try { parsed = JSON.parse(text); } catch { /* leave null */ } }
-        if (!r.ok) {
-          throw new Error((parsed && (parsed.message || parsed.error)) || text || ('http ' + r.status));
-        }
-
-        ggForm.reset();
-        ggCount.textContent = '0';
-        ggMsg.className = 'msg ok';
-        ggMsg.textContent = 'Sent. It is with the editor now.';
-      } catch (err) {
-        ggMsg.className = 'msg err';
-        ggMsg.textContent = err.message || 'It did not send. Try again in a moment.';
-      } finally {
-        ggSend.disabled = false;
-      }
-    });
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');
