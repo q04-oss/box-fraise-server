@@ -90,7 +90,17 @@
     /* The feed. Set like pages of the magazine rather than like
        posts — long-form is the common case here, so the measure
        matters more than the density. */
-    .feed { margin-top: 56px; border-top: 2px solid var(--ink); }
+    /* The feed is the page, so it starts where the reading starts. */
+    .feed { margin-top: 12px; border-top: 2px solid var(--ink); }
+    .open {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; text-transform: lowercase; letter-spacing: 0.1em;
+      padding: 16px 26px; border: 1px solid var(--ink); border-radius: 999px;
+      background: none; color: var(--ink); cursor: pointer;
+      margin: 0 0 34px; min-height: 52px;
+    }
+    .open:hover { border-color: var(--accent); color: var(--accent); }
+    form[hidden] { display: none; }
     .feed-head {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
@@ -127,13 +137,14 @@
     <a class="backlink" href="/">← box fraise</a>
 
     <h1>Gurgle</h1>
-    <p class="lede">Post a column or a photograph. The magazine is made from what goes up.</p>
-    <p class="fine">Everything here is read first. Once it goes up it is public, with your
-    name on it if you gave one — and the magazine is made by taking some of what is
-    already there. Your email is never published; it is how the editor reaches you, and
-    how you will claim your posts when accounts exist.</p>
+    <p class="lede">Columns and photographs, and the magazine is made from them.</p>
 
-    <form id="gg-form">
+    <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-form">post, or whatever</button>
+
+    <form id="gg-form" hidden>
+      <p class="fine">Everything here is read first. Once it goes up it is public, with
+      your name on it if you gave one. Your email is never published — it is how the
+      editor reaches you, and how you will claim your posts when accounts exist.</p>
       <label for="gg-title">Title</label>
       <input type="text" id="gg-title" maxlength="140" autocomplete="off">
 
@@ -154,13 +165,12 @@
       <div class="msg" id="gg-msg"></div>
     </form>
 
-    <p class="closer">A column, a photograph, or both — one is enough.
-    <a class="inline" href="/scan">Scanning a strawberry</a> gives you one back.</p>
-
     <section class="feed">
-      <p class="feed-head">What has gone up</p>
       <div id="gg-feed"></div>
     </section>
+
+    <p class="closer">A column, a photograph, or both — one is enough.
+    <a class="inline" href="/scan">Scanning a strawberry</a> gives you one back.</p>
   </main>
 
   <script src="/js/gurgle.js"></script>

@@ -403,6 +403,14 @@
     .gg-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; }
     .gg-fine a { color: var(--ink); }
     .gg-rule { border: 0; border-top: 1px solid var(--rule); margin: 18px 0 16px; }
+    .gg .open {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: lowercase; letter-spacing: 0.1em;
+      padding: 10px 16px; border: 1px solid var(--ink); border-radius: 999px;
+      background: none; color: var(--ink); cursor: pointer; margin-bottom: 16px;
+    }
+    .gg .open:hover { border-color: var(--accent); color: var(--accent); }
+    .gg form[hidden] { display: none; }
     /* The same feed as /gurgle, at window scale. */
     .gf-post { border-top: 1px solid var(--rule); padding: 14px 0; }
     .gf-title { font-style: italic; font-size: 16px; line-height: 1.2; margin: 0 0 7px; }
@@ -689,11 +697,11 @@
 
         <hr class="gg-rule">
 
-        <p class="kv">Send something in</p>
-        <p class="gg-note">Post a column or a photograph. Read first, then public — the
-        magazine is made from what is already up. Your email is never published.</p>
+        <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-form">post, or whatever</button>
 
-        <form id="gg-form">
+        <form id="gg-form" hidden>
+          <p class="gg-note">Read first, then public, with your name on it if you give
+          one. Your email is never published.</p>
           <label for="gg-title">Title</label>
           <input type="text" id="gg-title" maxlength="140" autocomplete="off">
 
@@ -716,7 +724,6 @@
 
         <hr class="gg-rule">
 
-        <p class="kv">What has gone up</p>
         <div id="gg-feed"></div>
       </div>
     </section>

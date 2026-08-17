@@ -45,6 +45,20 @@
     const form = document.getElementById('gg-form');
     if (!form) return;
 
+    // The feed leads and the form is folded away behind a button.
+    // Reading is the common case; posting is the occasional one, and
+    // a form at the top of a page is a page that looks like work.
+    const open = document.getElementById('gg-open');
+    if (open) {
+      open.addEventListener('click', () => {
+        const showing = !form.hidden;
+        form.hidden = showing;
+        open.textContent = showing ? 'post, or whatever' : 'never mind';
+        open.setAttribute('aria-expanded', String(!showing));
+        if (!showing) form.querySelector('textarea').focus();
+      });
+    }
+
     const bodyEl  = document.getElementById('gg-body');
     const msgEl   = document.getElementById('gg-msg');
     const sendEl  = document.getElementById('gg-send');
