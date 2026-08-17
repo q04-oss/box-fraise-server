@@ -254,6 +254,18 @@
     start();
 
     async function start() {
+      // /scan?line draws a line without a camera or a sticker, so the
+      // card can be looked at while the artwork does not exist yet and
+      // checked again before any are printed. It only ever shows what
+      // the pool would really hand over — there is no fake line here.
+      if (new URLSearchParams(location.search).has('line')) {
+        document.getElementById('instruction').textContent = 'Preview.';
+        hint.textContent = 'preview';
+        statusEl.textContent = 'not scanning';
+        drawLine();
+        return;
+      }
+
       // Each mark loads on its own. A missing reference disables
       // that one mark rather than the whole page — the strawberry
       // artwork is supplied separately, and the advertisement has to
