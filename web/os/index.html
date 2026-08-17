@@ -390,6 +390,19 @@
        /v1/submissions, which is the one unauthenticated write in the
        system — see migration 0018. */
     .gg-note { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0 0 14px; }
+    /* The line, set like the magazine rather than like a message. */
+    .gg-line {
+      font-style: italic; font-size: 21px; line-height: 1.25;
+      margin: 0 0 8px; color: var(--ink); text-wrap: balance;
+    }
+    .gg-who {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; letter-spacing: 0.14em; color: var(--accent);
+      margin: 0 0 12px;
+    }
+    .gg-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; }
+    .gg-fine a { color: var(--ink); }
+    .gg-rule { border: 0; border-top: 1px solid var(--rule); margin: 18px 0 16px; }
     .gg label {
       display: block;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -653,6 +666,18 @@
     <section class="win" id="win-gurgle" style="left:232px; top:262px; width:384px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">gurgle.app</span></header>
       <div class="body gg">
+        <!-- What came back. One line, drawn once when the desktop
+             boots — reopening this window shows the same one. A window
+             that deals a fresh line on every click is a feed, and the
+             entire point is that a line costs a walk. -->
+        <p class="kv">for better taste:</p>
+        <p class="gg-line" id="gg-line">…</p>
+        <p class="gg-who" id="gg-who"></p>
+        <p class="gg-fine">One line a visit. The rest are on stickers —
+        <a href="/scan">scan one</a>.</p>
+
+        <hr class="gg-rule">
+
         <p class="kv">Send something in</p>
         <p class="gg-note">Columns and photographs for the magazine. This one is real —
         it goes to the editor and nobody else can read it. Send writing, a photograph,
@@ -689,8 +714,9 @@
         <p>None of it is running. There is no kernel, no processes, no meter — the
         numbers are made up and count nothing. It is a picture of an idea.</p>
 
-        <p>With one exception. <a href="#" data-open="win-gurgle">gurgle.app</a> is real:
-        what you send through it reaches the editor, and nobody else can read it.</p>
+        <p>With one exception. <a href="#" data-open="win-gurgle">gurgle.app</a> is real
+        in both directions: the line in it was drawn from the published pool just now,
+        and what you send through it reaches the editor, where nobody else can read it.</p>
         <p>The idea: other companies build products on top, they pull only what you
         granted, and every pull pays you seventy percent. Box Fraise holds the identity
         and the consent, and keeps thirty. What is real today is
@@ -1068,7 +1094,32 @@
     }
 
     // ── gurgle.app ─────────────────────────────────────────────────
-    // The only code on this page that talks to the server.
+    // The only code on this page that talks to the server: it draws one
+    // line, and it sends what you write.
+
+    // Drawn once per load, deliberately. Reopening the window must not
+    // deal another — on a desktop the constraint has to be enforced in
+    // code, because there is no sticker to walk to.
+    (async () => {
+      const line = document.getElementById('gg-line');
+      const who  = document.getElementById('gg-who');
+      try {
+        const r = await fetch('/v1/lines/draw', { cache: 'no-store' });
+        if (r.status === 404) {
+          line.textContent = 'nothing in the pool yet.';
+          who.textContent  = '— box fraise';
+          return;
+        }
+        if (!r.ok) throw new Error('http ' + r.status);
+        const drawn = await r.json();
+        line.textContent = drawn.body;
+        who.textContent  = '— ' + drawn.attribution;
+      } catch (e) {
+        console.error(e);
+        line.textContent = 'the pool could not be reached.';
+        who.textContent  = '';
+      }
+    })();
     const ggForm = document.getElementById('gg-form');
     const ggBody = document.getElementById('gg-body');
     const ggMsg  = document.getElementById('gg-msg');
