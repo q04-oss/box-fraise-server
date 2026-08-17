@@ -1711,3 +1711,104 @@ async fn a_submission_needs_a_real_looking_email() {
         .await
         .unwrap();
 }
+
+/// The feed carries published posts and nothing else — a pending
+/// submission must never appear in it, however it is asked for.
+#[tokio::test]
+async fn the_feed_shows_only_published_posts() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+
+    let mk = |text: &str| SubmissionUpload {
+        title: None,
+        body: Some(text.into()),
+        image_bytes: None,
+        submitter_name: Some("A reader".into()),
+        submitter_email: "reader@test.local".into(),
+    };
+
+    let waiting = submissions_service::submit(
+        &pool,
+        mk("A post that is still waiting on the editor to make up their mind."),
+    )
+    .await
+    .unwrap();
+    let up = submissions_service::submit(
+        &pool,
+        mk("A post that the editor has already read and decided to put up."),
+    )
+    .await
+    .unwrap();
+    submissions_service::accept(&pool, admin_id, up.id)
+        .await
+        .unwrap();
+
+    let feed = submissions_service::list_published(&pool).await.unwrap();
+    assert!(
+        feed.iter().any(|p| p.id == up.id),
+        "an accepted post should be in the feed"
+    );
+    assert!(
+        !feed.iter().any(|p| p.id == waiting.id),
+        "a pending post must never reach the feed"
+    );
+
+    // And its image is private until it is not.
+    assert!(matches!(
+        submissions_service::published_image(&pool, waiting.id).await,
+        Err(AppError::NotFound)
+    ));
+
+    submissions_service::reject(&pool, admin_id, waiting.id)
+        .await
+        .unwrap();
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(up.id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+}
+
+/// The feed never carries an address. RLS is row-level, so the
+/// accepted-row policy does expose submitter_email to the app — the
+/// repository naming its columns is the only thing stopping it, and
+/// this is the test that fails if somebody widens that query.
+#[tokio::test]
+async fn the_feed_never_carries_an_email() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let secret = format!("private-{}@test.local", Uuid::new_v4());
+
+    let r = submissions_service::submit(
+        &pool,
+        SubmissionUpload {
+            title: None,
+            body: Some("A post whose author's address must not travel with it.".into()),
+            image_bytes: None,
+            submitter_name: Some("A reader".into()),
+            submitter_email: secret.clone(),
+        },
+    )
+    .await
+    .unwrap();
+    submissions_service::accept(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+
+    let feed = submissions_service::list_published(&pool).await.unwrap();
+    let json = serde_json::to_string(&feed).unwrap();
+    assert!(
+        !json.contains(&secret),
+        "an address reached the feed: {json}"
+    );
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(r.id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+}

@@ -28,6 +28,8 @@ const MAX_UPLOAD_BODY_BYTES: usize = service::MAX_IMAGE_BYTES + 128 * 1024;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/submissions/published", get(published))
+        .route("/submissions/published/{id}/image", get(published_image))
         .route(
             "/submissions",
             post(submit.layer(DefaultBodyLimit::max(MAX_UPLOAD_BODY_BYTES))),
@@ -85,6 +87,36 @@ async fn submit(
         StatusCode::ACCEPTED,
         Json(service::submit(&state.pool, upload).await?),
     ))
+}
+
+/// The feed. Published posts, newest first — the magazine as it
+/// stands. Never returns an address; see PublishedSubmission.
+async fn published(State(state): State<AppState>) -> AppResult<Json<Vec<PublishedSubmission>>> {
+    Ok(Json(service::list_published(&state.pool).await?))
+}
+
+async fn published_image(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<impl IntoResponse> {
+    let img = service::published_image(&state.pool, id).await?;
+    let mut headers = HeaderMap::new();
+    if let Ok(value) = HeaderValue::from_str(&img.content_type) {
+        headers.insert(header::CONTENT_TYPE, value);
+    }
+    // A published post is not edited in place and its id is never
+    // reissued, so this caches hard. Withdrawing one means deleting
+    // the row, and a deleted id 404s.
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age=86400"),
+    );
+    // Belt and braces against a byte sequence that slipped the sniffer.
+    headers.insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    );
+    Ok((headers, img.bytes))
 }
 
 // ── Admin ───────────────────────────────────────────────────────────

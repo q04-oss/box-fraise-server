@@ -127,3 +127,77 @@
     });
   };
 })();
+
+// ── The feed ────────────────────────────────────────────────────────
+// What the editor has put up, newest first. Shared by /gurgle and by
+// the gurgle.app window, which render it at different sizes but from
+// the same data.
+//
+// Everything a stranger typed goes in through textContent. A post is
+// arbitrary text from an open write path, and the one place it is
+// displayed is the one place that matters.
+(() => {
+  'use strict';
+
+  window.renderGurgleFeed = async function renderGurgleFeed(rootId) {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+
+    let posts;
+    try {
+      const r = await fetch('/v1/submissions/published');
+      if (!r.ok) throw new Error('http ' + r.status);
+      posts = await r.json();
+    } catch (e) {
+      console.error(e);
+      root.textContent = 'The feed could not be reached.';
+      return;
+    }
+
+    root.textContent = '';
+    if (!posts.length) {
+      const p = document.createElement('p');
+      p.className = 'gf-empty';
+      p.textContent = 'Nothing has gone up yet.';
+      root.appendChild(p);
+      return;
+    }
+
+    posts.forEach(post => {
+      const el = document.createElement('article');
+      el.className = 'gf-post';
+
+      if (post.title) {
+        const h = document.createElement('h3');
+        h.className = 'gf-title';
+        h.textContent = post.title;
+        el.appendChild(h);
+      }
+
+      if (post.has_image) {
+        const img = document.createElement('img');
+        img.className = 'gf-img';
+        img.loading = 'lazy';
+        img.alt = post.title || 'A photograph';
+        img.src = '/v1/submissions/published/' + post.id + '/image';
+        el.appendChild(img);
+      }
+
+      if (post.body) {
+        const b = document.createElement('p');
+        b.className = 'gf-body';
+        b.textContent = post.body;
+        el.appendChild(b);
+      }
+
+      const by = document.createElement('p');
+      by.className = 'gf-by';
+      by.textContent = (post.submitter_name || 'Anonymous') + ' · ' +
+        new Date(post.published_at).toLocaleDateString(undefined,
+          { year: 'numeric', month: 'short', day: 'numeric' });
+      el.appendChild(by);
+
+      root.appendChild(el);
+    });
+  };
+})();

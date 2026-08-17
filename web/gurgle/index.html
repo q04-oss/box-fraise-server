@@ -87,6 +87,35 @@
     a.inline:hover { text-decoration-color: var(--accent); }
     .closer { color: var(--muted); font-size: 14px; line-height: 1.6; margin-top: 40px; }
 
+    /* The feed. Set like pages of the magazine rather than like
+       posts — long-form is the common case here, so the measure
+       matters more than the density. */
+    .feed { margin-top: 56px; border-top: 2px solid var(--ink); }
+    .feed-head {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin: 16px 0 0;
+    }
+    .gf-post { border-bottom: 1px solid var(--rule); padding: 30px 0; }
+    .gf-title {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: 26px; line-height: 1.15; margin: 0 0 12px;
+    }
+    .gf-img {
+      display: block; max-width: 100%; height: auto;
+      border-radius: 8px; margin: 0 0 14px;
+    }
+    .gf-body {
+      font-size: 17px; line-height: 1.65; margin: 0 0 12px;
+      white-space: pre-wrap;
+    }
+    .gf-by {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--muted); margin: 0;
+    }
+    .gf-empty { font-size: 16px; color: var(--muted); padding: 26px 0 0; }
+
     @media (max-width: 560px) {
       main { padding: 40px 20px 72px; }
       .send { width: 100%; }
@@ -127,9 +156,14 @@
 
     <p class="closer">A column, a photograph, or both — one is enough.
     <a class="inline" href="/scan">Scanning a strawberry</a> gives you one back.</p>
+
+    <section class="feed">
+      <p class="feed-head">What has gone up</p>
+      <div id="gg-feed"></div>
+    </section>
   </main>
 
   <script src="/js/gurgle.js"></script>
-  <script>wireGurgle();</script>
+  <script>wireGurgle(); renderGurgleFeed('gg-feed');</script>
 </body>
 </html>

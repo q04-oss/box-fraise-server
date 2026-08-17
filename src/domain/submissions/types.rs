@@ -43,3 +43,19 @@ pub struct SubmissionImage {
     pub bytes: Vec<u8>,
     pub content_type: String,
 }
+
+/// A published post, as anyone may read it.
+///
+/// Note what is absent: `submitter_email`. RLS is row-level, so the
+/// accepted-row policy from 0020 does expose that column to any query
+/// the app makes — this struct and the repository query that fills it
+/// are the boundary. Never widen either to `SELECT *`.
+#[derive(Serialize, FromRow)]
+pub struct PublishedSubmission {
+    pub id: Uuid,
+    pub title: Option<String>,
+    pub body: Option<String>,
+    pub submitter_name: Option<String>,
+    pub has_image: bool,
+    pub published_at: DateTime<Utc>,
+}

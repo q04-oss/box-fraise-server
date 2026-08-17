@@ -403,6 +403,17 @@
     .gg-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; }
     .gg-fine a { color: var(--ink); }
     .gg-rule { border: 0; border-top: 1px solid var(--rule); margin: 18px 0 16px; }
+    /* The same feed as /gurgle, at window scale. */
+    .gf-post { border-top: 1px solid var(--rule); padding: 14px 0; }
+    .gf-title { font-style: italic; font-size: 16px; line-height: 1.2; margin: 0 0 7px; }
+    .gf-img { display: block; max-width: 100%; height: auto; border-radius: 6px; margin: 0 0 9px; }
+    .gf-body { font-size: 13.5px; line-height: 1.55; margin: 0 0 8px; white-space: pre-wrap; }
+    .gf-by {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); margin: 0;
+    }
+    .gf-empty { font-size: 13px; color: var(--muted); margin: 0; }
     .gg label {
       display: block;
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
@@ -702,6 +713,11 @@
           <button type="submit" class="send" id="gg-send">Send it in</button>
           <div class="msg" id="gg-msg"></div>
         </form>
+
+        <hr class="gg-rule">
+
+        <p class="kv">What has gone up</p>
+        <div id="gg-feed"></div>
       </div>
     </section>
 
@@ -1101,6 +1117,7 @@
     // same one. Its validation and wire format have to agree with the
     // server, and two copies of that would drift.
     wireGurgle();
+    renderGurgleFeed('gg-feed');
 
     // Drawn once per load, deliberately. Reopening the window must not
     // deal another — on a desktop the constraint has to be enforced in

@@ -60,6 +60,8 @@ On boot, the server will:
 | `POST /v1/admin/lines/{id}/publish`          | admin     | Into the pool                                      |
 | `POST /v1/admin/lines/{id}/withdraw`         | admin     | Out of the pool                                    |
 | `POST /v1/admin/lines/{id}/delete`           | admin     | Gone                                               |
+| `GET  /v1/submissions/published`             | public    | The feed — published posts, newest first, never an address |
+| `GET  /v1/submissions/published/{id}/image`  | public    | A published photograph                             |
 | `POST /v1/submissions`                       | public    | Send in a column and/or a photograph (multipart)   |
 | `GET  /v1/admin/submissions/pending`         | admin     | The editor's queue                                 |
 | `GET  /v1/admin/submissions/{id}/image`      | admin     | The submitted photograph                           |
@@ -118,7 +120,7 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-41 tests, one ignored (the iOS-fixture slot — swap in a real
+43 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the

@@ -1,7 +1,7 @@
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::types::{PendingSubmission, SubmissionImage};
+use super::types::{PendingSubmission, PublishedSubmission, SubmissionImage};
 
 /// The public write. `status` is not a parameter — it is hardcoded
 /// 'pending' here so no request body can influence it. The RLS INSERT
@@ -111,4 +111,52 @@ pub async fn delete(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<bool> {
         .execute(conn)
         .await?;
     Ok(done.rows_affected() == 1)
+}
+
+/// The feed: published posts, newest first.
+///
+/// Columns are named rather than globbed, and `submitter_email` is not
+/// among them. The `status` filter is explicit rather than left to RLS,
+/// so the query means the same thing under an admin transaction as
+/// under a public one — an admin reading the feed must not start seeing
+/// pending rows in it.
+pub async fn list_published(
+    conn: &mut PgConnection,
+    limit: i64,
+) -> sqlx::Result<Vec<PublishedSubmission>> {
+    sqlx::query_as::<_, PublishedSubmission>(
+        "SELECT id, title, body, submitter_name,
+                (image_bytes IS NOT NULL) AS has_image,
+                reviewed_at AS published_at
+           FROM submissions
+          WHERE status = 'accepted' AND reviewed_at IS NOT NULL
+          ORDER BY reviewed_at DESC
+          LIMIT $1",
+    )
+    .bind(limit)
+    .fetch_all(conn)
+    .await
+}
+
+/// A published photograph. Accepted rows only, so an unreviewed image
+/// can never be fetched by guessing an id.
+pub async fn published_image(
+    conn: &mut PgConnection,
+    id: Uuid,
+) -> sqlx::Result<Option<SubmissionImage>> {
+    let row: Option<(Option<Vec<u8>>, Option<String>)> = sqlx::query_as(
+        "SELECT image_bytes, content_type
+           FROM submissions
+          WHERE id = $1 AND status = 'accepted'",
+    )
+    .bind(id)
+    .fetch_optional(conn)
+    .await?;
+    Ok(match row {
+        Some((Some(bytes), Some(content_type))) => Some(SubmissionImage {
+            bytes,
+            content_type,
+        }),
+        _ => None,
+    })
 }

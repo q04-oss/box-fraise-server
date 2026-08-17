@@ -9,7 +9,9 @@ use uuid::Uuid;
 
 use super::{
     repository,
-    types::{PendingSubmission, SubmissionImage, SubmissionUpload, SubmitResponse},
+    types::{
+        PendingSubmission, PublishedSubmission, SubmissionImage, SubmissionUpload, SubmitResponse,
+    },
 };
 use crate::{
     audit,
@@ -135,6 +137,26 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
         id,
         status: "pending".into(),
     })
+}
+
+// ── Public read ────────────────────────────────────────────────────
+
+/// How much of the feed one request returns. A cap rather than
+/// pagination: the magazine is a few dozen posts, and an endpoint that
+/// can be asked for everything is an endpoint that will be.
+const FEED_LIMIT: i64 = 60;
+
+/// The feed. Published posts only, and never anybody's address.
+pub async fn list_published(pool: &Pool) -> AppResult<Vec<PublishedSubmission>> {
+    let mut conn = pool.acquire().await?;
+    Ok(repository::list_published(&mut conn, FEED_LIMIT).await?)
+}
+
+pub async fn published_image(pool: &Pool, id: Uuid) -> AppResult<SubmissionImage> {
+    let mut conn = pool.acquire().await?;
+    repository::published_image(&mut conn, id)
+        .await?
+        .ok_or(AppError::NotFound)
 }
 
 // ── Admin ───────────────────────────────────────────────────────────
