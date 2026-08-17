@@ -60,6 +60,20 @@
       border: 1px solid #eee; border-radius: 4px; margin-bottom: 10px;
     }
     .sub .acts { display: flex; gap: 8px; }
+    /* The pool. Compact — it is a list of one-liners. */
+    .tl {
+      display: flex; align-items: baseline; gap: 10px;
+      border-bottom: 1px solid #eee; padding: 9px 0;
+    }
+    .tl .txt { flex: 1; font-size: 14px; line-height: 1.4; }
+    .tl .who { color: #666; }
+    .tl .st {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+      flex: 0 0 auto;
+    }
+    .tl .st.pub { color: #b21b1b; }
+    .tl .st.draft { color: #999; }
+    .tl button { font-size: 11px; padding: 4px 8px; flex: 0 0 auto; }
   </style>
 </head>
 <body>
@@ -138,6 +152,32 @@
       </fieldset>
 
       <fieldset>
+        <legend>Taste lines <span id="tl-count" class="muted"></span></legend>
+        <div class="muted">The pool a strawberry draws from. Every one completes
+        &ldquo;for better taste:&rdquo;. Published lines are public; drafts are not.</div>
+
+        <div style="margin-top: 14px;">
+          <label for="tl-body">Line</label>
+          <input type="text" id="tl-body" maxlength="120" placeholder="stand closer to the oven.">
+          <label for="tl-who">Attribution</label>
+          <input type="text" id="tl-who" maxlength="80" placeholder="Ferngrove Bakery">
+          <label for="tl-source">Source</label>
+          <select id="tl-source">
+            <option value="editor">editor</option>
+            <option value="business">business</option>
+            <option value="member">member</option>
+          </select>
+          <div style="margin-top: 10px;">
+            <button id="tl-add">Add and publish</button>
+            <button id="tl-draft" class="secondary">Save as draft</button>
+          </div>
+          <div id="tl-msg" class="muted" style="margin-top: 8px;"></div>
+        </div>
+
+        <div id="tl-list" style="margin-top: 16px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Submissions <span id="sub-count" class="muted"></span></legend>
         <div class="muted">Columns and photographs sent in through gurgle.app.
         Nobody but you can read these — there is no public read path.</div>
@@ -208,6 +248,7 @@
       $('dashboard').classList.remove('hidden');
       loadEvents().catch(e => setMsg($('login-msg'), 'err', e.message));
       loadSubmissions();
+      loadLines();
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
@@ -428,6 +469,113 @@
       setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
     }
   }
+
+  // ── Taste lines ──────────────────────────────────────────────────
+  // Every field is shown through textContent: a line is written by an
+  // editor today, but the same list will hold what businesses and
+  // members submit.
+  async function loadLines() {
+    const list = document.getElementById('tl-list');
+    const count = document.getElementById('tl-count');
+    if (!list || !token) return;
+
+    let rows;
+    try {
+      rows = await api('/admin/lines');
+    } catch (e) {
+      list.textContent = 'Could not load lines: ' + e.message;
+      return;
+    }
+
+    const published = rows.filter(r => r.status === 'published').length;
+    count.textContent = '· ' + published + ' in the pool, ' + (rows.length - published) + ' draft';
+
+    list.textContent = '';
+    if (!rows.length) {
+      const p = document.createElement('div');
+      p.className = 'muted';
+      p.textContent = 'The pool is empty. A strawberry scanned now says so.';
+      list.appendChild(p);
+      return;
+    }
+
+    rows.forEach(row => {
+      const el = document.createElement('div');
+      el.className = 'tl';
+
+      const st = document.createElement('span');
+      st.className = 'st ' + (row.status === 'published' ? 'pub' : 'draft');
+      st.textContent = row.status === 'published' ? 'live' : 'draft';
+
+      const txt = document.createElement('span');
+      txt.className = 'txt';
+      txt.textContent = row.body + ' ';
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = '— ' + row.attribution;
+      txt.appendChild(who);
+
+      const toggle = document.createElement('button');
+      toggle.className = 'secondary';
+      toggle.textContent = row.status === 'published' ? 'Withdraw' : 'Publish';
+      toggle.addEventListener('click', () => act(
+        '/admin/lines/' + row.id + (row.status === 'published' ? '/withdraw' : '/publish'), el));
+
+      const del = document.createElement('button');
+      del.className = 'secondary';
+      del.textContent = 'Delete';
+      del.addEventListener('click', () => {
+        if (!confirm('Delete this line?')) return;
+        act('/admin/lines/' + row.id + '/delete', el);
+      });
+
+      el.appendChild(st);
+      el.appendChild(txt);
+      el.appendChild(toggle);
+      el.appendChild(del);
+      list.appendChild(el);
+    });
+  }
+
+  async function act(path, el) {
+    el.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    try {
+      await api(path, { method: 'POST' });
+      await loadLines();
+    } catch (e) {
+      el.querySelectorAll('button').forEach(b => { b.disabled = false; });
+      alert(e.message);
+    }
+  }
+
+  async function addLine(publish) {
+    const body = document.getElementById('tl-body');
+    const who  = document.getElementById('tl-who');
+    const src  = document.getElementById('tl-source');
+    const msg  = document.getElementById('tl-msg');
+    if (!body.value.trim() || !who.value.trim()) {
+      msg.textContent = 'A line needs words and somebody to have said them.';
+      return;
+    }
+    msg.textContent = 'Saving…';
+    try {
+      await api('/admin/lines', {
+        method: 'POST',
+        body: JSON.stringify({
+          body: body.value, attribution: who.value,
+          source: src.value, publish: publish,
+        }),
+      });
+      body.value = ''; who.value = '';
+      msg.textContent = publish ? 'In the pool.' : 'Saved as a draft.';
+      await loadLines();
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  }
+
+  document.getElementById('tl-add').addEventListener('click', () => addLine(true));
+  document.getElementById('tl-draft').addEventListener('click', () => addLine(false));
 
   // ── Submissions ──────────────────────────────────────────────────
   // Everything the sender typed is untrusted, so every field goes in

@@ -12,7 +12,7 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::pairings`, `domain::submissions`.
+  `domain::pairings`, `domain::submissions`, `domain::lines`.
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
 - **One endpoint accepts unauthenticated writes:**
@@ -162,7 +162,8 @@ Whenever you add a new mutating endpoint, add a matching `audit::write`
 call on the success path. Use the actor_type / action conventions
 that already exist (`user.register`, `challenge.issued`, `user.verify`,
 `event.create`, `admin.login`, `maintenance.prune`,
-`pairing.created`, `pairing.decided`).
+`pairing.created`, `pairing.decided`, `submission.received`,
+`line.published`).
 
 `actor_type` is `'user' | 'admin' | 'system' | 'public'`. `'public'`
 is what `submission.received` is written as: no user, no admin, no
@@ -172,6 +173,20 @@ mislabelling it `'system'`.
 Note `submission.rejected` is the audit trail for a *deletion*: the
 row, the writing and any photograph are gone, and this entry is the
 only remaining record that the submission ever existed.
+
+## Two tables, opposite directions
+
+`submissions` and `taste_lines` look similar and are mirror images.
+Getting them the wrong way round would either publish somebody's
+private correspondence or let anyone write the magazine:
+
+| | write | read |
+|---|---|---|
+| `submissions` (0018) | public, only as `pending` | **admin only, in every state** |
+| `taste_lines` (0019) | **admin only** | public, only where `published` |
+
+A submission is correspondence to the editor. A published line is
+published matter. Neither table has both doors open.
 
 ## When you change a table
 

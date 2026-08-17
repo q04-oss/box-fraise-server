@@ -75,6 +75,42 @@
       background: linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0));
     }
     .instruction { font-size: 19px; line-height: 1.4; margin: 0 0 14px; }
+
+    /* The line. Set like a page of the magazine rather than like a
+       notification, because that is what it is. */
+    .line-card {
+      position: absolute; inset: 0; z-index: 40;
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 8vw 7vw;
+      background: rgba(10,10,10,0.94);
+      animation: lineIn 420ms cubic-bezier(0.2,0.8,0.2,1) both;
+    }
+    .line-card.on { display: flex; }
+    @keyframes lineIn { from { opacity: 0 } to { opacity: 1 } }
+    .line-prompt {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.28em;
+      color: rgba(255,255,255,0.6); margin-bottom: 22px;
+    }
+    .line-body {
+      font-family: 'Newsreader', Georgia, serif;
+      font-style: italic; font-weight: 500;
+      font-size: clamp(28px, 8vw, 64px); line-height: 1.08;
+      letter-spacing: -0.02em; color: #fff;
+      margin: 0; max-width: 18ch; text-wrap: balance;
+    }
+    .line-who {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; letter-spacing: 0.16em;
+      color: #ff8a8a; margin-top: 26px;
+    }
+    .line-again {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: rgba(255,255,255,0.4); margin-top: 44px;
+    }
+    @media (prefers-reduced-motion: reduce) { .line-card { animation: none } }
     .status {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
@@ -133,6 +169,16 @@
     <video id="cam" autoplay muted playsinline></video>
     <div class="guide" id="guide"></div>
 
+    <!-- What a strawberry hands over. Covers the frame once the camera
+         has stopped, because the line is the whole result and there is
+         nothing left to aim at. -->
+    <div class="line-card" id="line-card">
+      <div class="line-prompt">for better taste:</div>
+      <p class="line-body" id="line-body"></p>
+      <div class="line-who" id="line-who"></div>
+      <div class="line-again">Scan another strawberry for another one.</div>
+    </div>
+
     <div class="hud">
       <a href="/">← box fraise</a>
       <span id="hint">point at the ad</span>
@@ -160,11 +206,18 @@
   (() => {
     'use strict';
 
-    // Where a successful scan lands.
-    const DESTINATION = '/run';
-    // The reference artwork. Small on purpose — it is only ever used
-    // to compute a fingerprint, never displayed.
-    const REFERENCE = '/ads/run-club.jpg';
+    // The marks this page knows how to recognise.
+    const MARKS = [
+      { id: 'ad',         src: '/ads/run-club.jpg',     act: 'go', to: '/run' },
+      { id: 'strawberry', src: '/marks/strawberry.jpg', act: 'line' },
+    ];
+    // Reference artwork is small on purpose: it is only ever used to
+    // compute a fingerprint, never displayed.
+    //
+    // Adding a mark means checking it against the others first: two
+    // designs closer than MAX_DISTANCE apart are the same picture as
+    // far as this page is concerned, and whichever is listed first
+    // would swallow the other.
 
     // dHash geometry: an 8×8 grid of horizontal comparisons, so 64
     // bits. Small enough to be tolerant of lighting, focus and phone
@@ -188,7 +241,7 @@
     const readout = document.getElementById('readout');
     const hint    = document.getElementById('hint');
 
-    let referenceHash = null;
+    let marks = [];
     let stream = null;
     let timer = null;
     let streak = 0;
@@ -201,13 +254,23 @@
     start();
 
     async function start() {
-      try {
-        referenceHash = await hashImage(REFERENCE);
-      } catch (e) {
-        console.error(e);
-        // Without a reference there is nothing to compare against;
-        // say so rather than pretending to scan.
-        showFallback('Scanning is unavailable', 'The reference image could not be loaded.');
+      // Each mark loads on its own. A missing reference disables
+      // that one mark rather than the whole page — the strawberry
+      // artwork is supplied separately, and the advertisement has to
+      // keep working whether or not it is there yet.
+      marks = (await Promise.all(MARKS.map(async m => {
+        try {
+          return Object.assign({}, m, { hash: await hashImage(m.src) });
+        } catch (e) {
+          console.warn('mark unavailable: ' + m.id, e);
+          return null;
+        }
+      }))).filter(Boolean);
+
+      if (!marks.length) {
+        // Nothing to compare against; say so rather than pretending
+        // to scan.
+        showFallback('Scanning is unavailable', 'No reference artwork could be loaded.');
         return;
       }
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -234,8 +297,9 @@
 
     function tick() {
       if (done || !video.videoWidth) return;
-      const d = bestDistance();
-      if (d === null) return;
+      const hit = bestMatch();
+      if (hit === null) return;
+      const d = hit.d;
       readout.textContent = d + ' / ' + MAX_DISTANCE;
 
       // Show the working: how close, as a bar.
@@ -246,7 +310,7 @@
         streak++;
         guide.className = 'guide hit';
         statusEl.textContent = 'got it';
-        if (streak >= CONFIRMATIONS) return succeed();
+        if (streak >= CONFIRMATIONS) return succeed(hit.mark);
       } else {
         streak = 0;
         const warm = d <= MAX_DISTANCE + 8;
@@ -255,7 +319,7 @@
       }
     }
 
-    function succeed() {
+    function succeed(mark) {
       done = true;
       clearInterval(timer);
       hint.textContent = 'match';
@@ -263,7 +327,43 @@
       stop();
       // A beat so the red frame registers as a response to what the
       // person did, rather than the page just vanishing.
-      setTimeout(() => { window.location.assign(DESTINATION); }, 450);
+      if (mark.act === 'line') { drawLine(); return; }
+      // A beat so the red frame registers as a response to what the
+      // person did, rather than the page just vanishing.
+      setTimeout(() => { window.location.assign(mark.to); }, 450);
+    }
+
+    /**
+     * A strawberry does not take you anywhere. It hands over one line
+     * from the pool, and the only way to get another is to scan
+     * again — which is the whole mechanic, so the line must not be
+     * something the page can be made to repeat.
+     */
+    async function drawLine() {
+      const card = document.getElementById('line-card');
+      const body = document.getElementById('line-body');
+      const who  = document.getElementById('line-who');
+      card.classList.add('on');
+      body.textContent = '…';
+      who.textContent  = '';
+
+      try {
+        const r = await fetch('/v1/lines/draw', { cache: 'no-store' });
+        if (r.status === 404) {
+          // An empty pool is a state, not a fault.
+          body.textContent = 'nothing in the pool yet.';
+          who.textContent  = '— box fraise';
+          return;
+        }
+        if (!r.ok) throw new Error('http ' + r.status);
+        const line = await r.json();
+        body.textContent = line.body;
+        who.textContent  = '— ' + line.attribution;
+      } catch (e) {
+        console.error(e);
+        body.textContent = 'the pool could not be reached.';
+        who.textContent  = '';
+      }
     }
 
     /**
@@ -276,13 +376,15 @@
      * the wall rather than the picture. Sampling a spread of scales
      * makes near-enough framing good enough.
      */
-    function bestDistance() {
+    function bestMatch() {
       let best = null;
       for (const scale of CROP_SCALES) {
         const hash = hashGuideRegion(scale);
         if (!hash) continue;
-        const d = hamming(hash, referenceHash);
-        if (best === null || d < best) best = d;
+        for (const mark of marks) {
+          const d = hamming(hash, mark.hash);
+          if (best === null || d < best.d) best = { d, mark };
+        }
       }
       return best;
     }

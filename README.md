@@ -54,6 +54,12 @@ On boot, the server will:
 | `GET  /v1/admin/events/{id}/verified-count`  | admin     | Live count for the scanner UI                      |
 | `POST /v1/admin/verify`                      | admin     | The scan: `{nonce, signature_b64, event_id}` → 200 |
 | `GET  /admin`                                | public    | Static admin tool (HTML)                           |
+| `GET  /v1/lines/draw`                        | public    | One published taste line, at random — what a strawberry returns |
+| `GET  /v1/admin/lines`                       | admin     | The whole pool, drafts included                    |
+| `POST /v1/admin/lines`                       | admin     | Write a line                                       |
+| `POST /v1/admin/lines/{id}/publish`          | admin     | Into the pool                                      |
+| `POST /v1/admin/lines/{id}/withdraw`         | admin     | Out of the pool                                    |
+| `POST /v1/admin/lines/{id}/delete`           | admin     | Gone                                               |
 | `POST /v1/submissions`                       | public    | Send in a column and/or a photograph (multipart)   |
 | `GET  /v1/admin/submissions/pending`         | admin     | The editor's queue                                 |
 | `GET  /v1/admin/submissions/{id}/image`      | admin     | The submitted photograph                           |
@@ -112,14 +118,15 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-35 tests, one ignored (the iOS-fixture slot — swap in a real
+40 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
 consultation lifecycle, the pairing boundary (silent decline, cooling
 period, peer name resolution across the RLS edge), and the submission
 boundary (pending rows invisible without admin, non-image bytes
-refused, accept race, rejection deletes).
+refused, accept race, rejection deletes), and the taste-line boundary
+(drafts invisible and never drawn, withdraw race).
 
 Note the default `DATABASE_URL` in the test file points at port 5432;
 this project's Postgres is on **5434**, so pass it explicitly as
@@ -144,7 +151,7 @@ src/
   domain/events/       — public list/get + admin list/create/count
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0002..0018           — applied in filename order; later files drop
+  0002..0019           — applied in filename order; later files drop
                          what earlier ones added (stickers → sightings
                          → gone). Read them forward, not in isolation.
 web/                   — the marketing site (static; /scan is the

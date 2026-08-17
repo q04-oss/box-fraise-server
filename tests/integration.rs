@@ -19,6 +19,7 @@ use box_fraise::{
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
         events::{service as events_service, types::CreateEventRequest},
+        lines::{service as lines_service, types::CreateLineRequest},
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
@@ -1519,4 +1520,128 @@ async fn rejection_deletes_the_submission() {
     .unwrap();
     tx.commit().await.unwrap();
     assert_eq!(audited, 1, "the rejection must leave a record behind");
+}
+
+// ── Taste lines ─────────────────────────────────────────────────────
+
+fn a_line(body: &str, publish: bool) -> CreateLineRequest {
+    CreateLineRequest {
+        body: body.into(),
+        attribution: format!("Test {}", random_label()),
+        source: Some("editor".into()),
+        publish,
+    }
+}
+
+/// A draft is the editor still thinking. It must never be handed to
+/// somebody who scanned a strawberry, and the public SELECT policy
+/// must not show it either.
+#[tokio::test]
+async fn a_draft_line_is_never_public() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let id = lines_service::create(&pool, admin_id, a_line("a draft nobody receives.", false))
+        .await
+        .unwrap();
+
+    // No GUCs: exactly what an unauthenticated request looks like.
+    let mut tx = pool.begin().await.unwrap();
+    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM taste_lines WHERE id = $1")
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(seen, 0, "a draft line must not be publicly readable");
+
+    lines_service::delete(&pool, admin_id, id).await.unwrap();
+}
+
+/// Published lines are the one thing in this schema meant to be read
+/// by anyone.
+#[tokio::test]
+async fn a_published_line_is_public() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let id = lines_service::create(&pool, admin_id, a_line("published and readable.", true))
+        .await
+        .unwrap();
+
+    let mut tx = pool.begin().await.unwrap();
+    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM taste_lines WHERE id = $1")
+        .bind(id)
+        .fetch_one(&mut *tx)
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(seen, 1, "a published line must be publicly readable");
+
+    lines_service::delete(&pool, admin_id, id).await.unwrap();
+}
+
+/// The draw only ever returns published rows. Runs enough times that
+/// a draft leaking through would be caught rather than missed by luck.
+#[tokio::test]
+async fn the_draw_never_returns_a_draft() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let draft = lines_service::create(&pool, admin_id, a_line("draft in the pool.", false))
+        .await
+        .unwrap();
+    let live = lines_service::create(&pool, admin_id, a_line("live in the pool.", true))
+        .await
+        .unwrap();
+
+    for _ in 0..25 {
+        let drawn = lines_service::draw(&pool).await.unwrap();
+        assert_ne!(drawn.id, draft, "the draw returned a draft");
+    }
+
+    lines_service::delete(&pool, admin_id, draft).await.unwrap();
+    lines_service::delete(&pool, admin_id, live).await.unwrap();
+}
+
+/// Withdrawing takes a line out of circulation, and withdrawing twice
+/// is a conflict rather than a silent no-op.
+#[tokio::test]
+async fn withdrawing_twice_conflicts() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let id = lines_service::create(&pool, admin_id, a_line("here then gone.", true))
+        .await
+        .unwrap();
+
+    lines_service::set_published(&pool, admin_id, id, false)
+        .await
+        .unwrap();
+    assert!(matches!(
+        lines_service::set_published(&pool, admin_id, id, false).await,
+        Err(AppError::Conflict)
+    ));
+
+    lines_service::delete(&pool, admin_id, id).await.unwrap();
+}
+
+/// A line is a line. Empty is refused, and so is a source outside the
+/// vocabulary the CHECK constraint allows.
+#[tokio::test]
+async fn line_validation_holds() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+
+    assert!(matches!(
+        lines_service::create(&pool, admin_id, a_line("   ", true)).await,
+        Err(AppError::BadRequest(_))
+    ));
+
+    let bad_source = CreateLineRequest {
+        body: "fine words".into(),
+        attribution: "Somebody".into(),
+        source: Some("hacker".into()),
+        publish: true,
+    };
+    assert!(matches!(
+        lines_service::create(&pool, admin_id, bad_source).await,
+        Err(AppError::BadRequest(_))
+    ));
 }
