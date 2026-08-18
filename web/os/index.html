@@ -406,6 +406,21 @@
     }
     .gg .open:hover { border-color: var(--accent); color: var(--accent); }
     .gg-panel[hidden], .gg form[hidden] { display: none; }
+    /* Feed and Channels, inside a 384px window. Members only: there is
+       nothing behind the second tab for anybody else. */
+    .gg-tabs { display: flex; gap: 18px; margin: 10px 0 0; border-bottom: 1px solid var(--rule); }
+    .gg-tabs button {
+      font: inherit; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+      background: none; border: 0; padding: 0 0 8px; cursor: pointer;
+      color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .gg-tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+    #tab-channels { margin-top: 14px; }
+    /* The channel UI is written for a page; inside a window it needs to
+       stop assuming it has the width of one. */
+    .gg #tab-channels .ch-row .who { font-size: 14px; }
+    .gg #tab-channels .ch-msg .txt { font-size: 13px; }
+    .gg #tab-channels .ch-qr img { max-width: 100%; height: auto; }
     .gg-panel {
       border-left: 2px solid var(--accent); padding: 0 0 0 14px; margin: 0 0 16px;
     }
@@ -689,6 +704,13 @@
         <p class="gg-fine">Everybody here is answering that about themselves.
         On a phone, <a href="/gurgle">gurgle is a page</a>.</p>
         <p class="gg-standing" id="gg-standing" hidden></p>
+
+        <div class="gg-tabs" id="gg-tabs" role="tablist" hidden>
+          <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="true">Feed</button>
+          <button type="button" role="tab" id="tab-channels-btn" aria-controls="tab-channels" aria-selected="false">Channels</button>
+        </div>
+
+        <div id="tab-feed" role="tabpanel" aria-labelledby="tab-feed-btn">
         <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
         <div class="gg-panel" id="gg-panel" hidden>
@@ -714,6 +736,13 @@
         <hr class="gg-rule">
 
         <div id="gg-feed"></div>
+        </div>
+
+        <div id="tab-channels" role="tabpanel" aria-labelledby="tab-channels-btn" hidden>
+          <p class="gg-fine">Each one opened because two people met at a run and both said
+          so, three days apart. Nothing here reaches the server as words.</p>
+          <div id="gg-channels"></div>
+        </div>
       </div>
     </section>
 
@@ -758,7 +787,10 @@
   </div>
 
   <script src="/js/session.js"></script>
+  <script src="/js/qrcode.min.js"></script>
   <script src="/js/gurgle.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/channels.js"></script>
   <script>
   (() => {
     'use strict';
@@ -1116,6 +1148,31 @@
     wireGurgle();
     renderGurgleFeed('gg-feed');
     renderMembership('gg-standing');
+
+    // Channels sit behind a tab in the same window rather than in an
+    // app of their own, because that is how they sit on /gurgle, and
+    // the point of this window is that it is the real thing.
+    if (bfSession.signedIn()) {
+      document.getElementById('gg-tabs').hidden = false;
+      const panes = { 'tab-feed-btn': 'tab-feed', 'tab-channels-btn': 'tab-channels' };
+      let built = false;
+      Object.keys(panes).forEach(btnId => {
+        document.getElementById(btnId).addEventListener('click', () => {
+          Object.entries(panes).forEach(([b, p]) => {
+            const on = b === btnId;
+            document.getElementById(b).setAttribute('aria-selected', String(on));
+            document.getElementById(p).hidden = !on;
+          });
+          // Built on first open: it asks the server for pairings and
+          // generates a keypair, and most visits here are somebody
+          // looking at the desktop rather than talking to anybody.
+          if (btnId === 'tab-channels-btn' && !built) {
+            built = true;
+            renderChannels('gg-channels');
+          }
+        });
+      });
+    }
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');

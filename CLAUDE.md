@@ -338,6 +338,28 @@ Static ECDH means no forward secrecy: a stolen private key reads
 everything that member received. Ratcheting would fix it and is a
 much larger machine.
 
+### Where the channel UI lives
+
+Inside gurgle, behind a tab, on both hosts: `/gurgle` and the
+gurgle.app window on `/os`. It used to be `/chat`, a page of its own
+linked from the homepage nav — which offered strangers a top-level link
+to something only members can open, and put a member's conversations
+somewhere other than where their number and their feed already were.
+`web/chat/index.html` is now a redirect and nothing else.
+
+`web/js/channels.js` owns the markup, the styles and the wiring, for
+the same reason `gurgle.js` does: two hosts render it at different
+sizes, and two copies of a pairing flow would drift. It builds its own
+DOM into whatever container it is given, so a host supplies an empty
+`<div>` and loads `session.js`, `chat.js` and `qrcode.min.js` first.
+Styles are injected once, scoped under `.bf-ch`, with `var(--ink, …)`
+fallbacks so a third host works without being told to.
+
+The tab is built on first open, not on load — it fetches pairings and
+generates a keypair, and most visits are somebody reading the feed. It
+is shown only to members: there is nothing behind it for anybody else,
+and a tab that says so is a worse answer than no tab.
+
 ## Two ways to claim a pairing
 
 `claim` takes a P-256 signature from a registered device key — the

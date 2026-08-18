@@ -154,6 +154,24 @@
       main { padding: 40px 20px 72px; }
       .send { width: 100%; }
     }
+
+    /* Feed and Channels. Shown only to members — a stranger has no
+       channels, and a tab that explains that is a worse answer than no
+       tab. The feed is the default and stays the primary thing. */
+    .tabs {
+      display: flex; gap: 26px; margin: 26px 0 4px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .tabs button {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      background: none; border: 0; padding: 0 0 12px; cursor: pointer;
+      color: var(--muted); border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+    }
+    .tabs button:hover { color: var(--ink); }
+    .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+    #tab-channels { margin-top: 30px; }
   </style>
 </head>
 <body>
@@ -166,6 +184,13 @@
     photographs, from people who turned up. The magazine is made by taking some of it.</p>
 
     <p class="standing" id="gg-standing" hidden></p>
+
+    <div class="tabs" id="gg-tabs" role="tablist" hidden>
+      <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="true">Feed</button>
+      <button type="button" role="tab" id="tab-channels-btn" aria-controls="tab-channels" aria-selected="false">Channels</button>
+    </div>
+
+    <div id="tab-feed" role="tabpanel" aria-labelledby="tab-feed-btn">
     <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
     <div class="panel" id="gg-panel" hidden>
@@ -204,10 +229,75 @@
 
     <p class="closer">Anyone can read this. The question is answered by turning up —
     <a class="inline" href="/run">Friday at six, Sunday at eight</a>.</p>
+    </div>
+
+    <div id="tab-channels" role="tabpanel" aria-labelledby="tab-channels-btn" hidden>
+      <h2 class="feed-q">Channels</h2>
+      <p class="lede">Each one opened because two people met at a run and both said so,
+      three days apart. Nothing here reaches the server as words.</p>
+      <div id="gg-channels"></div>
+    </div>
   </main>
 
   <script src="/js/session.js"></script>
+  <script src="/js/qrcode.min.js"></script>
   <script src="/js/gurgle.js"></script>
-  <script>wireGurgle(); renderGurgleFeed('gg-feed'); renderMembership('gg-standing');</script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/channels.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    wireGurgle();
+    renderGurgleFeed('gg-feed');
+    renderMembership('gg-standing');
+
+    // Channels are a member's own conversations, so there is nothing
+    // behind this tab for anybody else. A stranger sees the page they
+    // have always seen.
+    if (!bfSession.signedIn()) return;
+
+    const tabs = document.getElementById('gg-tabs');
+    tabs.hidden = false;
+    const panes = {
+      'tab-feed-btn': 'tab-feed',
+      'tab-channels-btn': 'tab-channels',
+    };
+
+    // Built the first time it is opened rather than on load: it asks
+    // the server for pairings and generates a keypair, and most visits
+    // are somebody reading the feed.
+    let built = false;
+
+    Object.keys(panes).forEach(btnId => {
+      document.getElementById(btnId).addEventListener('click', () => {
+        Object.entries(panes).forEach(([b, p]) => {
+          const on = b === btnId;
+          document.getElementById(b).setAttribute('aria-selected', String(on));
+          document.getElementById(p).hidden = !on;
+        });
+        if (btnId === 'tab-channels-btn' && !built) {
+          built = true;
+          renderChannels('gg-channels');
+        }
+      });
+    });
+
+    // /chat used to be a page of its own and now redirects here. A
+    // saved link should still land on channels rather than dropping
+    // somebody at the top of the feed wondering where they went.
+    if (location.hash === '#channels') {
+      document.getElementById('tab-channels-btn').click();
+    }
+
+    // A pairing that is waiting on an answer is time-limited, so it is
+    // worth saying before somebody has to go looking for it.
+    fetch('/v1/pairings').then(r => r.ok ? r.json() : []).then(rows => {
+      const waiting = rows.filter(p => p.status === 'deciding' && !p.my_decision).length;
+      if (waiting) {
+        document.getElementById('tab-channels-btn').textContent = 'Channels · ' + waiting;
+      }
+    }).catch(() => { /* the tab still works */ });
+  })();
+  </script>
 </body>
 </html>
