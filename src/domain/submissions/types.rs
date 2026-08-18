@@ -12,7 +12,6 @@ pub struct SubmissionUpload {
     pub title: Option<String>,
     pub body: Option<String>,
     pub image_bytes: Option<Vec<u8>>,
-    pub submitter_name: Option<String>,
 }
 
 #[derive(Serialize)]

@@ -74,6 +74,10 @@
     .tl .st.pub { color: #b21b1b; }
     .tl .st.draft { color: #999; }
     .tl button { font-size: 11px; padding: 4px 8px; flex: 0 0 auto; }
+    /* The membership QR. White quiet zone around it or phones
+       struggle to lock on. */
+    #mb-qr { background: #fff; padding: 12px; display: inline-block; }
+    #mb-qr img, #mb-qr canvas { display: block; }
   </style>
 </head>
 <body>
@@ -152,6 +156,31 @@
       </fieldset>
 
       <fieldset>
+        <legend>Sign somebody up</legend>
+        <div class="muted">The only way to become a member. They scan the code off this
+        screen and the membership lands on their phone — it is shown once and never
+        again, so if the scan fails, make another.</div>
+
+        <div style="margin-top: 14px;">
+          <label for="mb-name">Their name (optional)</label>
+          <input type="text" id="mb-name" maxlength="40" placeholder="how it appears on their posts">
+          <div style="margin-top: 10px;">
+            <button id="mb-create">Make a membership</button>
+          </div>
+          <div id="mb-msg" class="muted" style="margin-top: 8px;"></div>
+        </div>
+
+        <div id="mb-out" style="display: none; margin-top: 16px;">
+          <div id="mb-qr"></div>
+          <div class="muted" style="margin-top: 10px;">Have them point their camera at it.</div>
+          <div id="mb-link" class="muted" style="margin-top: 6px; word-break: break-all;"></div>
+          <div style="margin-top: 10px;">
+            <button id="mb-done" class="secondary">Done</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Taste lines <span id="tl-count" class="muted"></span></legend>
         <div class="muted">The pool a strawberry draws from. Every one completes
         &ldquo;for better taste:&rdquo;. Published lines are public; drafts are not.</div>
@@ -196,6 +225,10 @@
     </section>
   </main>
 
+<!-- Vendored, and already used by /pass. The admin tool is embedded in
+     the binary with include_str! but is still served from the same
+     origin, so it can pull this off ServeDir like any other page. -->
+<script src="/js/qrcode.min.js"></script>
 <script>
   // ── State ────────────────────────────────────────────────────────
   const TOKEN_KEY = 'bf_admin_token';
@@ -469,6 +502,59 @@
       setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
     }
   }
+
+  // ── Memberships ──────────────────────────────────────────────────
+  // The credential goes in the URL fragment, which browsers never send
+  // to a server — it stays out of access logs and Referer headers. The
+  // token is shown once here and only its hash is stored, so a missed
+  // scan means making another rather than looking it up.
+  async function makeMembership() {
+    const msg = document.getElementById('mb-msg');
+    const out = document.getElementById('mb-out');
+    if (!activeEventId) {
+      msg.textContent = 'Pick the event above first — a membership records which run it was granted at.';
+      return;
+    }
+    msg.textContent = 'Making it…';
+    out.style.display = 'none';
+
+    try {
+      const created = await api('/admin/members', {
+        method: 'POST',
+        body: JSON.stringify({
+          event_id: activeEventId,
+          display_name: document.getElementById('mb-name').value || null,
+        }),
+      });
+
+      const url = location.origin + '/join#' + created.token;
+      const holder = document.getElementById('mb-qr');
+      holder.textContent = '';
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      holder.innerHTML = qr.createImgTag(6, 0);
+
+      document.getElementById('mb-link').textContent = url;
+      msg.textContent = created.display_name
+        ? 'Made, for ' + created.display_name + '.'
+        : 'Made.';
+      out.style.display = 'block';
+      document.getElementById('mb-name').value = '';
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  }
+
+  document.getElementById('mb-create').addEventListener('click', makeMembership);
+  document.getElementById('mb-done').addEventListener('click', () => {
+    // Clear it off the screen rather than leaving somebody's
+    // credential facing the queue.
+    document.getElementById('mb-qr').textContent = '';
+    document.getElementById('mb-link').textContent = '';
+    document.getElementById('mb-out').style.display = 'none';
+    document.getElementById('mb-msg').textContent = '';
+  });
 
   // ── Taste lines ──────────────────────────────────────────────────
   // Every field is shown through textContent: a line is written by an

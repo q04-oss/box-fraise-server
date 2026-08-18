@@ -3,6 +3,7 @@ pub mod businesses;
 pub mod consultations;
 pub mod events;
 pub mod lines;
+pub mod members;
 pub mod onboarding;
 pub mod pairings;
 pub mod submissions;

@@ -1,8 +1,9 @@
 //! Submissions: columns and photographs sent in for the magazine.
 //!
-//! This owns the only unauthenticated write in the system. Everything
-//! here exists to bound it — see migration 0018 and CLAUDE.md before
-//! changing anything.
+//! Posting is members-only. 0023 puts that in the INSERT policy
+//! rather than in this file: a transaction without app.user_id set to
+//! the row's owner cannot write here at all. Read migration 0018,
+//! 0020 and 0023 before changing anything.
 
 use serde_json::json;
 use uuid::Uuid;
@@ -15,7 +16,7 @@ use super::{
 };
 use crate::{
     audit,
-    db::{AdminRlsTransaction, Pool},
+    db::{AdminRlsTransaction, Pool, RlsTransaction},
     error::{AppError, AppResult},
 };
 
@@ -34,20 +35,22 @@ const MAX_PENDING: i32 = 200;
 
 const MAX_TITLE_CHARS: usize = 140;
 const MAX_BODY_CHARS: usize = 20_000;
-const MAX_NAME_CHARS: usize = 80;
 /// A column of two words is a mistake or a probe, not a column.
 const MIN_BODY_CHARS: usize = 40;
 
-// ── Public write ────────────────────────────────────────────────────
+// ── Member write ────────────────────────────────────────────────────
 
 /// Accept a submission.
 ///
 /// Cheap checks first, DB work last, so a garbage upload holds a
 /// connection for as short a time as possible.
-pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitResponse> {
+pub async fn submit(
+    pool: &Pool,
+    user_id: Uuid,
+    upload: SubmissionUpload,
+) -> AppResult<SubmitResponse> {
     let title = clean_optional_text(upload.title.as_deref(), MAX_TITLE_CHARS)?;
     let body = clean_optional_text(upload.body.as_deref(), MAX_BODY_CHARS)?;
-    let submitter_name = clean_optional_text(upload.submitter_name.as_deref(), MAX_NAME_CHARS)?;
 
     if let Some(text) = body.as_deref() {
         if text.chars().count() < MIN_BODY_CHARS {
@@ -88,9 +91,20 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
         return Err(AppError::bad_request("a title needs a column under it"));
     }
 
-    let mut tx = pool.begin().await?;
+    // Under the member's own context: 0023's INSERT policy checks
+    // user_id against app.user_id, so a transaction without it cannot
+    // write here at all.
+    let mut tx = RlsTransaction::begin(pool, user_id).await?;
 
-    let pending = repository::pending_count(&mut tx).await?;
+    // The name on a post is the account's, not a field somebody types.
+    // Read here because it needs the member's own context —
+    // users_self_or_admin_select would hide the row otherwise. It is
+    // then denormalised onto the submission: the feed is read with no
+    // user context at all, and under RLS a join to users would match
+    // nothing and silently drop every post. See 0023.
+    let name = super::super::members::repository::display_name(tx.conn(), user_id).await?;
+
+    let pending = repository::pending_count(tx.conn()).await?;
     if pending >= MAX_PENDING {
         tx.commit().await?;
         return Err(AppError::TooManyRequests(
@@ -99,16 +113,17 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
     }
 
     let id = repository::insert_submission(
-        &mut tx,
+        tx.conn(),
+        user_id,
         title.as_deref(),
         body.as_deref(),
         image,
-        submitter_name.as_deref(),
+        name.as_deref(),
     )
     .await?;
     tx.commit().await?;
 
-    // 'public' actor: no user, no admin, no server.
+    // The member is the actor now. Posting is a membership act.
     //
     // The metadata deliberately records shape, not content — lengths
     // and whether there was a photograph, never the writing itself or
@@ -116,8 +131,8 @@ pub async fn submit(pool: &Pool, upload: SubmissionUpload) -> AppResult<SubmitRe
     // anything put here can never be taken out.
     audit::write(
         pool,
-        "public",
-        None,
+        "user",
+        Some(user_id),
         "submission.received",
         Some(&id.to_string()),
         json!({

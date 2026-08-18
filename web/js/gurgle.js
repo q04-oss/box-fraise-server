@@ -10,6 +10,12 @@
 (() => {
   'use strict';
 
+  // The membership credential, put here by /join when a code was
+  // scanned off an admin's screen at the run club. Its absence is
+  // simply not being a member.
+  const TOKEN_KEY = 'bf_member_token';
+  const token = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
+
   // Mirrors MIN_BODY_CHARS in src/domain/submissions/service.rs. A
   // column of two words is a mistake or a probe, not a column.
   const MIN_BODY = 40;
@@ -46,21 +52,25 @@
   // has, pressing this explains where memberships come from rather
   // than opening a form nobody is allowed to submit.
   window.wireGurgle = function wireGurgle() {
-    const open  = document.getElementById('gg-open');
-    const panel = document.getElementById('gg-panel');
-    if (open && panel) {
+    const open   = document.getElementById('gg-open');
+    const panel  = document.getElementById('gg-panel');
+    const form   = document.getElementById('gg-form');
+    const member = !!token();
+
+    // A member gets the form; everybody else gets told where
+    // memberships come from.
+    const target = member ? form : panel;
+    if (open && target) {
       open.addEventListener('click', () => {
-        const showing = !panel.hidden;
-        panel.hidden = showing;
+        const showing = !target.hidden;
+        target.hidden = showing;
         open.textContent = showing ? 'post, or whatever' : 'never mind';
         open.setAttribute('aria-expanded', String(!showing));
+        if (!showing && member) target.querySelector('textarea').focus();
       });
     }
 
-    // The submit path below stays wired for when members can post.
-    // It does nothing while there is no form on the page.
-    const form = document.getElementById('gg-form');
-    if (!form) return;
+    if (!form || !member) return;
 
     const bodyEl  = document.getElementById('gg-body');
     const msgEl   = document.getElementById('gg-msg');
@@ -96,16 +106,6 @@
         msgEl.textContent = 'A title needs a column under it.';
         return;
       }
-      // Required, because it is the handle a post is claimed with.
-      // Shape only — the server checks again, and the only proof an
-      // address works is a message arriving at it.
-      const email = document.getElementById('gg-contact').value.trim();
-      if (!/^[^@s]+@[^@s]+.[^@s]+$/.test(email)) {
-        msgEl.className = 'msg err';
-        msgEl.textContent = 'An email address is needed — it is how your post gets back to you.';
-        return;
-      }
-
       sendEl.disabled = true;
       msgEl.className = 'msg err';
       msgEl.textContent = file ? 'Preparing the photograph…' : 'Sending…';
@@ -114,16 +114,17 @@
         const fd = new FormData();
         if (title) fd.append('title', title);
         if (body)  fd.append('body', body);
-        const name    = document.getElementById('gg-name').value.trim();
-        if (name)    fd.append('submitter_name', name);
-        fd.append('submitter_email', email);
         if (file) {
           const blob = await prepareImage(file);
           fd.append('image', blob, 'photograph.jpg');
         }
 
         msgEl.textContent = 'Sending…';
-        const r = await fetch('/v1/submissions', { method: 'POST', body: fd });
+        const r = await fetch('/v1/submissions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token() },
+          body: fd,
+        });
         const text = await r.text();
         let parsed = null;
         if (text) { try { parsed = JSON.parse(text); } catch { /* leave null */ } }

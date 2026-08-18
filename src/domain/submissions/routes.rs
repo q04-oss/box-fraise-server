@@ -16,7 +16,7 @@ use crate::{
     app::AppState,
     domain::submissions::{service, types::*},
     error::{AppError, AppResult},
-    http::extractors::AuthedAdmin,
+    http::extractors::{AuthedAdmin, AuthedUser},
 };
 
 /// Ceiling on the multipart body, a little above `MAX_IMAGE_BYTES` to
@@ -42,11 +42,11 @@ pub fn router() -> Router<AppState> {
 
 // ── Public ──────────────────────────────────────────────────────────
 
-/// The one public write in the system.
-///
-/// There is no GET counterpart. A submission is never readable by
-/// anyone but an admin, in any state — see migration 0018.
+/// Members only. There is one way to become one and it is turning up
+/// to the run club — see 0023, where the database enforces it rather
+/// than this handler.
 async fn submit(
+    AuthedUser(user_id): AuthedUser,
     State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> AppResult<(StatusCode, Json<SubmitResponse>)> {
@@ -54,7 +54,6 @@ async fn submit(
         title: None,
         body: None,
         image_bytes: None,
-        submitter_name: None,
     };
 
     while let Some(field) = multipart
@@ -74,7 +73,6 @@ async fn submit(
             }
             "title" => upload.title = field.text().await.ok(),
             "body" => upload.body = field.text().await.ok(),
-            "submitter_name" => upload.submitter_name = field.text().await.ok(),
             // Unknown parts are ignored rather than rejected, so an
             // extra field in a future form does not break this one.
             _ => {}
@@ -83,7 +81,7 @@ async fn submit(
 
     Ok((
         StatusCode::ACCEPTED,
-        Json(service::submit(&state.pool, upload).await?),
+        Json(service::submit(&state.pool, user_id, upload).await?),
     ))
 }
 

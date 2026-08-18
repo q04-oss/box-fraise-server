@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::types::{PendingSubmission, PublishedSubmission, SubmissionImage};
 
-/// The public write. `status` is not a parameter — it is hardcoded
+/// The member write. `status` is not a parameter — it is hardcoded
 /// 'pending' here so no request body can influence it. The RLS INSERT
 /// policy independently rejects anything else; this is the first of
 /// the two barriers.
@@ -16,6 +16,7 @@ use super::types::{PendingSubmission, PublishedSubmission, SubmissionImage};
 /// public write needs no read privilege whatsoever.
 pub async fn insert_submission(
     conn: &mut PgConnection,
+    user_id: Uuid,
     title: Option<&str>,
     body: Option<&str>,
     image: Option<(&[u8], &str)>,
@@ -29,8 +30,8 @@ pub async fn insert_submission(
     sqlx::query(
         "INSERT INTO submissions
              (id, title, body, image_bytes, content_type, byte_size,
-              submitter_name, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')",
+              submitter_name, user_id, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')",
     )
     .bind(id)
     .bind(title)
@@ -39,6 +40,7 @@ pub async fn insert_submission(
     .bind(content_type)
     .bind(bytes.map(|b| b.len() as i32))
     .bind(submitter_name)
+    .bind(user_id)
     .execute(conn)
     .await?;
     Ok(id)

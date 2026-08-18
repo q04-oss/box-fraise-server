@@ -62,6 +62,7 @@ On boot, the server will:
 | `POST /v1/admin/lines/{id}/delete`           | admin     | Gone                                               |
 | `GET  /v1/submissions/published`             | public    | The feed — published posts, newest first, never an address |
 | `GET  /v1/submissions/published/{id}/image`  | public    | A published photograph                             |
+| `POST /v1/admin/members`                     | admin     | Sign somebody up at the run club; returns the credential once |
 | `POST /v1/submissions`                       | public    | Send in a column and/or a photograph (multipart)   |
 | `GET  /v1/admin/submissions/pending`         | admin     | The editor's queue                                 |
 | `GET  /v1/admin/submissions/{id}/image`      | admin     | The submitted photograph                           |
@@ -120,7 +121,7 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-43 tests, one ignored (the iOS-fixture slot — swap in a real
+45 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
@@ -168,7 +169,7 @@ src/
   domain/events/       — public list/get + admin list/create/count
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0002..0021           — applied in filename order; later files drop
+  0002..0023           — applied in filename order; later files drop
                          what earlier ones added (stickers → sightings
                          → gone). Read them forward, not in isolation.
 web/                   — the marketing site (static; /scan is the

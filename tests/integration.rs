@@ -20,6 +20,7 @@ use box_fraise::{
         },
         events::{service as events_service, types::CreateEventRequest},
         lines::{service as lines_service, types::CreateLineRequest},
+        members::{service as members_service, types::CreateMemberRequest},
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
@@ -91,6 +92,24 @@ async fn seed_test_event(pool: &PgPool, admin_id: Uuid) -> Uuid {
     .await
     .unwrap()
     .id
+}
+
+/// A member, made the only way there is: an admin signs somebody up
+/// at a run. Returns the user id to post as.
+async fn seed_test_member(pool: &PgPool) -> Uuid {
+    let admin_id = seed_test_admin(pool).await;
+    let event_id = seed_test_event(pool, admin_id).await;
+    members_service::create(
+        pool,
+        admin_id,
+        CreateMemberRequest {
+            event_id,
+            display_name: Some(format!("Member {}", &random_label()[..8])),
+        },
+    )
+    .await
+    .unwrap()
+    .user_id
 }
 
 fn fresh_keypair() -> (SigningKey, Vec<u8>) {
@@ -1325,7 +1344,6 @@ fn column(text: &str) -> SubmissionUpload {
         title: None,
         body: Some(text.into()),
         image_bytes: None,
-        submitter_name: None,
     }
 }
 
@@ -1335,8 +1353,10 @@ fn column(text: &str) -> SubmissionUpload {
 #[tokio::test]
 async fn submission_is_accepted_as_pending() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let r = submissions_service::submit(
         &pool,
+        member,
         column("A column about the railyard, long enough to count as one."),
     )
     .await
@@ -1358,8 +1378,10 @@ async fn submission_is_accepted_as_pending() {
 #[tokio::test]
 async fn submissions_are_invisible_without_admin() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let r = submissions_service::submit(
         &pool,
+        member,
         column("Another column, once again long enough to be a column."),
     )
     .await
@@ -1385,20 +1407,20 @@ async fn submissions_are_invisible_without_admin() {
 #[tokio::test]
 async fn empty_submission_is_refused() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let empty = SubmissionUpload {
         title: None,
         body: None,
         image_bytes: None,
-        submitter_name: Some("nobody".into()),
     };
     assert!(matches!(
-        submissions_service::submit(&pool, empty).await,
+        submissions_service::submit(&pool, member, empty).await,
         Err(AppError::BadRequest(_))
     ));
 
     // Too short to be a column.
     assert!(matches!(
-        submissions_service::submit(&pool, column("hi")).await,
+        submissions_service::submit(&pool, member, column("hi")).await,
         Err(AppError::BadRequest(_))
     ));
 }
@@ -1408,6 +1430,7 @@ async fn empty_submission_is_refused() {
 #[tokio::test]
 async fn non_image_bytes_are_refused() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let html = SubmissionUpload {
         title: None,
         body: None,
@@ -1416,10 +1439,9 @@ async fn non_image_bytes_are_refused() {
                 .repeat(40)
                 .to_vec(),
         ),
-        submitter_name: None,
     };
     assert!(matches!(
-        submissions_service::submit(&pool, html).await,
+        submissions_service::submit(&pool, member, html).await,
         Err(AppError::BadRequest(_))
     ));
 }
@@ -1428,13 +1450,14 @@ async fn non_image_bytes_are_refused() {
 #[tokio::test]
 async fn photograph_alone_is_a_submission() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let r = submissions_service::submit(
         &pool,
+        member,
         SubmissionUpload {
             title: None,
             body: None,
             image_bytes: Some(tiny_jpeg()),
-            submitter_name: Some("Photographer".into()),
         },
     )
     .await
@@ -1454,9 +1477,11 @@ async fn photograph_alone_is_a_submission() {
 #[tokio::test]
 async fn accepting_twice_conflicts() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let admin_id = seed_test_admin(&pool).await;
     let r = submissions_service::submit(
         &pool,
+        member,
         column("A column that will be accepted exactly once, no matter what."),
     )
     .await
@@ -1488,14 +1513,15 @@ async fn accepting_twice_conflicts() {
 #[tokio::test]
 async fn rejection_deletes_the_submission() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let admin_id = seed_test_admin(&pool).await;
     let r = submissions_service::submit(
         &pool,
+        member,
         SubmissionUpload {
             title: Some("Doomed".into()),
             body: Some("A column that is about to be turned down by the editor.".into()),
             image_bytes: Some(tiny_jpeg()),
-            submitter_name: None,
         },
     )
     .await
@@ -1658,23 +1684,25 @@ async fn line_validation_holds() {
 #[tokio::test]
 async fn the_feed_shows_only_published_posts() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let admin_id = seed_test_admin(&pool).await;
 
     let mk = |text: &str| SubmissionUpload {
         title: None,
         body: Some(text.into()),
         image_bytes: None,
-        submitter_name: Some("A reader".into()),
     };
 
     let waiting = submissions_service::submit(
         &pool,
+        member,
         mk("A post that is still waiting on the editor to make up their mind."),
     )
     .await
     .unwrap();
     let up = submissions_service::submit(
         &pool,
+        member,
         mk("A post that the editor has already read and decided to put up."),
     )
     .await
@@ -1721,15 +1749,16 @@ async fn the_feed_shows_only_published_posts() {
 #[tokio::test]
 async fn the_feed_exposes_only_the_fields_it_means_to() {
     let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let admin_id = seed_test_admin(&pool).await;
 
     let r = submissions_service::submit(
         &pool,
+        member,
         SubmissionUpload {
             title: Some("A title".into()),
             body: Some("A post used to pin down exactly what the feed gives out.".into()),
             image_bytes: None,
-            submitter_name: Some("A reader".into()),
         },
     )
     .await
@@ -1771,4 +1800,133 @@ async fn the_feed_exposes_only_the_fields_it_means_to() {
         .await
         .unwrap();
     tx.commit().await.unwrap();
+}
+
+/// Posting is members-only, and the database is what says so. This
+/// goes straight at the RLS policy rather than through the handler,
+/// because the handler is not the boundary — 0023 is.
+#[tokio::test]
+async fn a_post_needs_a_membership() {
+    let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
+
+    // No user context at all: what an unauthenticated request looks
+    // like once the extractor has been bypassed or forgotten.
+    let orphan = sqlx::query(
+        "INSERT INTO submissions (body, user_id, status)
+         VALUES ('a post with nobody behind it, long enough to be a column.', $1, 'pending')",
+    )
+    .bind(member)
+    .execute(&pool)
+    .await;
+    assert!(
+        orphan.is_err(),
+        "an insert with no app.user_id must be refused by the policy"
+    );
+
+    // And one member may not post as another.
+    let other = seed_test_member(&pool).await;
+    let mut tx = RlsTransaction::begin(&pool, member).await.unwrap();
+    let impersonation = sqlx::query(
+        "INSERT INTO submissions (body, user_id, status)
+         VALUES ('a post attributed to somebody else entirely, at length.', $1, 'pending')",
+    )
+    .bind(other)
+    .execute(tx.conn())
+    .await;
+    assert!(
+        impersonation.is_err(),
+        "posting as another member must be refused by the policy"
+    );
+}
+
+/// The name on a post comes from the account, not from the request.
+#[tokio::test]
+async fn a_post_carries_the_members_name() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let created = members_service::create(
+        &pool,
+        admin_id,
+        CreateMemberRequest {
+            event_id,
+            display_name: Some("Bertrand".into()),
+        },
+    )
+    .await
+    .unwrap();
+
+    let r = submissions_service::submit(
+        &pool,
+        created.user_id,
+        SubmissionUpload {
+            title: None,
+            body: Some("A post that should carry its author's name without being told it.".into()),
+            image_bytes: None,
+        },
+    )
+    .await
+    .unwrap();
+    submissions_service::accept(&pool, admin_id, r.id)
+        .await
+        .unwrap();
+
+    let feed = submissions_service::list_published(&pool).await.unwrap();
+    let post = feed.iter().find(|p| p.id == r.id).unwrap();
+    assert_eq!(post.submitter_name.as_deref(), Some("Bertrand"));
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(r.id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+}
+
+/// A membership is only representable as verified-at-an-event-by-an-
+/// admin, so the credential it hands over is evidence somebody was
+/// there.
+#[tokio::test]
+async fn a_membership_records_where_it_was_granted() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let created = members_service::create(
+        &pool,
+        admin_id,
+        CreateMemberRequest {
+            event_id,
+            display_name: None,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(!created.token.is_empty(), "a membership hands over a token");
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let (status, at_event, by_admin): (String, Uuid, Uuid) = sqlx::query_as(
+        "SELECT status, verified_at_event_id, verified_by_admin_id FROM users WHERE id = $1",
+    )
+    .bind(created.user_id)
+    .fetch_one(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    assert_eq!(status, "verified");
+    assert_eq!(at_event, event_id);
+    assert_eq!(by_admin, admin_id);
+
+    // Only the hash is kept, so the token cannot be recovered later.
+    let stored: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM user_sessions WHERE user_id = $1 AND token_hash = $2",
+    )
+    .bind(created.user_id)
+    .bind(box_fraise::crypto::sha256_hex(created.token.as_bytes()))
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(stored, 1);
 }

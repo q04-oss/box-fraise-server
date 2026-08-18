@@ -12,7 +12,8 @@ this rewrite was designed to avoid show up.
 - Route-owning modules: `domain::admin` (login), `domain::onboarding`
   (register, challenge, verify, me), `domain::events` (public + admin
   events), `domain::businesses` (directory), `domain::consultations`,
-  `domain::pairings`, `domain::submissions`, `domain::lines`.
+  `domain::pairings`, `domain::submissions`, `domain::lines`,
+  `domain::members`.
   The `/admin/...` route prefixes inside those modules are
   admin-authed but still business logic of that domain.
 - **One endpoint accepts unauthenticated writes:**
@@ -182,11 +183,14 @@ private correspondence or let anyone write the magazine:
 
 | | write | read |
 |---|---|---|
-| `submissions` (0018, 0020) | public, only as `pending` | **`pending` admin-only; `accepted` public** |
+| `submissions` (0018, 0020, 0023) | **members only, as their own `pending`** | own rows always; `accepted` public |
 | `taste_lines` (0019) | **admin only** | public, only where `published` |
 
-Both are moderated publication: anyone may write, nobody may publish
-themselves. 0018 originally made submissions private correspondence;
+Both are moderated publication, and nobody may publish themselves.
+0023 closed the write side of submissions: the INSERT policy checks
+`user_id` against `app.user_id`, so a transaction without a member's
+context cannot write at all. That is the enforcement — not the
+handler, which merely fails earlier and more politely. 0018 originally made submissions private correspondence;
 0020 corrected that — they are posts, and the magazine is a selection
 from what is already public.
 

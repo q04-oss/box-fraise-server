@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Membership — box fraise</title>
+  <meta name="description" content="Your Box Fraise membership, granted at the run club.">
+  <meta name="theme-color" content="#ffffff">
+  <!-- Nothing here should ever be indexed: the URL carries a
+       credential in its fragment. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 560px; margin: 0 auto; padding: 64px 24px 96px; }
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(32px, 7vw, 56px); letter-spacing: -0.03em;
+      line-height: 1.02; margin: 0 0 22px; text-wrap: balance;
+    }
+    p { font-size: 18px; line-height: 1.6; margin: 0 0 18px; }
+    .muted { color: var(--muted); font-size: 15px; }
+    .kv {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 14px;
+    }
+    .act {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em;
+      background: var(--accent); color: #fff; text-decoration: none;
+      padding: 18px 30px; border-radius: 999px; display: inline-block;
+      margin-top: 12px; min-height: 56px; line-height: 20px;
+    }
+    a.inline { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+    #ok, #bad { display: none; }
+    #ok.on, #bad.on { display: block; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="ok">
+      <p class="kv">Membership</p>
+      <h1>You are a member.</h1>
+      <p>This phone is now the thing that proves it. Nothing was emailed and there is no
+      password — the credential lives here, so keep the phone.</p>
+      <p class="muted">Lose it and it is not a lock-out: come to a run and somebody will
+      make you another.</p>
+      <p><a class="act" href="/gurgle">Go and post something</a></p>
+    </div>
+
+    <div id="bad">
+      <p class="kv">Membership</p>
+      <h1>That link had nothing in it.</h1>
+      <p>A membership is handed over in person, at the run club, by scanning a code off
+      somebody's screen. A link typed out by hand will not carry it.</p>
+      <p><a class="inline" href="/run">Friday at six, Sunday at eight →</a></p>
+    </div>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+    // The credential arrives in the fragment rather than the query
+    // string, because a fragment is never sent to the server: it stays
+    // out of access logs, out of Referer headers, and out of anything
+    // in front of the app. It is read once and replaced immediately,
+    // so it does not sit in the address bar or in history.
+    const token = location.hash.replace(/^#/, '').trim();
+    if (token) {
+      try { localStorage.setItem('bf_member_token', token); } catch { /* private mode */ }
+      history.replaceState(null, '', location.pathname);
+      document.getElementById('ok').classList.add('on');
+    } else {
+      document.getElementById(
+        localStorage.getItem('bf_member_token') ? 'ok' : 'bad'
+      ).classList.add('on');
+    }
+  })();
+  </script>
+</body>
+</html>
