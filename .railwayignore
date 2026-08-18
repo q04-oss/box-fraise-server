@@ -1,0 +1,24 @@
+# What `railway up` must not ship.
+#
+# `railway up` uploads the working directory, not the git tree, so
+# .gitignore is not automatically the whole story. target/ is around
+# 6 GB of Rust build artifacts — none of it is needed, because the
+# Dockerfile compiles from source inside the image, and trying to carry
+# it is what makes a deploy fail with:
+#
+#   Repository snapshot operation timed out. This may be due to a large
+#   repository size or network issues.
+#
+# Keep this in step with .dockerignore. The two answer different
+# questions — what gets uploaded, and what the build context contains —
+# but target/ is wrong in both.
+target/
+.git/
+
+# Local only. The database URL and the seed admin password live here in
+# development; on Railway they are service variables.
+.env
+
+# The compose stack and its init SQL are for a laptop, not the platform.
+docker/
+docker-compose.yml
