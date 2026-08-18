@@ -341,11 +341,14 @@ much larger machine.
 ### Where the channel UI lives
 
 Inside gurgle, behind a tab, on both hosts: `/gurgle` and the
-gurgle.app window on `/os`. It used to be `/chat`, a page of its own
-linked from the homepage nav — which offered strangers a top-level link
-to something only members can open, and put a member's conversations
-somewhere other than where their number and their feed already were.
-`web/chat/index.html` is now a redirect and nothing else.
+gurgle.app window on `/os`. `/gurgle#channels` opens straight onto it.
+
+There was briefly a `/chat` page linked from the homepage nav. It was
+wrong twice — a top-level link offering strangers something only
+members can open, and a member's conversations kept somewhere other
+than where their number and their feed already were. It is deleted, not
+redirected: it was never indexed, never linked from anywhere else, and
+no member ever loaded it.
 
 `web/js/channels.js` owns the markup, the styles and the wiring, for
 the same reason `gurgle.js` does: two hosts render it at different

@@ -282,9 +282,8 @@
       });
     });
 
-    // /chat used to be a page of its own and now redirects here. A
-    // saved link should still land on channels rather than dropping
-    // somebody at the top of the feed wondering where they went.
+    // A tab worth having is a tab worth linking to — /gurgle#channels
+    // opens straight onto it.
     if (location.hash === '#channels') {
       document.getElementById('tab-channels-btn').click();
     }

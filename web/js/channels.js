@@ -1,11 +1,10 @@
 // Channels — meeting somebody, and then talking to them.
 //
-// This was the whole of /chat, a page of its own reached from the
-// homepage nav. That was wrong twice over: it offered strangers a
-// top-level link to something only members can open, and it put a
-// member's conversations somewhere other than where their number, their
-// feed and their post button already are. Channels belong inside
-// gurgle.
+// This began as a page of its own, reached from the homepage nav. That
+// was wrong twice over: it offered strangers a top-level link to
+// something only members can open, and it put a member's conversations
+// somewhere other than where their number, their feed and their post
+// button already are. Channels belong inside gurgle.
 //
 // Extracted here rather than copied into two pages, for the same reason
 // gurgle.js exists: /gurgle and the gurgle.app window on /os render it
