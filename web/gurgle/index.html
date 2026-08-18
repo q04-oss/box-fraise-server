@@ -100,7 +100,16 @@
       margin: 0 0 34px; min-height: 52px;
     }
     .open:hover { border-color: var(--accent); color: var(--accent); }
-    form[hidden] { display: none; }
+    .panel[hidden] { display: none; }
+    .panel {
+      border-left: 2px solid var(--accent); padding: 2px 0 2px 18px;
+      margin: 0 0 34px; max-width: 46ch;
+    }
+    .panel p { font-size: 16px; line-height: 1.6; margin: 0 0 12px; }
+    .panel .when {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.1em; line-height: 1.9; color: var(--muted);
+    }
     .feed-head {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
@@ -139,38 +148,22 @@
     <h1>Gurgle</h1>
     <p class="lede">Columns and photographs, and the magazine is made from them.</p>
 
-    <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-form">post, or whatever</button>
+    <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
-    <form id="gg-form" hidden>
-      <p class="fine">Everything here is read first. Once it goes up it is public, with
-      your name on it if you gave one. Your email is never published — it is how the
-      editor reaches you, and how you will claim your posts when accounts exist.</p>
-      <label for="gg-title">Title</label>
-      <input type="text" id="gg-title" maxlength="140" autocomplete="off">
-
-      <label for="gg-body">Column</label>
-      <textarea id="gg-body" maxlength="20000"></textarea>
-      <div class="count" id="gg-count">0</div>
-
-      <label for="gg-image">Photograph</label>
-      <input type="file" id="gg-image" accept="image/*">
-
-      <label for="gg-name">Your name</label>
-      <input type="text" id="gg-name" maxlength="80" autocomplete="name">
-
-      <label for="gg-contact">Email</label>
-      <input type="email" id="gg-contact" maxlength="200" autocomplete="email" required>
-
-      <button type="submit" class="send" id="gg-send">Send it in</button>
-      <div class="msg" id="gg-msg"></div>
-    </form>
+    <div class="panel" id="gg-panel" hidden>
+      <p>Posting is for members, and there is one way to become one: turn up to the
+      run club. Somebody will make you an account there, in person.</p>
+      <p class="when">Friday at six · Sunday at eight<br>
+      Dr. Wilbert McIntyre Park, Old Strathcona</p>
+      <p><a class="inline" href="/run">Where and why →</a></p>
+    </div>
 
     <section class="feed">
       <div id="gg-feed"></div>
     </section>
 
-    <p class="closer">A column, a photograph, or both — one is enough.
-    <a class="inline" href="/scan">Scanning a strawberry</a> gives you one back.</p>
+    <p class="closer">Anyone can read this. <a class="inline" href="/scan">Scanning a strawberry</a>
+    gives you a line back.</p>
   </main>
 
   <script src="/js/gurgle.js"></script>

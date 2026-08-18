@@ -13,9 +13,6 @@ pub struct SubmissionUpload {
     pub body: Option<String>,
     pub image_bytes: Option<Vec<u8>>,
     pub submitter_name: Option<String>,
-    /// Required. The handle a magic link would claim this post
-    /// with, and the only field on a submission that is never public.
-    pub submitter_email: String,
 }
 
 #[derive(Serialize)]
@@ -35,7 +32,6 @@ pub struct PendingSubmission {
     pub has_image: bool,
     pub byte_size: Option<i32>,
     pub submitter_name: Option<String>,
-    pub submitter_email: String,
     pub submitted_at: DateTime<Utc>,
 }
 
@@ -46,10 +42,10 @@ pub struct SubmissionImage {
 
 /// A published post, as anyone may read it.
 ///
-/// Note what is absent: `submitter_email`. RLS is row-level, so the
-/// accepted-row policy from 0020 does expose that column to any query
-/// the app makes — this struct and the repository query that fills it
-/// are the boundary. Never widen either to `SELECT *`.
+/// Columns are named rather than globbed. 0020 makes accepted rows
+/// publicly readable, so anything added to this table later is public
+/// the moment a post is accepted unless this struct and the query that
+/// fills it leave it out. Never widen either to `SELECT *`.
 #[derive(Serialize, FromRow)]
 pub struct PublishedSubmission {
     pub id: Uuid,

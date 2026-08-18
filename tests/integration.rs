@@ -1326,7 +1326,6 @@ fn column(text: &str) -> SubmissionUpload {
         body: Some(text.into()),
         image_bytes: None,
         submitter_name: None,
-        submitter_email: "writer@test.local".into(),
     }
 }
 
@@ -1391,7 +1390,6 @@ async fn empty_submission_is_refused() {
         body: None,
         image_bytes: None,
         submitter_name: Some("nobody".into()),
-        submitter_email: "writer@test.local".into(),
     };
     assert!(matches!(
         submissions_service::submit(&pool, empty).await,
@@ -1419,7 +1417,6 @@ async fn non_image_bytes_are_refused() {
                 .to_vec(),
         ),
         submitter_name: None,
-        submitter_email: "writer@test.local".into(),
     };
     assert!(matches!(
         submissions_service::submit(&pool, html).await,
@@ -1438,7 +1435,6 @@ async fn photograph_alone_is_a_submission() {
             body: None,
             image_bytes: Some(tiny_jpeg()),
             submitter_name: Some("Photographer".into()),
-            submitter_email: "writer@test.local".into(),
         },
     )
     .await
@@ -1500,7 +1496,6 @@ async fn rejection_deletes_the_submission() {
             body: Some("A column that is about to be turned down by the editor.".into()),
             image_bytes: Some(tiny_jpeg()),
             submitter_name: None,
-            submitter_email: "writer@test.local".into(),
         },
     )
     .await
@@ -1658,60 +1653,6 @@ async fn line_validation_holds() {
     ));
 }
 
-/// Posting requires an address, and it has to look like one. The
-/// service refuses before the DB does; the `submissions_email_shape`
-/// CHECK is the backstop.
-#[tokio::test]
-async fn a_submission_needs_a_real_looking_email() {
-    let pool = test_pool().await;
-
-    let with_email = |email: &str| SubmissionUpload {
-        title: None,
-        body: Some("A column long enough to count as a column, sent for checking.".into()),
-        image_bytes: None,
-        submitter_name: None,
-        submitter_email: email.into(),
-    };
-
-    for bad in [
-        "",
-        "   ",
-        "nobody",
-        "@fraise.box",
-        "someone@",
-        "two@@at.com",
-        "a b@c.com",
-    ] {
-        assert!(
-            matches!(
-                submissions_service::submit(&pool, with_email(bad)).await,
-                Err(AppError::BadRequest(_))
-            ),
-            "{bad:?} should have been refused"
-        );
-    }
-
-    // Addresses are stored lowercased, so the same person is the same
-    // handle whatever their keyboard did.
-    let admin_id = seed_test_admin(&pool).await;
-    let r = submissions_service::submit(&pool, with_email("  Writer@Fraise.Box  "))
-        .await
-        .unwrap();
-    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
-    let stored: String =
-        sqlx::query_scalar("SELECT submitter_email FROM submissions WHERE id = $1")
-            .bind(r.id)
-            .fetch_one(tx.conn())
-            .await
-            .unwrap();
-    tx.commit().await.unwrap();
-    assert_eq!(stored, "writer@fraise.box");
-
-    submissions_service::reject(&pool, admin_id, r.id)
-        .await
-        .unwrap();
-}
-
 /// The feed carries published posts and nothing else — a pending
 /// submission must never appear in it, however it is asked for.
 #[tokio::test]
@@ -1724,7 +1665,6 @@ async fn the_feed_shows_only_published_posts() {
         body: Some(text.into()),
         image_bytes: None,
         submitter_name: Some("A reader".into()),
-        submitter_email: "reader@test.local".into(),
     };
 
     let waiting = submissions_service::submit(
@@ -1771,24 +1711,25 @@ async fn the_feed_shows_only_published_posts() {
     tx.commit().await.unwrap();
 }
 
-/// The feed never carries an address. RLS is row-level, so the
-/// accepted-row policy does expose submitter_email to the app — the
-/// repository naming its columns is the only thing stopping it, and
-/// this is the test that fails if somebody widens that query.
+/// The feed exposes exactly the fields it means to.
+///
+/// 0020 makes accepted rows publicly readable, and RLS is row-level —
+/// so any column added to `submissions` later is public the moment a
+/// post is accepted, unless the feed query and PublishedSubmission
+/// leave it out. This pins the shape, so adding a column and widening
+/// the query fails here rather than in the open.
 #[tokio::test]
-async fn the_feed_never_carries_an_email() {
+async fn the_feed_exposes_only_the_fields_it_means_to() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
-    let secret = format!("private-{}@test.local", Uuid::new_v4());
 
     let r = submissions_service::submit(
         &pool,
         SubmissionUpload {
-            title: None,
-            body: Some("A post whose author's address must not travel with it.".into()),
+            title: Some("A title".into()),
+            body: Some("A post used to pin down exactly what the feed gives out.".into()),
             image_bytes: None,
             submitter_name: Some("A reader".into()),
-            submitter_email: secret.clone(),
         },
     )
     .await
@@ -1798,10 +1739,29 @@ async fn the_feed_never_carries_an_email() {
         .unwrap();
 
     let feed = submissions_service::list_published(&pool).await.unwrap();
-    let json = serde_json::to_string(&feed).unwrap();
-    assert!(
-        !json.contains(&secret),
-        "an address reached the feed: {json}"
+    let post = feed
+        .iter()
+        .find(|p| p.id == r.id)
+        .expect("the post should be in the feed");
+    let value = serde_json::to_value(post).unwrap();
+    let mut keys: Vec<&str> = value
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(String::as_str)
+        .collect();
+    keys.sort_unstable();
+    assert_eq!(
+        keys,
+        [
+            "body",
+            "has_image",
+            "id",
+            "published_at",
+            "submitter_name",
+            "title"
+        ],
+        "the feed's shape changed — check nothing private came with it"
     );
 
     let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();

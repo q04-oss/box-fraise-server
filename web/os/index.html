@@ -410,7 +410,12 @@
       background: none; color: var(--ink); cursor: pointer; margin-bottom: 16px;
     }
     .gg .open:hover { border-color: var(--accent); color: var(--accent); }
-    .gg form[hidden] { display: none; }
+    .gg-panel[hidden] { display: none; }
+    .gg-panel {
+      border-left: 2px solid var(--accent); padding: 0 0 0 14px; margin: 0 0 16px;
+    }
+    .gg-panel p { font-size: 13px; line-height: 1.55; margin: 0; color: var(--muted); }
+    .gg-panel a { color: var(--ink); }
     /* The same feed as /gurgle, at window scale. */
     .gf-post { border-top: 1px solid var(--rule); padding: 14px 0; }
     .gf-title { font-style: italic; font-size: 16px; line-height: 1.2; margin: 0 0 7px; }
@@ -697,30 +702,12 @@
 
         <hr class="gg-rule">
 
-        <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-form">post, or whatever</button>
+        <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
-        <form id="gg-form" hidden>
-          <p class="gg-note">Read first, then public, with your name on it if you give
-          one. Your email is never published.</p>
-          <label for="gg-title">Title</label>
-          <input type="text" id="gg-title" maxlength="140" autocomplete="off">
-
-          <label for="gg-body">Column</label>
-          <textarea id="gg-body" maxlength="20000"></textarea>
-          <div class="count" id="gg-count">0</div>
-
-          <label for="gg-image">Photograph</label>
-          <input type="file" id="gg-image" accept="image/*">
-
-          <label for="gg-name">Your name</label>
-          <input type="text" id="gg-name" maxlength="80" autocomplete="name">
-
-          <label for="gg-contact">Email</label>
-          <input type="email" id="gg-contact" maxlength="200" autocomplete="email" required>
-
-          <button type="submit" class="send" id="gg-send">Send it in</button>
-          <div class="msg" id="gg-msg"></div>
-        </form>
+        <div class="gg-panel" id="gg-panel" hidden>
+          <p>Posting is for members. There is one way to become one: turn up to the
+          <a href="/run">run club</a> and somebody will make you an account, in person.</p>
+        </div>
 
         <hr class="gg-rule">
 

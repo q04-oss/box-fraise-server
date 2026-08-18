@@ -41,23 +41,26 @@
     });
   }
 
+  // The post button. There is one way to become a member of this
+  // platform and it is turning up to the run club, so until somebody
+  // has, pressing this explains where memberships come from rather
+  // than opening a form nobody is allowed to submit.
   window.wireGurgle = function wireGurgle() {
-    const form = document.getElementById('gg-form');
-    if (!form) return;
-
-    // The feed leads and the form is folded away behind a button.
-    // Reading is the common case; posting is the occasional one, and
-    // a form at the top of a page is a page that looks like work.
-    const open = document.getElementById('gg-open');
-    if (open) {
+    const open  = document.getElementById('gg-open');
+    const panel = document.getElementById('gg-panel');
+    if (open && panel) {
       open.addEventListener('click', () => {
-        const showing = !form.hidden;
-        form.hidden = showing;
+        const showing = !panel.hidden;
+        panel.hidden = showing;
         open.textContent = showing ? 'post, or whatever' : 'never mind';
         open.setAttribute('aria-expanded', String(!showing));
-        if (!showing) form.querySelector('textarea').focus();
       });
     }
+
+    // The submit path below stays wired for when members can post.
+    // It does nothing while there is no form on the page.
+    const form = document.getElementById('gg-form');
+    if (!form) return;
 
     const bodyEl  = document.getElementById('gg-body');
     const msgEl   = document.getElementById('gg-msg');
