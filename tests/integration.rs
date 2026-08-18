@@ -31,7 +31,7 @@ use box_fraise::{
         },
         pairings::{
             service as pairings_service,
-            types::{ClaimRequest, DecisionRequest, SetDisplayNameRequest},
+            types::{ClaimInPersonRequest, ClaimRequest, DecisionRequest, SetDisplayNameRequest},
         },
         submissions::{service as submissions_service, types::SubmissionUpload},
     },
@@ -2180,4 +2180,97 @@ async fn messages_are_opaque_and_final() {
                 .unwrap();
         assert!(!granted, "bf_app must not be able to {verb} a message");
     }
+}
+
+/// Two members can pair with nothing but their memberships. This is
+/// the path that matters: a member has no device key, because their
+/// credential was handed to them on a phone at a run, so requiring a
+/// signature would mean nobody can ever start a channel.
+#[tokio::test]
+async fn two_members_can_pair_without_device_keys() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let a = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap()
+        .user_id;
+    let b = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap()
+        .user_id;
+
+    // Neither has one, which is the whole point.
+    let keys: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM device_keys WHERE user_id = ANY($1)")
+        .bind(vec![a, b])
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(keys, 0);
+
+    let nonce = pairings_service::issue_nonce(&pool, a).await.unwrap().nonce;
+    let claimed = pairings_service::claim_in_person(
+        &pool,
+        b,
+        SHORT_COOLING,
+        LONG_WINDOW,
+        ClaimInPersonRequest {
+            nonce: nonce.clone(),
+        },
+    )
+    .await
+    .unwrap();
+
+    // One code, one pairing: it burns on use.
+    assert!(matches!(
+        pairings_service::claim_in_person(
+            &pool,
+            b,
+            SHORT_COOLING,
+            LONG_WINDOW,
+            ClaimInPersonRequest { nonce },
+        )
+        .await,
+        Err(AppError::Conflict)
+    ));
+
+    // Your own code is not a way to pair with yourself.
+    let own = pairings_service::issue_nonce(&pool, a).await.unwrap().nonce;
+    assert!(matches!(
+        pairings_service::claim_in_person(
+            &pool,
+            a,
+            SHORT_COOLING,
+            LONG_WINDOW,
+            ClaimInPersonRequest { nonce: own },
+        )
+        .await,
+        Err(AppError::BadRequest(_))
+    ));
+
+    // And it is a real pairing: both decide, and a channel opens.
+    wait_for_window().await;
+    for who in [a, b] {
+        pairings_service::decide(
+            &pool,
+            who,
+            claimed.pairing_id,
+            DecisionRequest {
+                decision: "yes".into(),
+            },
+        )
+        .await
+        .unwrap();
+    }
+    messages_service::send(
+        &pool,
+        a,
+        claimed.pairing_id,
+        SendMessageRequest {
+            ciphertext: URL_SAFE_NO_PAD.encode("something long enough to pass".as_bytes()),
+            iv: URL_SAFE_NO_PAD.encode([0u8; 12]),
+        },
+    )
+    .await
+    .unwrap();
 }

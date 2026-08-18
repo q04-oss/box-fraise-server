@@ -123,6 +123,13 @@ pub struct ClaimRequest {
     pub signature_b64: String,
 }
 
+/// A member claiming with nothing but their membership. See
+/// `service::claim_in_person` for why that is enough.
+#[derive(Debug, Deserialize)]
+pub struct ClaimInPersonRequest {
+    pub nonce: String,
+}
+
 #[derive(Debug, Serialize)]
 pub struct ClaimResponse {
     pub pairing_id: Uuid,

@@ -258,6 +258,23 @@ Static ECDH means no forward secrecy: a stolen private key reads
 everything that member received. Ratcheting would fix it and is a
 much larger machine.
 
+## Two ways to claim a pairing
+
+`claim` takes a P-256 signature from a registered device key — the
+iOS path. `claim_in_person` takes nothing but the caller's bearer
+token, because a member has no device key: their credential was
+handed to them on a phone at a run by an admin who was looking at
+them. Requiring a second proof would mean nobody can ever start a
+channel.
+
+Everything else the signed path relies on still holds either way —
+the nonce lives two minutes, both people act while authenticated, it
+burns on use, and you cannot claim your own.
+
+They are separate entry points on purpose. "Skip the check when they
+have no keys" would be the same behaviour today and a hole the day
+key registration stops being mandatory.
+
 ## When you change a table
 
 1. Add the table to `migrations/0001_init.sql` (or a new

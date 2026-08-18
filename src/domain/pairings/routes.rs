@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         .route("/pairings", get(list))
         .route("/pairings/nonce", post(nonce))
         .route("/pairings/claim", post(claim))
+        .route("/pairings/claim-in-person", post(claim_in_person))
         .route("/pairings/authorized", get(authorized))
         .route("/pairings/{id}/decision", post(decision))
         .route("/pairings/{id}/block", post(block))
@@ -47,6 +48,19 @@ async fn claim(
     let (cooling, window) = (state.cfg.pairing_cooling, state.cfg.pairing_window);
     Ok(Json(
         service::claim(&state.pool, me, cooling, window, req).await?,
+    ))
+}
+
+/// A member pairing with nothing but their membership — the web
+/// path, for people whose credential was handed to them at a run.
+async fn claim_in_person(
+    AuthedUser(me): AuthedUser,
+    State(state): State<AppState>,
+    Json(req): Json<ClaimInPersonRequest>,
+) -> AppResult<Json<ClaimResponse>> {
+    let (cooling, window) = (state.cfg.pairing_cooling, state.cfg.pairing_window);
+    Ok(Json(
+        service::claim_in_person(&state.pool, me, cooling, window, req).await?,
     ))
 }
 

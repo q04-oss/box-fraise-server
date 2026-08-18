@@ -63,6 +63,7 @@ On boot, the server will:
 | `GET  /v1/submissions/published`             | public    | The feed — published posts, newest first, never an address |
 | `GET  /v1/submissions/published/{id}/image`  | public    | A published photograph                             |
 | `POST /v1/admin/attendances`                 | admin     | Mark a member present at a run, by their number |
+| `POST /v1/pairings/claim-in-person`          | member    | Claim a code with a membership, no device key |
 | `PUT  /v1/members/me/key`                    | member    | Publish an ECDH public key made in the browser |
 | `GET  /v1/pairings/{id}/key`                 | member    | A peer's key, only on an open channel          |
 | `GET  /v1/pairings/{id}/messages`            | member    | The conversation, as ciphertext                |
@@ -127,7 +128,7 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-50 tests, one ignored (the iOS-fixture slot — swap in a real
+51 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the

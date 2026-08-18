@@ -65,6 +65,37 @@
     }
     .chan[data-open="1"] .st { color: var(--accent); }
 
+    /* Meeting somebody. Two buttons, because there are two sides of
+       the same act and only one of you needs to hold the phone. */
+    .meet { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; }
+    .meet button {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: lowercase; letter-spacing: 0.1em;
+      padding: 14px 22px; border: 1px solid var(--ink); border-radius: 999px;
+      background: none; color: var(--ink); cursor: pointer;
+    }
+    .meet button:hover { border-color: var(--accent); color: var(--accent); }
+    #code, #scan { display: none; margin: 16px 0 26px; }
+    #code.on, #scan.on { display: block; }
+    #qr { background: #fff; display: inline-block; }
+    #qr img { display: block; }
+    #cam { width: 100%; max-width: 320px; border-radius: 8px; background: #000; display: block; }
+    .nonce {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; letter-spacing: 0.08em; word-break: break-all;
+      color: var(--muted); margin-top: 10px;
+    }
+    #paste { width: 100%; font: inherit; font-size: 15px; margin-top: 10px;
+             border: 1px solid var(--rule); border-radius: 8px; padding: 10px; }
+    .decide { display: flex; gap: 8px; flex: 0 0 auto; }
+    .decide button {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 7px 12px; border-radius: 999px; cursor: pointer;
+      border: 1px solid var(--rule); background: none; color: var(--ink);
+    }
+    .decide button.yes { border-color: var(--accent); color: var(--accent); }
+
     /* The conversation. */
     #room { display: none; }
     #room.on { display: block; }
@@ -112,6 +143,22 @@
       <p class="lede">Each one opened because two people met at a run and both said so, three
       days apart. Nothing here reaches the server as words.</p>
 
+      <p class="kv">Meet somebody</p>
+      <div class="meet">
+        <button type="button" id="show-code">show my code</button>
+        <button type="button" id="scan-code">scan a code</button>
+      </div>
+      <div id="code">
+        <div id="qr"></div>
+        <p class="msgline">Have them scan this. It lasts two minutes.</p>
+        <p class="nonce" id="nonce"></p>
+      </div>
+      <div id="scan">
+        <video id="cam" autoplay playsinline muted></video>
+        <p class="msgline" id="scan-msg">Point it at their code.</p>
+        <input id="paste" placeholder="or type the code out">
+      </div>
+
       <p class="kv">Yours</p>
       <div id="chans"></div>
 
@@ -129,6 +176,7 @@
     </div>
   </main>
 
+  <script src="/js/qrcode.min.js"></script>
   <script src="/js/chat.js"></script>
   <script>
   (() => {
@@ -141,6 +189,117 @@
     const auth = { 'Authorization': 'Bearer ' + token };
     const no = n => 'no. ' + String(n).padStart(4, '0');
     let current = null;
+
+    // ── Meeting somebody ─────────────────────────────────────────
+    // One of you shows a code and the other reads it. Which way round
+    // does not matter: the pairing is the same either way, and both
+    // people had to be there for it to happen at all.
+    let scanning = null;
+
+    document.getElementById('show-code').addEventListener('click', async () => {
+      stopScanning();
+      const box = document.getElementById('code');
+      box.classList.add('on');
+      document.getElementById('nonce').textContent = 'asking…';
+      try {
+        const r = await fetch('/v1/pairings/nonce', { method: 'POST', headers: auth });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const { nonce } = await r.json();
+        const holder = document.getElementById('qr');
+        holder.textContent = '';
+        const qr = qrcode(0, 'M');
+        qr.addData(nonce);
+        qr.make();
+        holder.innerHTML = qr.createImgTag(6, 8);
+        // Shown as text too: a cracked screen or a dim camera should
+        // not be the reason two people cannot connect.
+        document.getElementById('nonce').textContent = nonce;
+      } catch {
+        document.getElementById('nonce').textContent = 'Could not get a code.';
+      }
+    });
+
+    document.getElementById('scan-code').addEventListener('click', async () => {
+      document.getElementById('code').classList.remove('on');
+      const box = document.getElementById('scan');
+      box.classList.add('on');
+      const msg = document.getElementById('scan-msg');
+
+      if (!('BarcodeDetector' in window) || !navigator.mediaDevices) {
+        msg.textContent = 'This browser cannot use the camera — type the code instead.';
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
+        const video = document.getElementById('cam');
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        scanning = { stream, timer: setInterval(async () => {
+          try {
+            const found = await detector.detect(video);
+            if (found.length) await pairWith(found[0].rawValue);
+          } catch { /* a frame that did not decode */ }
+        }, 400) };
+      } catch {
+        msg.textContent = 'No camera — type the code instead.';
+      }
+    });
+
+    document.getElementById('paste').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.value.trim()) pairWith(e.target.value.trim());
+    });
+
+    function stopScanning() {
+      if (!scanning) return;
+      clearInterval(scanning.timer);
+      scanning.stream.getTracks().forEach(t => t.stop());
+      scanning = null;
+    }
+
+    let pairing = false;
+    async function pairWith(nonce) {
+      if (pairing) return;
+      pairing = true;
+      const msg = document.getElementById('scan-msg');
+      msg.textContent = 'Pairing…';
+      try {
+        const r = await fetch('/v1/pairings/claim-in-person', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+          body: JSON.stringify({ nonce }),
+        });
+        const text = await r.text();
+        let body = null;
+        if (text) { try { body = JSON.parse(text); } catch { /* leave null */ } }
+        if (!r.ok) {
+          throw new Error(
+            body && body.message ? body.message :
+            body && body.error === 'conflict' ? 'That code has been used already.' :
+            body && body.error === 'not_found' ? 'No such code.' :
+            'That did not work.');
+        }
+        stopScanning();
+        document.getElementById('scan').classList.remove('on');
+        document.getElementById('paste').value = '';
+        await loadChannels();
+      } catch (e) {
+        msg.textContent = e.message;
+      } finally {
+        pairing = false;
+      }
+    }
+
+    async function decide(id, answer) {
+      await fetch('/v1/pairings/' + id + '/decision', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+        body: JSON.stringify({ decision: answer }),
+      });
+      await loadChannels();
+    }
 
     async function loadChannels() {
       const holder = document.getElementById('chans');
@@ -185,6 +344,24 @@
         el.appendChild(st);
         if (open) el.addEventListener('click', () => enter(p));
         holder.appendChild(el);
+
+        // Three days later, both people are asked. A no is never
+        // reported to the other side — see the pairing design.
+        if (p.status === 'deciding' && !p.my_decision) {
+          const row = document.createElement('div');
+          row.className = 'decide';
+          row.style.padding = '0 0 15px';
+          const yes = document.createElement('button');
+          yes.className = 'yes';
+          yes.textContent = 'yes';
+          yes.addEventListener('click', () => decide(p.id, 'yes'));
+          const nope = document.createElement('button');
+          nope.textContent = 'no';
+          nope.addEventListener('click', () => decide(p.id, 'no'));
+          row.appendChild(yes);
+          row.appendChild(nope);
+          holder.appendChild(row);
+        }
       });
     }
 

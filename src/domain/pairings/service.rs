@@ -47,16 +47,15 @@ pub async fn issue_nonce(pool: &Pool, me: Uuid) -> AppResult<PairingNonceRespons
     Ok(PairingNonceResponse { nonce, expires_at })
 }
 
-/// Claim someone's nonce by signing it. Proves the scanner's device
-/// was close enough to read the initiator's screen inside the nonce's
-/// lifetime, and that the initiator asked for that code while
-/// authenticated. Both people acted; that is the in-person part.
+/// Claim someone's nonce by signing it, from the iOS app. The
+/// signature proves the scanner's registered device read the
+/// initiator's screen inside the nonce's lifetime.
 ///
 /// `cooling` and `window` are passed in rather than read from a
 /// global, matching `onboarding::issue_challenge`. That keeps the
 /// timings configurable at the edge and lets tests use one-second
 /// windows without mutating process-wide state, which would race
-/// under parallel test execution.
+/// under parallel tests.
 pub async fn claim(
     pool: &Pool,
     me: Uuid,
@@ -65,13 +64,50 @@ pub async fn claim(
     req: ClaimRequest,
 ) -> AppResult<ClaimResponse> {
     let signature_der = b64_decode(&req.signature_b64)?;
+    finish_claim(pool, me, cooling, window, &req.nonce, Some(&signature_der)).await
+}
 
+/// Claim someone's nonce as a member, with no signature.
+///
+/// A member has no device key: their credential was handed to them
+/// on a phone at the run club, by an admin who was looking at them.
+/// That token is the in-person artefact, so requiring a second one
+/// would only mean nobody can pair.
+///
+/// Everything else the signed path relies on still holds. The nonce
+/// lives two minutes, so both people were in the same place at the
+/// same time. The initiator asked for it while authenticated and the
+/// claimer answers while authenticated, so both acted. It burns on
+/// use, so one code makes one pairing.
+///
+/// Deliberately a separate entry point rather than "skip the check
+/// when they have no keys" — a rule like that quietly becomes a hole
+/// the day key registration stops being mandatory for app users.
+pub async fn claim_in_person(
+    pool: &Pool,
+    me: Uuid,
+    cooling: Duration,
+    window: Duration,
+    req: ClaimInPersonRequest,
+) -> AppResult<ClaimResponse> {
+    finish_claim(pool, me, cooling, window, &req.nonce, None).await
+}
+
+/// The part both paths share. `signature` is None for a member
+/// claiming with their token.
+async fn finish_claim(
+    pool: &Pool,
+    me: Uuid,
+    cooling: Duration,
+    window: Duration,
+    nonce: &str,
+    signature: Option<&[u8]>,
+) -> AppResult<ClaimResponse> {
     let mut tx = RlsTransaction::begin(pool, me).await?;
 
-    let (initiator_id, event_id, expires_at, used_at) =
-        repository::get_nonce(tx.conn(), &req.nonce)
-            .await?
-            .ok_or(AppError::NotFound)?;
+    let (initiator_id, event_id, expires_at, used_at) = repository::get_nonce(tx.conn(), nonce)
+        .await?
+        .ok_or(AppError::NotFound)?;
 
     // Replay and expiry both mean "code no longer valid" but are
     // distinct failures, so the UI can say something useful.
@@ -90,16 +126,19 @@ pub async fn claim(
         return Err(AppError::bad_request("that is your own code"));
     }
 
-    // The signature must be from one of the scanner's registered
-    // device keys, over the nonce, using the same P-256 / DER /
-    // SHA-256 / low-S-normalised path as event verification.
-    let keys = repository::public_keys_for(tx.conn(), me).await?;
-    let verified = keys
-        .iter()
-        .any(|pk| verify_p256_signature(pk, &req.nonce, &signature_der).is_ok());
-    if !verified {
-        tx.rollback().await.ok();
-        return Err(AppError::InvalidSignature);
+    // The signature, when there is one, must come from one of the
+    // scanner's registered device keys, over the nonce, using the same
+    // P-256 / DER / SHA-256 / low-S-normalised path as event
+    // verification.
+    if let Some(signature_der) = signature {
+        let keys = repository::public_keys_for(tx.conn(), me).await?;
+        let verified = keys
+            .iter()
+            .any(|pk| verify_p256_signature(pk, nonce, signature_der).is_ok());
+        if !verified {
+            tx.rollback().await.ok();
+            return Err(AppError::InvalidSignature);
+        }
     }
 
     let pending = repository::pending_count_for(tx.conn(), me).await?;
@@ -110,7 +149,7 @@ pub async fn claim(
         ));
     }
 
-    if !repository::burn_nonce(tx.conn(), &req.nonce).await? {
+    if !repository::burn_nonce(tx.conn(), nonce).await? {
         // Lost the race to another claimer.
         tx.rollback().await.ok();
         return Err(AppError::Conflict);
