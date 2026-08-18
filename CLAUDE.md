@@ -255,11 +255,31 @@ non-extractable and specific to the browser that made them, so a new
 device is a new key and the old conversations stay unreadable. That is
 what end-to-end costs, and it is not a bug to be fixed later.
 
-`DELETE /v1/members/session` ends one session — the one that made the
-request, via `SessionHash` from the middleware. Not every session the
-member has: handing a phone back should not log out a laptop. 0027's
+`DELETE /v1/members/session` ends the session that made the request,
+via `SessionHash` from the middleware. 0027's
 `user_sessions_own_delete` is scoped by `user_id`, so naming somebody
 else's session hash exactly still deletes nothing.
+
+## One phone, one membership
+
+A member holds exactly one session at a time. Only two paths mint one —
+`members::service::create` and `reissue`, and reissue clears the others
+first. There is no way for somebody to add a second device.
+
+That is a decision, not an oversight. It was weighed against letting a
+signed-in phone authorise another browser, and rejected: "a membership
+lives on one phone" is doing real work in how this platform is
+described, and two devices would cost it.
+
+The consequence to keep in mind when touching sign-out: **it costs
+exactly what losing the phone costs.** There is no cheap version of it.
+The confirmation in `web/js/session.js` says so in as many words, and
+it should keep saying so — anyone who taps it to lend their phone for
+an afternoon is out until the next run.
+
+`sign_out` is nonetheless written as "end this token's session" rather
+than "end this member's sessions". The narrow statement is the true
+one, and it stays true if a second device ever arrives.
 
 `user_sessions` has no `expires_at` and should not grow one. An admin
 session expires because an admin holds power over other people's

@@ -134,13 +134,22 @@ pub async fn reissue(
     })
 }
 
-/// End this session and no others.
+/// End this session.
 ///
-/// Scoped to the one token that made the request, so handing a phone
-/// back does not log out a laptop. Run under the member's own context:
-/// 0027's policy means the DELETE can only ever match their own rows,
-/// which is the actual enforcement — this function merely asks politely
-/// for the right one.
+/// In practice that is every session the member has: one phone, one
+/// membership, and the only two paths that mint a session are `create`
+/// and `reissue`, which clears the others first. So signing out costs
+/// what losing the phone costs, and the button says so before it does
+/// anything.
+///
+/// It is still written as "this token" rather than "this member" — the
+/// narrower statement is the true one, and a future path that hands
+/// somebody a second device should not have to remember to come back
+/// here and tighten it.
+///
+/// Run under the member's own context, where 0027's policy means the
+/// DELETE can only ever match their own rows. That is the actual
+/// enforcement; this function merely asks politely for the right one.
 ///
 /// No audit entry. Signing out is not something done *to* anybody, and
 /// a permanent record of when each member closed their phone is

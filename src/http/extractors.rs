@@ -24,9 +24,10 @@ pub struct AuthedAdmin(pub Uuid);
 /// same value the middleware looked up by. Present alongside AuthedUser
 /// and only there.
 ///
-/// Exists so that signing out can end *this* session rather than every
-/// session the member has. A phone handed back should not log out the
-/// laptop, and a lost phone is the admin's job, not this one's.
+/// Exists so that signing out can name the session it means. A member
+/// only ever holds one, so today that is the same set either way — but
+/// "the token that asked" is the honest scope, and it stays correct if
+/// that ever stops being true.
 #[derive(Clone, Debug)]
 pub struct SessionHash(pub String);
 
