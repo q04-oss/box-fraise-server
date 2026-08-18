@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gurgle — box fraise</title>
-  <meta name="description" content="Post a column or a photograph. Published posts are public; the magazine is made from them.">
+  <meta name="description" content="Do you have what it takes to run this country? Answers, in writing and photographs, from people who turned up.">
   <meta name="theme-color" content="#ffffff">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,7 +91,17 @@
        posts — long-form is the common case here, so the measure
        matters more than the density. */
     /* The feed is the page, so it starts where the reading starts. */
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 16px;
+    }
     .feed { margin-top: 12px; border-top: 2px solid var(--ink); }
+    .feed-q {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 16px 0 0;
+    }
     .open {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 12px; text-transform: lowercase; letter-spacing: 0.1em;
@@ -145,8 +155,10 @@
   <main>
     <a class="backlink" href="/">← box fraise</a>
 
-    <h1>Gurgle</h1>
-    <p class="lede">Columns and photographs, and the magazine is made from them.</p>
+    <p class="kicker">Gurgle</p>
+    <h1>Do you have what it takes to run this country?</h1>
+    <p class="lede">Everything here answers that. In writing, in photographs, from people
+    who turned up. The magazine is made by taking some of it.</p>
 
     <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
@@ -159,13 +171,14 @@
     </div>
 
     <form id="gg-form" hidden>
-      <p class="fine">Read first, then public, under your member number. Nothing else is
-      asked for — a member is a number, not a name.</p>
+      <p class="fine">Answer it however you like — an argument, a photograph, something
+      you noticed at six in the morning. Read first, then public, under your member
+      number.</p>
 
       <label for="gg-title">Title</label>
       <input type="text" id="gg-title" maxlength="140" autocomplete="off">
 
-      <label for="gg-body">Column</label>
+      <label for="gg-body">Your answer</label>
       <textarea id="gg-body" maxlength="20000"></textarea>
       <div class="count" id="gg-count">0</div>
 
@@ -177,11 +190,12 @@
     </form>
 
     <section class="feed">
+      <p class="feed-q">Answers</p>
       <div id="gg-feed"></div>
     </section>
 
-    <p class="closer">Anyone can read this. <a class="inline" href="/scan">Scanning a strawberry</a>
-    gives you a line back.</p>
+    <p class="closer">Anyone can read this. The question is answered by turning up —
+    <a class="inline" href="/run">Friday at six, Sunday at eight</a>.</p>
   </main>
 
   <script src="/js/gurgle.js"></script>
