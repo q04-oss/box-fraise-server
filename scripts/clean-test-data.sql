@@ -85,10 +85,12 @@ DELETE FROM device_keys    WHERE user_id      IN (SELECT id FROM t_users);
 -- ── The users themselves, then what they were verified at ──────────
 DELETE FROM users WHERE id IN (SELECT id FROM t_users);
 
--- Any surviving user still pointing at a test event would block it.
-UPDATE users
-   SET verified_at_event_id = NULL
- WHERE verified_at_event_id IN (SELECT id FROM t_events);
+-- Anybody verified at a test event is a test user by construction:
+-- the event was made by a test admin, so the verification was too.
+-- They are caught above, but delete defensively rather than nulling
+-- the column — 0024 forbids a verified user without an event, so
+-- nulling it breaks users_verified_state_consistent.
+DELETE FROM users WHERE verified_at_event_id IN (SELECT id FROM t_events);
 
 DELETE FROM events          WHERE id       IN (SELECT id FROM t_events);
 
