@@ -20,9 +20,11 @@
   const DB = 'box-fraise-chat';
   const STORE = 'keys';
   const KEY_ID = 'ecdh';
-  const TOKEN_KEY = 'bf_member_token';
 
-  const token = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
+  // Nothing here carries a credential. The membership is an HttpOnly
+  // cookie the server set, and same-origin fetch sends it unasked —
+  // see web/js/session.js. The private key below is the one secret this
+  // file holds, and it is deliberately unreadable even to this file.
 
   const b64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -72,10 +74,7 @@
     const raw = await crypto.subtle.exportKey('raw', pair.publicKey);
     const r = await fetch('/v1/members/me/key', {
       method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token(),
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ public_key: b64(raw) }),
     });
     if (!r.ok) throw new Error('could not publish the key');
@@ -91,9 +90,7 @@
     if (secrets.has(pairingId)) return secrets.get(pairingId);
 
     const pair = await myKeypair();
-    const r = await fetch('/v1/pairings/' + peerId + '/key', {
-      headers: { 'Authorization': 'Bearer ' + token() },
-    });
+    const r = await fetch('/v1/pairings/' + peerId + '/key');
     if (r.status === 404) throw new Error('they have not opened this on a device yet');
     if (!r.ok) throw new Error('could not fetch their key');
     const { public_key } = await r.json();
@@ -127,10 +124,7 @@
 
       const r = await fetch('/v1/pairings/' + pairingId + '/messages', {
         method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token(),
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ciphertext: b64(ct), iv: b64(iv) }),
       });
       if (!r.ok) throw new Error('it did not send');
@@ -139,9 +133,7 @@
 
     async read(pairingId, peerId) {
       const key = await sharedKey(pairingId, peerId);
-      const r = await fetch('/v1/pairings/' + pairingId + '/messages', {
-        headers: { 'Authorization': 'Bearer ' + token() },
-      });
+      const r = await fetch('/v1/pairings/' + pairingId + '/messages');
       if (!r.ok) throw new Error('could not read the channel');
       const rows = await r.json();
 

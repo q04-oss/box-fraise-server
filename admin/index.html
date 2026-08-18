@@ -193,6 +193,33 @@
       </fieldset>
 
       <fieldset>
+        <legend>Lost phone</legend>
+        <div class="muted">For somebody who already has a number and cannot get in — new
+        phone, wiped browser, signed out. This hands them a fresh code for the
+        <em>same</em> account: their number, their posts and their months of turning up
+        all stay. It is the only way back in, and it only happens here, with them standing
+        in front of you.
+        <br><br>
+        Every device they had is signed out first, because the usual reason for asking is
+        that one of them is gone. Say so out loud. Their conversations will not come back
+        either — those keys were on the old phone and nowhere else.</div>
+        <div class="row" style="margin-top: 14px;">
+          <input type="number" id="rc-no" min="1" placeholder="member number" inputmode="numeric">
+          <button id="rc-make">Replace their code</button>
+        </div>
+        <div id="rc-msg" class="muted" style="margin-top: 8px;"></div>
+
+        <div id="rc-out" style="display: none; margin-top: 16px;">
+          <div id="rc-qr"></div>
+          <div class="muted" style="margin-top: 10px;">Have them point their camera at it.</div>
+          <div id="rc-link" class="muted" style="margin-top: 6px; word-break: break-all;"></div>
+          <div style="margin-top: 10px;">
+            <button id="rc-done" class="secondary">Done</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Taste lines <span id="tl-count" class="muted"></span></legend>
         <div class="muted">The pool a strawberry draws from. Every one completes
         &ldquo;for better taste:&rdquo;. Published lines are public; drafts are not.</div>
@@ -603,6 +630,74 @@
     document.getElementById('mb-link').textContent = '';
     document.getElementById('mb-out').style.display = 'none';
     document.getElementById('mb-msg').textContent = '';
+  });
+
+  // ── Replacing a credential ───────────────────────────────────────
+  // The support desk. A membership lives on one phone and nowhere
+  // else, which is what makes it worth something and also the thing
+  // that breaks. There is no email, no password and no code that can
+  // be read out over a telephone — so the way back in is to turn up to
+  // a run, which is the same act that made the membership.
+  //
+  // No event is needed: this replaces a credential, it does not record
+  // an attendance. If they have lapsed, the message below says so and
+  // the panel above is the fix.
+  async function replaceCredential() {
+    const msg = document.getElementById('rc-msg');
+    const out = document.getElementById('rc-out');
+    const input = document.getElementById('rc-no');
+    const no = parseInt(input.value, 10);
+    if (!no || no < 1) {
+      msg.textContent = 'Their member number. If they cannot remember it, it is on every post they made.';
+      return;
+    }
+    msg.textContent = 'Replacing…';
+    out.style.display = 'none';
+
+    try {
+      const r = await api('/admin/members/credential', {
+        method: 'POST',
+        body: JSON.stringify({ member_no: no }),
+      });
+
+      const url = location.origin + '/join#' + r.token;
+      const holder = document.getElementById('rc-qr');
+      holder.textContent = '';
+      const qr = qrcode(0, 'M');
+      qr.addData(url);
+      qr.make();
+      holder.innerHTML = qr.createImgTag(6, 0);
+      document.getElementById('rc-link').textContent = url;
+
+      const label = 'no. ' + String(r.member_no).padStart(4, '0');
+      const ended = r.sessions_ended === 1
+        ? '1 device signed out.'
+        : r.sessions_ended + ' devices signed out.';
+      // Standing is worth saying here rather than making them find out
+      // by trying to post: they are standing right in front of the
+      // person who can fix it.
+      msg.textContent = r.current
+        ? label + ' — ' + ended + ' They can post.'
+        : label + ' — ' + ended + ' They have lapsed; mark them present above.';
+      input.value = '';
+      out.style.display = 'block';
+    } catch (e) {
+      msg.textContent = e.message === 'not_found'
+        ? 'No member has that number.'
+        : e.message;
+    }
+  }
+
+  document.getElementById('rc-make').addEventListener('click', replaceCredential);
+  document.getElementById('rc-no').addEventListener('keydown', e => {
+    if (e.key === 'Enter') replaceCredential();
+  });
+  document.getElementById('rc-done').addEventListener('click', () => {
+    // Off the screen rather than left facing the queue.
+    document.getElementById('rc-qr').textContent = '';
+    document.getElementById('rc-link').textContent = '';
+    document.getElementById('rc-out').style.display = 'none';
+    document.getElementById('rc-msg').textContent = '';
   });
 
   // ── Taste lines ──────────────────────────────────────────────────

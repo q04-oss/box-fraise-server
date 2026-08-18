@@ -20,7 +20,7 @@ use super::{
     repository,
     types::{
         AttendanceRecorded, CreateMemberRequest, CreatedMember, MembershipStatus,
-        RecordAttendanceRequest,
+        RecordAttendanceRequest, ReissueRequest, ReissuedCredential,
     },
 };
 use crate::{
@@ -65,6 +65,91 @@ pub async fn create(
         member_no,
         token,
     })
+}
+
+/// Hand an existing member a new credential.
+///
+/// A membership lives on one phone and nowhere else — that is what
+/// makes it worth something, and it is also the thing that breaks. A
+/// phone is lost, wiped, replaced, or its browser storage is cleared,
+/// and the token is gone. The server only ever kept the hash, so it
+/// cannot give the old one back and would not want to.
+///
+/// So it gives a new one for the same account. The member number, the
+/// posts, the attendances and the pairings all stay where they are;
+/// only the thing in the pocket changes.
+///
+/// This is deliberately the least remote-recoverable design available.
+/// There is no email, no code, no security question, nothing that can
+/// be talked out of somebody over the phone. To get back in you turn up
+/// to a run and an admin looks at you — the same act that makes a
+/// membership in the first place. That the support desk is a person on
+/// a Sunday morning is the point, not a limitation.
+///
+/// Every other session is ended first. Somebody asking for this has
+/// usually lost the device, so leaving the old credential alive would
+/// mean whoever found it keeps posting under their number.
+///
+/// What this cannot restore: the chat keys. Those are non-extractable
+/// and live in the browser that generated them, so a new device is a
+/// new key and the old conversations stay unreadable. That is what
+/// end-to-end means here — see the channel notes in CLAUDE.md.
+pub async fn reissue(
+    pool: &Pool,
+    admin_id: Uuid,
+    req: ReissueRequest,
+) -> AppResult<ReissuedCredential> {
+    let (token, token_hash) = crypto::new_session_token();
+
+    let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let user_id = repository::id_by_member_no(tx.conn(), req.member_no)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    let sessions_ended = repository::delete_all_sessions(tx.conn(), user_id).await?;
+    repository::insert_session(tx.conn(), user_id, &token_hash).await?;
+    let (current, last_seen) = repository::standing(tx.conn(), user_id).await?;
+    tx.commit().await?;
+
+    // Worth a trail: this is the one action that hands somebody else's
+    // account to whoever is holding the admin's screen. The token is
+    // not written here, for the same reason it is not written in
+    // `create` — audit_events is append-only.
+    audit::write(
+        pool,
+        "admin",
+        Some(admin_id),
+        "member.reissued",
+        Some(&user_id.to_string()),
+        json!({ "member_no": req.member_no, "sessions_ended": sessions_ended }),
+    )
+    .await;
+
+    Ok(ReissuedCredential {
+        user_id,
+        member_no: req.member_no,
+        token,
+        sessions_ended,
+        current,
+        last_seen,
+    })
+}
+
+/// End this session and no others.
+///
+/// Scoped to the one token that made the request, so handing a phone
+/// back does not log out a laptop. Run under the member's own context:
+/// 0027's policy means the DELETE can only ever match their own rows,
+/// which is the actual enforcement — this function merely asks politely
+/// for the right one.
+///
+/// No audit entry. Signing out is not something done *to* anybody, and
+/// a permanent record of when each member closed their phone is
+/// surveillance rather than accountability.
+pub async fn sign_out(pool: &Pool, user_id: Uuid, token_hash: &str) -> AppResult<()> {
+    let mut tx = RlsTransaction::begin(pool, user_id).await?;
+    repository::delete_session(tx.conn(), token_hash).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 /// How long an attendance keeps somebody able to post. Mirrors the

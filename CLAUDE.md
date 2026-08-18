@@ -235,6 +235,66 @@ on a screen can be photographed and sent to somebody at home.
 `bf_app` has no UPDATE on `attendances`. When somebody was somewhere
 is a fact, not a field — record it or delete it.
 
+## The support desk is a run club
+
+A membership is a token in one browser and nothing else. There is no
+password, no email, no recovery code — deliberately, because every one
+of those is a thing that can be talked out of somebody over a
+telephone. What replaces them is that the platform already asks people
+to turn up in person once a month.
+
+So when the credential is lost, the fix is `POST
+/v1/admin/members/credential`: an admin types the member's number while
+looking at them and hands over a new code for the *same* account. The
+number, the posts and the attendances all stay. Every existing session
+is ended first, because the usual reason for asking is that one of the
+devices is gone.
+
+What a re-issue cannot restore is the chat keys. They are
+non-extractable and specific to the browser that made them, so a new
+device is a new key and the old conversations stay unreadable. That is
+what end-to-end costs, and it is not a bug to be fixed later.
+
+`DELETE /v1/members/session` ends one session — the one that made the
+request, via `SessionHash` from the middleware. Not every session the
+member has: handing a phone back should not log out a laptop. 0027's
+`user_sessions_own_delete` is scoped by `user_id`, so naming somebody
+else's session hash exactly still deletes nothing.
+
+`user_sessions` has no `expires_at` and should not grow one. An admin
+session expires because an admin holds power over other people's
+accounts; a member's session holds power over their own posts. An
+expiry would log out somebody who came to every run for a year, for a
+reason that has nothing to do with turning up. Attendance already
+governs the only thing that lapses.
+
+## Where a member's credential lives
+
+An HttpOnly cookie (`bf_session`), set by the server, alongside a
+script-readable `bf_member` holding the member number — which is not a
+secret, it is the byline printed under every post.
+
+It used to be `localStorage` plus an `Authorization` header. That was
+wrong: Safari deletes script-writable storage — localStorage and
+IndexedDB both — after seven days without a visit, and this platform
+asks members to turn up once a *month*. Somebody who did nothing wrong
+could open the site after a fortnight and find their membership gone.
+
+Consequences worth knowing before touching this:
+
+- The middleware takes a token from `Authorization: Bearer` **or** the
+  cookie, header first. The iOS app and the admin tool still use the
+  header; only browsers get cookies.
+- Nothing in `web/js/` reads the credential any more. Same-origin
+  `fetch` sends the cookie unasked, so a page can be signed in without
+  ever holding the thing that signs it in. Do not reintroduce a header.
+- `SameSite=Lax` is what stands between a cookie credential and CSRF on
+  every mutating route. Do not relax it.
+- `Secure` is set only when `x-forwarded-proto` says https, because a
+  Secure cookie over `http://localhost` is silently dropped and the
+  sign-in then appears to do nothing at all.
+- `web/js/session.js` must load before `gurgle.js` or `chat.js`.
+
 ## The channel is the one thing the server cannot read
 
 Messages arrive as AES-GCM ciphertext and are stored as ciphertext.

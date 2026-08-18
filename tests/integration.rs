@@ -11,7 +11,7 @@
 
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use box_fraise::{
-    crypto::{argon2_hash, new_nonce, verify_p256_signature},
+    crypto::{argon2_hash, new_nonce, sha256_hex, verify_p256_signature},
     db::{self, AdminRlsTransaction, RlsTransaction},
     domain::{
         consultations::{
@@ -22,7 +22,7 @@ use box_fraise::{
         lines::{service as lines_service, types::CreateLineRequest},
         members::{
             service as members_service,
-            types::{CreateMemberRequest, RecordAttendanceRequest},
+            types::{CreateMemberRequest, RecordAttendanceRequest, ReissueRequest},
         },
         messages::{service as messages_service, types::SendMessageRequest},
         onboarding::{
@@ -2072,6 +2072,106 @@ async fn a_member_cannot_record_their_own_attendance() {
         attempt.is_err(),
         "attendance is something an admin says about you, not something you say"
     );
+}
+
+/// Resolve a raw token the way `resolve_bearer` does — by hash, and by
+/// nothing else. Tests call services directly, so this stands in for
+/// the middleware when what is under test is whether a credential still
+/// opens anything.
+async fn session_owner(pool: &PgPool, token: &str) -> Option<Uuid> {
+    sqlx::query_scalar::<_, Uuid>("SELECT user_id FROM user_sessions WHERE token_hash = $1")
+        .bind(sha256_hex(token.as_bytes()))
+        .fetch_optional(pool)
+        .await
+        .unwrap()
+}
+
+/// A replacement credential is the same membership on a different
+/// phone. This is the whole reason the endpoint exists: losing a device
+/// used to cost somebody their number, and their posts stayed under a
+/// byline they could no longer write as.
+#[tokio::test]
+async fn a_replacement_credential_keeps_the_member() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let member = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    let replaced = members_service::reissue(
+        &pool,
+        admin_id,
+        ReissueRequest {
+            member_no: member.member_no,
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(replaced.user_id, member.user_id, "the same account");
+    assert_eq!(
+        replaced.member_no, member.member_no,
+        "a lost phone does not cost somebody their number"
+    );
+    assert_ne!(
+        replaced.token, member.token,
+        "the server kept only a hash and could not reissue the old one if it wanted to"
+    );
+    assert_eq!(replaced.sessions_ended, 1);
+    assert!(
+        replaced.current,
+        "signing up counted as turning up, and replacing a phone does not undo that"
+    );
+
+    assert_eq!(
+        session_owner(&pool, &member.token).await,
+        None,
+        "whoever found the old phone is not this member any more"
+    );
+    assert_eq!(
+        session_owner(&pool, &replaced.token).await,
+        Some(member.user_id),
+        "and the new code opens the same account"
+    );
+}
+
+/// Signing out ends one session. Not the account, and not anybody
+/// else's — 0027 scopes the delete by user_id, so naming a stranger's
+/// session exactly still matches nothing.
+#[tokio::test]
+async fn signing_out_ends_that_session_and_no_other() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let a = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+    let b = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    // The policy is the enforcement, so this is allowed to succeed —
+    // it simply deletes nothing.
+    members_service::sign_out(&pool, a.user_id, &sha256_hex(b.token.as_bytes()))
+        .await
+        .unwrap();
+    assert_eq!(
+        session_owner(&pool, &b.token).await,
+        Some(b.user_id),
+        "one member cannot log another one out"
+    );
+
+    members_service::sign_out(&pool, a.user_id, &sha256_hex(a.token.as_bytes()))
+        .await
+        .unwrap();
+    assert_eq!(session_owner(&pool, &a.token).await, None);
+
+    // Signing out is not leaving. The number, the posts and the
+    // attendance are all still there for the next credential.
+    let standing = members_service::standing(&pool, a.user_id).await.unwrap();
+    assert_eq!(standing.member_no, a.member_no);
+    assert!(standing.current);
 }
 
 /// A channel exists only while the pairing is open. Waiting,

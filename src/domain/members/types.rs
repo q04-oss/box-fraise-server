@@ -39,6 +39,34 @@ pub struct AttendanceRecorded {
     pub current_until: DateTime<Utc>,
 }
 
+#[derive(Deserialize)]
+pub struct ReissueRequest {
+    /// Read off a screen, or off the person, or looked up in the
+    /// attendance panel. The admin is standing in front of them.
+    pub member_no: i32,
+}
+
+/// A replacement credential for a member who already exists.
+///
+/// The number is deliberately the old one. This is the whole point of
+/// the endpoint: a lost phone should not cost somebody their byline,
+/// their posts, or the year of turning up behind them.
+#[derive(Serialize)]
+pub struct ReissuedCredential {
+    pub user_id: Uuid,
+    pub member_no: i32,
+    pub token: String,
+    /// How many devices were signed out to make this one work. Shown to
+    /// the admin so they can say it out loud — "your old phone is dead
+    /// now" is better heard than discovered.
+    pub sessions_ended: u64,
+    /// Whether this member may currently post. False means they have
+    /// not been at a run in over a month, and since they are standing
+    /// right there, the admin should mark them present too.
+    pub current: bool,
+    pub last_seen: Option<DateTime<Utc>>,
+}
+
 /// What a member can see about their own standing.
 #[derive(Serialize)]
 pub struct MembershipStatus {

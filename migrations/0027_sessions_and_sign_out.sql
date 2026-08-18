@@ -1,0 +1,35 @@
+-- Signing out, and getting back in.
+--
+-- Until now a membership was a one-way door. The token was shown once
+-- as a QR at the run club, only its hash was kept, and there was no
+-- endpoint to end a session and nothing to start a new one. Clearing
+-- browser data was therefore permanent: the member lost their number,
+-- their posts stayed under a byline they could no longer write as, and
+-- the only remedy was a second account.
+--
+-- That is the wrong failure for this platform. The run club is the
+-- support desk — a person with a problem comes to a run and an admin
+-- fixes it while looking at them. This migration gives that admin
+-- something to do, and gives a member a way to hand a phone back.
+--
+-- Two changes, both small:
+--
+-- 1. A member may delete their own session row. 0001 granted DELETE on
+--    user_sessions but only under an admin policy, so sign-out was not
+--    expressible. The policy below is scoped by user_id, so the worst a
+--    member can do with it is log themselves out.
+--
+-- 2. Nothing else. Re-issuing a credential is an admin inserting a row
+--    and deleting the old ones, both of which 0001 already permits
+--    (user_sessions_register_insert, user_sessions_admin_delete). No
+--    new grant is needed and none is added.
+--
+-- Deliberately NOT added: an expires_at on user_sessions. Admin
+-- sessions have one because an admin holds power over other people's
+-- accounts. A member's session holds power over their own posts and
+-- nothing else, and an expiry would mean somebody who came to every run
+-- for a year gets logged out for a reason that has nothing to do with
+-- turning up. Attendance already governs the only thing that lapses.
+
+CREATE POLICY user_sessions_own_delete ON user_sessions FOR DELETE
+    USING (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid);

@@ -10,11 +10,14 @@
 (() => {
   'use strict';
 
-  // The membership credential, put here by /join when a code was
-  // scanned off an admin's screen at the run club. Its absence is
-  // simply not being a member.
-  const TOKEN_KEY = 'bf_member_token';
-  const token = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
+  // Whether this browser holds a membership, put here by /join when a
+  // code was scanned off an admin's screen at the run club. Its absence
+  // is simply not being a member.
+  //
+  // No token is read anywhere below: the credential is an HttpOnly
+  // cookie the server set, and same-origin fetch sends it without being
+  // asked. See web/js/session.js, which must be loaded first.
+  const member = () => window.bfSession && window.bfSession.signedIn();
 
   // Mirrors MIN_BODY_CHARS in src/domain/submissions/service.rs. A
   // column of two words is a mistake or a probe, not a column.
@@ -56,19 +59,26 @@
   // allow cannot disagree.
   window.renderMembership = async function renderMembership(elId) {
     const el = document.getElementById(elId);
-    if (!el || !token()) return;
+    if (!el || !member()) return;
     try {
-      const r = await fetch('/v1/members/me', {
-        headers: { 'Authorization': 'Bearer ' + token() },
-      });
+      const r = await fetch('/v1/members/me');
       if (!r.ok) return;
       const m = await r.json();
-      const no = 'no. ' + String(m.member_no).padStart(4, '0');
+      const no = window.bfSession.label(m.member_no);
       const until = m.current_until && new Date(m.current_until).toLocaleDateString(
         undefined, { month: 'short', day: 'numeric' });
-      el.textContent = m.current
+
+      el.textContent = '';
+      const line = document.createElement('span');
+      line.textContent = m.current
         ? no + ' · posting until ' + until + ', then come for a run'
         : no + ' · lapsed. Come for a run and it comes back.';
+      el.appendChild(line);
+      el.appendChild(document.createTextNode(' · '));
+      // The way off this device. It sits next to the number rather than
+      // in a menu, because the case it exists for is handing a phone to
+      // somebody, and that happens in a hurry.
+      window.bfSession.mountSignOut(el);
       el.hidden = false;
     } catch { /* silent: it is a status line, not the page */ }
   };
@@ -77,22 +87,22 @@
     const open   = document.getElementById('gg-open');
     const panel  = document.getElementById('gg-panel');
     const form   = document.getElementById('gg-form');
-    const member = !!token();
 
     // A member gets the form; everybody else gets told where
     // memberships come from.
-    const target = member ? form : panel;
+    const isMember = member();
+    const target = isMember ? form : panel;
     if (open && target) {
       open.addEventListener('click', () => {
         const showing = !target.hidden;
         target.hidden = showing;
         open.textContent = showing ? 'post, or whatever' : 'never mind';
         open.setAttribute('aria-expanded', String(!showing));
-        if (!showing && member) target.querySelector('textarea').focus();
+        if (!showing && isMember) target.querySelector('textarea').focus();
       });
     }
 
-    if (!form || !member) return;
+    if (!form || !isMember) return;
 
     const bodyEl  = document.getElementById('gg-body');
     const msgEl   = document.getElementById('gg-msg');
@@ -144,7 +154,6 @@
         msgEl.textContent = 'Sending…';
         const r = await fetch('/v1/submissions', {
           method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + token() },
           body: fd,
         });
         const text = await r.text();

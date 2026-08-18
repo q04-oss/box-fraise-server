@@ -57,42 +57,63 @@
 <body>
   <main>
     <div id="ok">
-      <p class="kv">Membership</p>
+      <p class="kv">Membership <span id="no"></span></p>
       <h1>You are a member.</h1>
       <p>This phone is now the thing that proves it. Nothing was emailed and there is no
       password — the credential lives here, so keep the phone.</p>
-      <p class="muted">Lose it and it is not a lock-out: come to a run and somebody will
-      make you another.</p>
+      <p class="muted">Lose it and it is not a lock-out. Come to a run, say your number,
+      and somebody will hand you a new code for the same account — your number, your posts
+      and your months of turning up all stay where they are. Conversations do not: those
+      are locked to the phone that had them.</p>
       <p><a class="act" href="/gurgle">Go and post something</a></p>
     </div>
 
     <div id="bad">
       <p class="kv">Membership</p>
-      <h1>That link had nothing in it.</h1>
-      <p>A membership is handed over in person, at the run club, by scanning a code off
-      somebody's screen. A link typed out by hand will not carry it.</p>
+      <h1>That code will not open anything.</h1>
+      <p>Either the link had nothing in it, or it has been replaced — a code stops working
+      the moment somebody is handed a new one, which is what happens when a member says
+      they lost their phone.</p>
+      <p>Memberships are handed over in person, at the run club, by scanning a code off
+      somebody's screen. So is a replacement. There is nothing to do here from a distance,
+      and that is on purpose.</p>
       <p><a class="inline" href="/run">Friday at six, Sunday at eight →</a></p>
     </div>
   </main>
 
+  <script src="/js/session.js"></script>
   <script>
   (() => {
     'use strict';
     // The credential arrives in the fragment rather than the query
-    // string, because a fragment is never sent to the server: it stays
-    // out of access logs, out of Referer headers, and out of anything
-    // in front of the app. It is read once and replaced immediately,
-    // so it does not sit in the address bar or in history.
+    // string, because a fragment is never sent to the server by the
+    // browser: it stays out of access logs, out of Referer headers, and
+    // out of anything in front of the app. It is read once and replaced
+    // immediately, so it does not sit in the address bar or in history.
+    //
+    // It is then handed to the server once, deliberately, so it can be
+    // written back as an HttpOnly cookie. It used to be kept in
+    // localStorage instead, which Safari sweeps after seven days
+    // without a visit — a bad fit for a platform that asks people to
+    // turn up monthly. See web/js/session.js.
     const token = location.hash.replace(/^#/, '').trim();
-    if (token) {
-      try { localStorage.setItem('bf_member_token', token); } catch { /* private mode */ }
-      history.replaceState(null, '', location.pathname);
-      document.getElementById('ok').classList.add('on');
-    } else {
-      document.getElementById(
-        localStorage.getItem('bf_member_token') ? 'ok' : 'bad'
-      ).classList.add('on');
+    const show = id => document.getElementById(id).classList.add('on');
+
+    if (!token) {
+      show(bfSession.signedIn() ? 'ok' : 'bad');
+      return;
     }
+
+    history.replaceState(null, '', location.pathname);
+    bfSession.adopt(token).then(
+      m => {
+        document.getElementById('no').textContent = bfSession.label(m.member_no);
+        show('ok');
+      },
+      // A code that will not exchange is a code that has been replaced
+      // — somebody was handed a new one, and this is the old phone.
+      () => show('bad'),
+    );
   })();
   </script>
 </body>

@@ -43,6 +43,33 @@ pub async fn insert_session(
     Ok(())
 }
 
+/// End one session. Run under the member's own context, where 0027's
+/// `user_sessions_own_delete` policy scopes the delete to their rows —
+/// so a token hash belonging to somebody else matches nothing, rather
+/// than logging a stranger out.
+///
+/// Returns false when the row was already gone, which is what a second
+/// tap on sign-out looks like.
+pub async fn delete_session(conn: &mut PgConnection, token_hash: &str) -> sqlx::Result<bool> {
+    let done = sqlx::query("DELETE FROM user_sessions WHERE token_hash = $1")
+        .bind(token_hash)
+        .execute(conn)
+        .await?;
+    Ok(done.rows_affected() == 1)
+}
+
+/// End every session a member has. Run under an admin's context, and
+/// used for one thing: somebody standing at a run saying they lost
+/// their phone. Whatever is on that phone stops working before the
+/// replacement is minted.
+pub async fn delete_all_sessions(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<u64> {
+    let done = sqlx::query("DELETE FROM user_sessions WHERE user_id = $1")
+        .bind(user_id)
+        .execute(conn)
+        .await?;
+    Ok(done.rows_affected())
+}
+
 /// The number that goes on a post. Read under the poster's own
 /// context, which `users_self_or_admin_select` permits.
 pub async fn member_no(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<Option<i32>> {

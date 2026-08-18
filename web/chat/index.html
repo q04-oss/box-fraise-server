@@ -173,21 +173,31 @@
       <p class="fine">Encrypted between the two phones. The server keeps ciphertext and has no
       key, so it can see that two numbers exchanged something and when — never what. Losing
       the phone loses the conversation: there is no copy anywhere to restore from.</p>
+
+      <p class="kv" id="whoami"></p>
     </div>
   </main>
 
+  <script src="/js/session.js"></script>
   <script src="/js/qrcode.min.js"></script>
   <script src="/js/chat.js"></script>
   <script>
   (() => {
     'use strict';
-    const token = (() => { try { return localStorage.getItem('bf_member_token'); } catch { return null; } })();
-    if (!token) return;
+    if (!bfSession.signedIn()) return;
     document.getElementById('gate').style.display = 'none';
     document.getElementById('app').style.display = 'block';
 
-    const auth = { 'Authorization': 'Bearer ' + token };
-    const no = n => 'no. ' + String(n).padStart(4, '0');
+    // Empty, and kept only so the calls below read the same as they
+    // did: the credential is an HttpOnly cookie now, and same-origin
+    // fetch attaches it without being told to.
+    const auth = {};
+    const no = n => bfSession.label(n);
+
+    // Which number this phone is, and the way to stop being it.
+    const me = document.getElementById('whoami');
+    me.appendChild(document.createTextNode('You are ' + no(bfSession.memberNo()) + ' · '));
+    bfSession.mountSignOut(me);
     let current = null;
 
     // ── Meeting somebody ─────────────────────────────────────────
