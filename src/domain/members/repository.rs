@@ -17,20 +17,17 @@ pub async fn insert_verified_member(
     conn: &mut PgConnection,
     event_id: Uuid,
     admin_id: Uuid,
-    display_name: Option<&str>,
-) -> sqlx::Result<Uuid> {
-    let (id,): (Uuid,) = sqlx::query_as(
+) -> sqlx::Result<(Uuid, i32)> {
+    sqlx::query_as(
         "INSERT INTO users
-             (status, verified_at, verified_at_event_id, verified_by_admin_id, display_name)
-         VALUES ('verified', now(), $1, $2, $3)
-         RETURNING id",
+             (status, verified_at, verified_at_event_id, verified_by_admin_id, member_no)
+         VALUES ('verified', now(), $1, $2, nextval('member_no_seq'))
+         RETURNING id, member_no",
     )
     .bind(event_id)
     .bind(admin_id)
-    .bind(display_name)
     .fetch_one(conn)
-    .await?;
-    Ok(id)
+    .await
 }
 
 pub async fn insert_session(
@@ -46,10 +43,10 @@ pub async fn insert_session(
     Ok(())
 }
 
-/// The name that goes on a post. Read under the poster's own context,
-/// which `users_self_or_admin_select` permits.
-pub async fn display_name(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<Option<String>> {
-    sqlx::query_scalar::<_, Option<String>>("SELECT display_name FROM users WHERE id = $1")
+/// The number that goes on a post. Read under the poster's own
+/// context, which `users_self_or_admin_select` permits.
+pub async fn member_no(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<Option<i32>> {
+    sqlx::query_scalar::<_, Option<i32>>("SELECT member_no FROM users WHERE id = $1")
         .bind(user_id)
         .fetch_optional(conn)
         .await

@@ -30,7 +30,7 @@ pub struct PendingSubmission {
     pub body: Option<String>,
     pub has_image: bool,
     pub byte_size: Option<i32>,
-    pub submitter_name: Option<String>,
+    pub member_no: i32,
     pub submitted_at: DateTime<Utc>,
 }
 
@@ -50,7 +50,7 @@ pub struct PublishedSubmission {
     pub id: Uuid,
     pub title: Option<String>,
     pub body: Option<String>,
-    pub submitter_name: Option<String>,
+    pub member_no: i32,
     pub has_image: bool,
     pub published_at: DateTime<Utc>,
 }

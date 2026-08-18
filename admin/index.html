@@ -157,13 +157,12 @@
 
       <fieldset>
         <legend>Sign somebody up</legend>
-        <div class="muted">The only way to become a member. They scan the code off this
+        <div class="muted">The only way to become a member. No name is taken — a member is
+        a number, given in the order people joined. They scan the code off this
         screen and the membership lands on their phone — it is shown once and never
         again, so if the scan fails, make another.</div>
 
         <div style="margin-top: 14px;">
-          <label for="mb-name">Their name (optional)</label>
-          <input type="text" id="mb-name" maxlength="40" placeholder="how it appears on their posts">
           <div style="margin-top: 10px;">
             <button id="mb-create">Make a membership</button>
           </div>
@@ -523,7 +522,6 @@
         method: 'POST',
         body: JSON.stringify({
           event_id: activeEventId,
-          display_name: document.getElementById('mb-name').value || null,
         }),
       });
 
@@ -536,11 +534,8 @@
       holder.innerHTML = qr.createImgTag(6, 0);
 
       document.getElementById('mb-link').textContent = url;
-      msg.textContent = created.display_name
-        ? 'Made, for ' + created.display_name + '.'
-        : 'Made.';
+      msg.textContent = 'Made — member no. ' + String(created.member_no).padStart(4, '0') + '.';
       out.style.display = 'block';
-      document.getElementById('mb-name').value = '';
     } catch (e) {
       msg.textContent = e.message;
     }

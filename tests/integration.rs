@@ -99,17 +99,10 @@ async fn seed_test_event(pool: &PgPool, admin_id: Uuid) -> Uuid {
 async fn seed_test_member(pool: &PgPool) -> Uuid {
     let admin_id = seed_test_admin(pool).await;
     let event_id = seed_test_event(pool, admin_id).await;
-    members_service::create(
-        pool,
-        admin_id,
-        CreateMemberRequest {
-            event_id,
-            display_name: Some(format!("Member {}", &random_label()[..8])),
-        },
-    )
-    .await
-    .unwrap()
-    .user_id
+    members_service::create(pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap()
+        .user_id
 }
 
 fn fresh_keypair() -> (SigningKey, Vec<u8>) {
@@ -1786,8 +1779,8 @@ async fn the_feed_exposes_only_the_fields_it_means_to() {
             "body",
             "has_image",
             "id",
+            "member_no",
             "published_at",
-            "submitter_name",
             "title"
         ],
         "the feed's shape changed — check nothing private came with it"
@@ -1840,22 +1833,16 @@ async fn a_post_needs_a_membership() {
     );
 }
 
-/// The name on a post comes from the account, not from the request.
+/// The byline on a post is the member's number, taken from the
+/// account rather than from anything the request said.
 #[tokio::test]
-async fn a_post_carries_the_members_name() {
+async fn a_post_carries_the_members_number() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
     let event_id = seed_test_event(&pool, admin_id).await;
-    let created = members_service::create(
-        &pool,
-        admin_id,
-        CreateMemberRequest {
-            event_id,
-            display_name: Some("Bertrand".into()),
-        },
-    )
-    .await
-    .unwrap();
+    let created = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
 
     let r = submissions_service::submit(
         &pool,
@@ -1874,7 +1861,8 @@ async fn a_post_carries_the_members_name() {
 
     let feed = submissions_service::list_published(&pool).await.unwrap();
     let post = feed.iter().find(|p| p.id == r.id).unwrap();
-    assert_eq!(post.submitter_name.as_deref(), Some("Bertrand"));
+    assert_eq!(post.member_no, created.member_no);
+    assert!(created.member_no > 0, "a member is numbered from one");
 
     let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
     sqlx::query("DELETE FROM submissions WHERE id = $1")
@@ -1893,16 +1881,9 @@ async fn a_membership_records_where_it_was_granted() {
     let pool = test_pool().await;
     let admin_id = seed_test_admin(&pool).await;
     let event_id = seed_test_event(&pool, admin_id).await;
-    let created = members_service::create(
-        &pool,
-        admin_id,
-        CreateMemberRequest {
-            event_id,
-            display_name: None,
-        },
-    )
-    .await
-    .unwrap();
+    let created = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
     assert!(!created.token.is_empty(), "a membership hands over a token");
 
     let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();

@@ -157,6 +157,10 @@
 (() => {
   'use strict';
 
+  // Zero-padded so the column of bylines lines up and an early
+  // number still reads as a number rather than a rank.
+  const memberNo = n => 'no. ' + String(n).padStart(4, '0');
+
   window.renderGurgleFeed = async function renderGurgleFeed(rootId) {
     const root = document.getElementById(rootId);
     if (!root) return;
@@ -208,9 +212,11 @@
         el.appendChild(b);
       }
 
+      // A member is a number, not a name. Nothing public about
+      // somebody here was chosen by them.
       const by = document.createElement('p');
       by.className = 'gf-by';
-      by.textContent = (post.submitter_name || 'Anonymous') + ' · ' +
+      by.textContent = memberNo(post.member_no) + ' · ' +
         new Date(post.published_at).toLocaleDateString(undefined,
           { year: 'numeric', month: 'short', day: 'numeric' });
       el.appendChild(by);

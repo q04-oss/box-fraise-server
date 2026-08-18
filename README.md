@@ -169,7 +169,7 @@ src/
   domain/events/       — public list/get + admin list/create/count
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0002..0023           — applied in filename order; later files drop
+  0002..0024           — applied in filename order; later files drop
                          what earlier ones added (stickers → sightings
                          → gone). Read them forward, not in isolation.
 web/                   — the marketing site (static; /scan is the

@@ -9,6 +9,9 @@
 //! shows a QR, the phone scans it and keeps the token. The server
 //! keeps only its hash, so a membership shown once and not scanned is
 //! a membership lost, and the admin makes another.
+//!
+//! A member has a number and no name. Nothing public about them is
+//! chosen by them.
 
 use serde_json::json;
 use uuid::Uuid;
@@ -20,39 +23,19 @@ use super::{
 use crate::{
     audit, crypto,
     db::{AdminRlsTransaction, Pool},
-    error::{AppError, AppResult},
+    error::AppResult,
 };
-
-/// Matches the `users_display_name_len` CHECK.
-const MAX_NAME_CHARS: usize = 40;
 
 pub async fn create(
     pool: &Pool,
     admin_id: Uuid,
     req: CreateMemberRequest,
 ) -> AppResult<CreatedMember> {
-    let display_name = match req.display_name.as_deref().map(str::trim) {
-        Some(n) if !n.is_empty() => {
-            if n.chars().count() > MAX_NAME_CHARS {
-                return Err(AppError::bad_request(format!(
-                    "a name is at most {MAX_NAME_CHARS} characters"
-                )));
-            }
-            Some(n.to_owned())
-        }
-        _ => None,
-    };
-
     let (token, token_hash) = crypto::new_session_token();
 
     let mut tx = AdminRlsTransaction::begin(pool).await?;
-    let user_id = repository::insert_verified_member(
-        tx.conn(),
-        req.event_id,
-        admin_id,
-        display_name.as_deref(),
-    )
-    .await?;
+    let (user_id, member_no) =
+        repository::insert_verified_member(tx.conn(), req.event_id, admin_id).await?;
     repository::insert_session(tx.conn(), user_id, &token_hash).await?;
     tx.commit().await?;
 
@@ -65,13 +48,13 @@ pub async fn create(
         Some(admin_id),
         "member.created",
         Some(&user_id.to_string()),
-        json!({ "event_id": req.event_id, "named": display_name.is_some() }),
+        json!({ "event_id": req.event_id, "member_no": member_no }),
     )
     .await;
 
     Ok(CreatedMember {
         user_id,
-        display_name,
+        member_no,
         token,
     })
 }

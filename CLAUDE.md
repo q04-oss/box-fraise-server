@@ -199,6 +199,23 @@ RLS is row-level, so the accepted-row policy does expose that column
 to any query the app makes — the boundary is the repository, which
 names its columns. Never `SELECT *` on a public submissions path.
 
+## A member is a number
+
+Nothing public about a member is chosen by them. `users.member_no` is
+sequential in the order people were verified, and it is the byline on
+every post. There is no public name.
+
+`display_name` still exists and is used by exactly one thing:
+pairings, where two people who already met and both said yes can put
+a name to each other. That is a private channel after consent, not a
+public identity.
+
+Two paths mint a number, and both must: an admin signing somebody up
+at a run (`domain::members`) and the iOS device proving itself at an
+event (`domain::onboarding`). The `users_member_no_matches_status`
+CHECK from 0024 makes forgetting one impossible — it is what caught
+the second path when only the first had been written.
+
 ## When you change a table
 
 1. Add the table to `migrations/0001_init.sql` (or a new

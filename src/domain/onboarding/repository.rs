@@ -121,11 +121,18 @@ pub async fn promote_user_to_verified(
     admin_id: Uuid,
 ) -> sqlx::Result<Option<DateTime<Utc>>> {
     let row: Option<(DateTime<Utc>,)> = sqlx::query_as(
+        // The member number is minted here too. There are two ways to
+        // become verified — an admin signing somebody up at the run, and
+        // this, an app proving a device at an event — and both are
+        // memberships, so both draw from the same sequence in the order
+        // people were verified. The `users_member_no_matches_status`
+        // CHECK from 0024 is what makes forgetting this impossible.
         "UPDATE users
             SET status='verified',
                 verified_at=now(),
                 verified_at_event_id=$1,
-                verified_by_admin_id=$2
+                verified_by_admin_id=$2,
+                member_no=nextval('member_no_seq')
           WHERE id=$3 AND status='pending'
           RETURNING verified_at",
     )

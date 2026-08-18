@@ -96,13 +96,15 @@ pub async fn submit(
     // write here at all.
     let mut tx = RlsTransaction::begin(pool, user_id).await?;
 
-    // The name on a post is the account's, not a field somebody types.
+    // The byline is the member's number, not a field somebody types.
     // Read here because it needs the member's own context —
     // users_self_or_admin_select would hide the row otherwise. It is
     // then denormalised onto the submission: the feed is read with no
     // user context at all, and under RLS a join to users would match
-    // nothing and silently drop every post. See 0023.
-    let name = super::super::members::repository::display_name(tx.conn(), user_id).await?;
+    // nothing and silently drop every post. See 0023 and 0024.
+    let member_no = crate::domain::members::repository::member_no(tx.conn(), user_id)
+        .await?
+        .ok_or_else(|| AppError::bad_request("this account is not a member"))?;
 
     let pending = repository::pending_count(tx.conn()).await?;
     if pending >= MAX_PENDING {
@@ -118,7 +120,7 @@ pub async fn submit(
         title.as_deref(),
         body.as_deref(),
         image,
-        name.as_deref(),
+        member_no,
     )
     .await?;
     tx.commit().await?;

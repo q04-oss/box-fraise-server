@@ -7,9 +7,6 @@ pub struct CreateMemberRequest {
     /// will not accept a verified row without an event and an admin,
     /// so a membership always records where it was granted.
     pub event_id: Uuid,
-    /// What goes on their posts. Optional — somebody can be a member
-    /// without putting a name to it.
-    pub display_name: Option<String>,
 }
 
 /// Returned once, at the moment of signing somebody up, and never
@@ -18,6 +15,8 @@ pub struct CreateMemberRequest {
 #[derive(Serialize)]
 pub struct CreatedMember {
     pub user_id: Uuid,
-    pub display_name: Option<String>,
+    /// What goes on their posts. Sequential, in the order people
+    /// joined — nothing about a member is chosen by them.
+    pub member_no: i32,
     pub token: String,
 }
