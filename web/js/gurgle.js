@@ -51,6 +51,28 @@
   // platform and it is turning up to the run club, so until somebody
   // has, pressing this explains where memberships come from rather
   // than opening a form nobody is allowed to submit.
+  // A member's standing, straight from the same functions the INSERT
+  // policy uses — so what somebody is told and what the database will
+  // allow cannot disagree.
+  window.renderMembership = async function renderMembership(elId) {
+    const el = document.getElementById(elId);
+    if (!el || !token()) return;
+    try {
+      const r = await fetch('/v1/members/me', {
+        headers: { 'Authorization': 'Bearer ' + token() },
+      });
+      if (!r.ok) return;
+      const m = await r.json();
+      const no = 'no. ' + String(m.member_no).padStart(4, '0');
+      const until = m.current_until && new Date(m.current_until).toLocaleDateString(
+        undefined, { month: 'short', day: 'numeric' });
+      el.textContent = m.current
+        ? no + ' · posting until ' + until + ', then come for a run'
+        : no + ' · lapsed. Come for a run and it comes back.';
+      el.hidden = false;
+    } catch { /* silent: it is a status line, not the page */ }
+  };
+
   window.wireGurgle = function wireGurgle() {
     const open   = document.getElementById('gg-open');
     const panel  = document.getElementById('gg-panel');

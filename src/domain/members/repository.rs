@@ -52,3 +52,50 @@ pub async fn member_no(conn: &mut PgConnection, user_id: Uuid) -> sqlx::Result<O
         .await
         .map(Option::flatten)
 }
+
+/// Find a member by the number they read out. None when nobody has it.
+pub async fn id_by_member_no(
+    conn: &mut PgConnection,
+    member_no: i32,
+) -> sqlx::Result<Option<Uuid>> {
+    sqlx::query_scalar::<_, Uuid>("SELECT id FROM users WHERE member_no = $1")
+        .bind(member_no)
+        .fetch_optional(conn)
+        .await
+}
+
+/// Mark somebody present. Returns false when they were already marked
+/// at this run — the unique constraint makes that a no-op rather than
+/// an error, because an admin pressing the button twice is not a
+/// mistake worth stopping them for.
+pub async fn record_attendance(
+    conn: &mut PgConnection,
+    user_id: Uuid,
+    event_id: Uuid,
+    admin_id: Uuid,
+) -> sqlx::Result<bool> {
+    let done = sqlx::query(
+        "INSERT INTO attendances (user_id, event_id, recorded_by_admin_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, event_id) DO NOTHING",
+    )
+    .bind(user_id)
+    .bind(event_id)
+    .bind(admin_id)
+    .execute(conn)
+    .await?;
+    Ok(done.rows_affected() == 1)
+}
+
+/// Standing, straight from the functions the INSERT policy uses — so
+/// what a member is told and what the database will allow cannot
+/// disagree.
+pub async fn standing(
+    conn: &mut PgConnection,
+    user_id: Uuid,
+) -> sqlx::Result<(bool, Option<chrono::DateTime<chrono::Utc>>)> {
+    sqlx::query_as("SELECT bf_member_is_current($1), bf_member_last_seen($1)")
+        .bind(user_id)
+        .fetch_one(conn)
+        .await
+}

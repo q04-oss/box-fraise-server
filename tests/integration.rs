@@ -20,7 +20,10 @@ use box_fraise::{
         },
         events::{service as events_service, types::CreateEventRequest},
         lines::{service as lines_service, types::CreateLineRequest},
-        members::{service as members_service, types::CreateMemberRequest},
+        members::{
+            service as members_service,
+            types::{CreateMemberRequest, RecordAttendanceRequest},
+        },
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
@@ -1910,4 +1913,162 @@ async fn a_membership_records_where_it_was_granted() {
     .await
     .unwrap();
     assert_eq!(stored, 1);
+}
+
+/// A membership is kept, not got. Turning up opens the account;
+/// turning up every month is what keeps it able to post.
+#[tokio::test]
+async fn posting_lapses_without_attendance() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let member = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    let post = |body: &str| SubmissionUpload {
+        title: None,
+        body: Some(body.into()),
+        image_bytes: None,
+    };
+
+    // Signing up is turning up, so they can post straight away.
+    let first = submissions_service::submit(
+        &pool,
+        member.user_id,
+        post("A post from somebody who turned up this morning, at length."),
+    )
+    .await
+    .unwrap();
+
+    // Wind their attendance back past the window. Replaced rather than
+    // edited: bf_app has no UPDATE on attendances, because when
+    // somebody was somewhere is a fact rather than a field.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    sqlx::query("DELETE FROM attendances WHERE user_id = $1")
+        .bind(member.user_id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    sqlx::query(
+        "INSERT INTO attendances (user_id, event_id, recorded_at)
+         VALUES ($1, $2, now() - interval '40 days')",
+    )
+    .bind(member.user_id)
+    .bind(event_id)
+    .execute(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    let standing = members_service::standing(&pool, member.user_id)
+        .await
+        .unwrap();
+    assert!(!standing.current, "forty days without a run is not current");
+
+    assert!(
+        submissions_service::submit(
+            &pool,
+            member.user_id,
+            post("A post from somebody who stopped coming to the run club."),
+        )
+        .await
+        .is_err(),
+        "a lapsed member must not be able to post"
+    );
+
+    // Nothing was taken away: the account is intact and so is the work.
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let still_there: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM submissions WHERE id = $1")
+        .bind(first.id)
+        .fetch_one(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(still_there, 1, "a lapse must not remove what they wrote");
+
+    // Coming back restores it — at the next run, not the same one. A
+    // run can only be attended once, so coming back necessarily means
+    // a different event.
+    let next_run = seed_test_event(&pool, admin_id).await;
+    members_service::record_attendance(
+        &pool,
+        admin_id,
+        RecordAttendanceRequest {
+            event_id: next_run,
+            member_no: member.member_no,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(
+        members_service::standing(&pool, member.user_id)
+            .await
+            .unwrap()
+            .current,
+        "turning up again makes them current"
+    );
+    assert!(submissions_service::submit(
+        &pool,
+        member.user_id,
+        post("A post from somebody who came back to the run club after a while.")
+    )
+    .await
+    .is_ok());
+}
+
+/// Marking somebody twice at the same run is an admin pressing a
+/// button again, not a second attendance.
+#[tokio::test]
+async fn attendance_at_one_run_counts_once() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let member = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    // Signing up already recorded this run, so marking it is a no-op.
+    let again = members_service::record_attendance(
+        &pool,
+        admin_id,
+        RecordAttendanceRequest {
+            event_id,
+            member_no: member.member_no,
+        },
+    )
+    .await
+    .unwrap();
+    assert!(!again.was_new, "the same run cannot be attended twice");
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM attendances WHERE user_id = $1")
+        .bind(member.user_id)
+        .fetch_one(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(rows, 1);
+}
+
+/// A member cannot mark themselves present.
+#[tokio::test]
+async fn a_member_cannot_record_their_own_attendance() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let member = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    let mut tx = RlsTransaction::begin(&pool, member.user_id).await.unwrap();
+    let attempt = sqlx::query("INSERT INTO attendances (user_id, event_id) VALUES ($1, $2)")
+        .bind(member.user_id)
+        .bind(event_id)
+        .execute(tx.conn())
+        .await;
+    assert!(
+        attempt.is_err(),
+        "attendance is something an admin says about you, not something you say"
+    );
 }

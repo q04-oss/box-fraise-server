@@ -156,8 +156,21 @@
       </fieldset>
 
       <fieldset>
+        <legend>Who turned up</legend>
+        <div class="muted">A membership lasts a month. Ask for their number and type it
+        in — nothing to scan, nothing that works from a sofa. Marking somebody twice at
+        the same run does nothing.</div>
+        <div class="row" style="margin-top: 14px;">
+          <input type="number" id="at-no" min="1" placeholder="member number" inputmode="numeric">
+          <button id="at-mark">Mark present</button>
+        </div>
+        <div id="at-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Sign somebody up</legend>
-        <div class="muted">The only way to become a member. No name is taken — a member is
+        <div class="muted">The only way to become a member, and it counts as their first
+        run. No name is taken — a member is
         a number, given in the order people joined. They scan the code off this
         screen and the membership lands on their phone — it is shown once and never
         again, so if the scan fails, make another.</div>
@@ -501,6 +514,47 @@
       setMsg($('scan-msg'), 'err', 'Verify failed: ' + e.message);
     }
   }
+
+  // ── Attendance ───────────────────────────────────────────────────
+  // A membership lasts a month from the last run somebody was at.
+  // The admin is looking at the person, so a typed number is the
+  // whole verification — a code on a screen can be photographed and
+  // sent to somebody sitting at home.
+  async function markPresent() {
+    const msg = document.getElementById('at-msg');
+    const input = document.getElementById('at-no');
+    const no = parseInt(input.value, 10);
+    if (!activeEventId) {
+      msg.textContent = 'Pick the event above first — attendance is at a particular run.';
+      return;
+    }
+    if (!no || no < 1) {
+      msg.textContent = 'Their member number, from their phone.';
+      return;
+    }
+    msg.textContent = 'Marking…';
+    try {
+      const r = await api('/admin/attendances', {
+        method: 'POST',
+        body: JSON.stringify({ event_id: activeEventId, member_no: no }),
+      });
+      const until = new Date(r.current_until).toLocaleDateString(undefined,
+        { year: 'numeric', month: 'short', day: 'numeric' });
+      msg.textContent = r.was_new
+        ? 'no. ' + String(r.member_no).padStart(4, '0') + ' is here. Can post until ' + until + '.'
+        : 'no. ' + String(r.member_no).padStart(4, '0') + ' was already marked at this run. Can post until ' + until + '.';
+      input.value = '';
+    } catch (e) {
+      msg.textContent = e.message === 'not_found'
+        ? 'No member has that number.'
+        : e.message;
+    }
+  }
+
+  document.getElementById('at-mark').addEventListener('click', markPresent);
+  document.getElementById('at-no').addEventListener('keydown', e => {
+    if (e.key === 'Enter') markPresent();
+  });
 
   // ── Memberships ──────────────────────────────────────────────────
   // The credential goes in the URL fragment, which browsers never send

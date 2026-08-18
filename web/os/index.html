@@ -393,6 +393,11 @@
     .gg-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; }
     .gg-fine a { color: var(--ink); }
     .gg-rule { border: 0; border-top: 1px solid var(--rule); margin: 18px 0 16px; }
+    .gg-standing {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--accent); margin: 0 0 12px;
+    }
     .gg .open {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 10px; text-transform: lowercase; letter-spacing: 0.1em;
@@ -683,10 +688,13 @@
         <p class="kv">Do I Have What it Takes To Run This Country?</p>
         <p class="gg-fine">Everybody here is answering that about themselves.
         On a phone, <a href="/gurgle">gurgle is a page</a>.</p>
+        <p class="gg-standing" id="gg-standing" hidden></p>
         <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
         <div class="gg-panel" id="gg-panel" hidden>
-          <p>If you believe you have what it takes to run this country, show up to the run club and prove it. <a href="/run">Friday at six, Sunday at eight</a>.</p>
+          <p>If you believe you have what it takes to run this country, show up to the
+          run club and prove it. <a href="/run">Friday at six, Sunday at eight</a>. A
+          membership lasts a month and is kept by coming back.</p>
         </div>
 
         <form id="gg-form" hidden>
@@ -1106,6 +1114,7 @@
     // server, and two copies of that would drift.
     wireGurgle();
     renderGurgleFeed('gg-feed');
+    renderMembership('gg-standing');
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');

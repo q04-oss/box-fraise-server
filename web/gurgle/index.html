@@ -102,6 +102,11 @@
       font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
       color: var(--muted); margin: 16px 0 0;
     }
+    .standing {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--accent); margin: 0 0 16px;
+    }
     .open {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 12px; text-transform: lowercase; letter-spacing: 0.1em;
@@ -160,12 +165,14 @@
     <p class="lede">Everybody here is answering that about themselves — in writing, in
     photographs, from people who turned up. The magazine is made by taking some of it.</p>
 
+    <p class="standing" id="gg-standing" hidden></p>
     <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
     <div class="panel" id="gg-panel" hidden>
       <p>If you believe you have what it takes to run this country, show up to the run club and prove it.</p>
       <p>Somebody will make you an account while you are standing there. That is the
-      only way there is.</p>
+      only way there is — and it lasts a month. Come back within it and it keeps going;
+      miss it and posting stops until you turn up again. Nothing is deleted either way.</p>
       <p class="when">Friday at six · Sunday at eight<br>
       Dr. Wilbert McIntyre Park, Old Strathcona</p>
       <p><a class="inline" href="/run">Where and why →</a></p>
@@ -200,6 +207,6 @@
   </main>
 
   <script src="/js/gurgle.js"></script>
-  <script>wireGurgle(); renderGurgleFeed('gg-feed');</script>
+  <script>wireGurgle(); renderGurgleFeed('gg-feed'); renderMembership('gg-standing');</script>
 </body>
 </html>

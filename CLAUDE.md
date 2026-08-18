@@ -216,6 +216,25 @@ event (`domain::onboarding`). The `users_member_no_matches_status`
 CHECK from 0024 makes forgetting one impossible — it is what caught
 the second path when only the first had been written.
 
+## A membership is kept, not got
+
+Turning up opens the account; turning up every month keeps it able to
+post. 0025 puts that in the INSERT policy through
+`bf_member_is_current` — a SECURITY DEFINER function, because
+`attendances` is under RLS and a posting member has no context to
+read it.
+
+A lapse takes nothing away. The account, the number and everything
+they wrote stay exactly where they are; only posting stops, and it
+resumes the moment an admin marks them present again.
+
+Attendance is recorded by an admin typing a member number while
+looking at the person. There is deliberately no code to scan: a code
+on a screen can be photographed and sent to somebody at home.
+
+`bf_app` has no UPDATE on `attendances`. When somebody was somewhere
+is a fact, not a field — record it or delete it.
+
 ## When you change a table
 
 1. Add the table to `migrations/0001_init.sql` (or a new
