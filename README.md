@@ -63,6 +63,10 @@ On boot, the server will:
 | `GET  /v1/submissions/published`             | public    | The feed — published posts, newest first, never an address |
 | `GET  /v1/submissions/published/{id}/image`  | public    | A published photograph                             |
 | `POST /v1/admin/attendances`                 | admin     | Mark a member present at a run, by their number |
+| `PUT  /v1/members/me/key`                    | member    | Publish an ECDH public key made in the browser |
+| `GET  /v1/pairings/{id}/key`                 | member    | A peer's key, only on an open channel          |
+| `GET  /v1/pairings/{id}/messages`            | member    | The conversation, as ciphertext                |
+| `POST /v1/pairings/{id}/messages`            | member    | Send ciphertext                                |
 | `GET  /v1/members/me`                        | member    | Own standing: number, whether current, until when |
 | `POST /v1/admin/members`                     | admin     | Sign somebody up at the run club; returns the credential once |
 | `POST /v1/submissions`                       | public    | Send in a column and/or a photograph (multipart)   |
@@ -123,7 +127,7 @@ DATABASE_URL='postgresql://bf_app:bf_app@localhost:5434/box_fraise' \
   cargo test --test integration
 ```
 
-48 tests, one ignored (the iOS-fixture slot — swap in a real
+50 tests, one ignored (the iOS-fixture slot — swap in a real
 on-device capture when convenient). The rest cover the RLS
 invariants, the verify race, replay rejection, expired challenges,
 tampered signatures, audit append-only, the two-role enforcement, the
@@ -171,7 +175,7 @@ src/
   domain/events/       — public list/get + admin list/create/count
 migrations/
   0001_init.sql        — schema, RLS, policies, grants
-  0002..0025           — applied in filename order; later files drop
+  0002..0026           — applied in filename order; later files drop
                          what earlier ones added (stickers → sightings
                          → gone). Read them forward, not in isolation.
 web/                   — the marketing site (static; /scan is the

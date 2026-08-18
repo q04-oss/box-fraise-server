@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Channels — box fraise</title>
+  <meta name="description" content="Channels that opened after a pairing at the run club.">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 620px; margin: 0 auto; padding: 48px 24px 96px; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 36px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(28px, 5.5vw, 46px); letter-spacing: -0.028em;
+      line-height: 1.05; margin: 0 0 16px;
+    }
+    .lede { font-size: 17px; line-height: 1.6; color: var(--muted); margin: 0 0 32px; max-width: 46ch; }
+    .kv {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin: 0 0 12px;
+    }
+
+    /* One row per pairing. Only the open ones can be entered; the rest
+       are shown because knowing a channel is coming is part of it. */
+    .chan {
+      display: flex; align-items: baseline; gap: 12px;
+      border-bottom: 1px solid var(--rule); padding: 15px 0;
+      width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0;
+      text-align: left; font: inherit; color: var(--ink);
+    }
+    .chan[data-open="1"] { cursor: pointer; }
+    .chan[data-open="1"]:hover { border-bottom-color: var(--ink); }
+    .chan .who { flex: 1; font-size: 17px; }
+    .chan .st {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--muted); flex: 0 0 auto;
+    }
+    .chan[data-open="1"] .st { color: var(--accent); }
+
+    /* The conversation. */
+    #room { display: none; }
+    #room.on { display: block; }
+    #list { border-top: 2px solid var(--ink); margin: 18px 0 0; }
+    .msg { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+    .msg .from {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--muted); margin-bottom: 5px;
+    }
+    .msg.mine .from { color: var(--accent); }
+    .msg .txt { font-size: 16px; line-height: 1.55; white-space: pre-wrap; }
+    .msg .lost { color: var(--muted); font-style: italic; }
+    textarea {
+      width: 100%; font: inherit; font-size: 16px; margin-top: 18px;
+      border: 1px solid var(--rule); border-radius: 8px; padding: 12px;
+      min-height: 88px; resize: vertical;
+    }
+    textarea:focus { outline: none; border-color: var(--accent); }
+    .send {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      padding: 14px 24px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; margin-top: 12px;
+    }
+    .send[disabled] { background: #ccc; cursor: default; }
+    .msgline { font-size: 14px; color: var(--muted); margin-top: 10px; }
+    .fine { font-size: 13px; line-height: 1.6; color: var(--muted); margin-top: 28px; }
+    a.inline { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <div id="gate">
+      <h1>Channels are for members.</h1>
+      <p class="lede">A channel opens between two people who met at a run, both said yes, and
+      waited three days. There is no other way to start one.</p>
+      <p><a class="inline" href="/run">Friday at six, Sunday at eight →</a></p>
+    </div>
+
+    <div id="app" style="display:none">
+      <h1>Channels</h1>
+      <p class="lede">Each one opened because two people met at a run and both said so, three
+      days apart. Nothing here reaches the server as words.</p>
+
+      <p class="kv">Yours</p>
+      <div id="chans"></div>
+
+      <div id="room">
+        <p class="kv" id="room-who"></p>
+        <div id="list"></div>
+        <textarea id="draft" maxlength="4000" placeholder="Say something."></textarea>
+        <div><button class="send" id="send">Send</button></div>
+        <div class="msgline" id="msg"></div>
+      </div>
+
+      <p class="fine">Encrypted between the two phones. The server keeps ciphertext and has no
+      key, so it can see that two numbers exchanged something and when — never what. Losing
+      the phone loses the conversation: there is no copy anywhere to restore from.</p>
+    </div>
+  </main>
+
+  <script src="/js/chat.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const token = (() => { try { return localStorage.getItem('bf_member_token'); } catch { return null; } })();
+    if (!token) return;
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    const auth = { 'Authorization': 'Bearer ' + token };
+    const no = n => 'no. ' + String(n).padStart(4, '0');
+    let current = null;
+
+    async function loadChannels() {
+      const holder = document.getElementById('chans');
+      let rows;
+      try {
+        const r = await fetch('/v1/pairings', { headers: auth });
+        if (!r.ok) throw new Error('http ' + r.status);
+        rows = await r.json();
+      } catch {
+        holder.textContent = 'Could not load your channels.';
+        return;
+      }
+
+      holder.textContent = '';
+      if (!rows.length) {
+        const p = document.createElement('p');
+        p.className = 'lede';
+        p.textContent = 'None yet. They start by meeting somebody at a run.';
+        holder.appendChild(p);
+        return;
+      }
+
+      rows.forEach(p => {
+        const open = p.status === 'open' && p.peer_id;
+        const el = document.createElement('button');
+        el.className = 'chan';
+        el.type = 'button';
+        el.dataset.open = open ? '1' : '0';
+        if (!open) el.disabled = true;
+
+        const who = document.createElement('span');
+        who.className = 'who';
+        // Before a channel opens there is no peer to name — a pairing
+        // is a memory of meeting somebody, not a contact.
+        who.textContent = p.peer_name || (open ? 'Somebody from a run' : 'Not open yet');
+
+        const st = document.createElement('span');
+        st.className = 'st';
+        st.textContent = p.status;
+
+        el.appendChild(who);
+        el.appendChild(st);
+        if (open) el.addEventListener('click', () => enter(p));
+        holder.appendChild(el);
+      });
+    }
+
+    async function enter(pairing) {
+      current = pairing;
+      document.getElementById('room').classList.add('on');
+      document.getElementById('room-who').textContent =
+        'With ' + (pairing.peer_name || 'somebody from a run');
+      await draw();
+    }
+
+    async function draw() {
+      const list = document.getElementById('list');
+      list.textContent = 'Decrypting…';
+      let msgs;
+      try {
+        msgs = await bfChat.read(current.id, current.peer_id);
+      } catch (e) {
+        list.textContent = e.message;
+        return;
+      }
+
+      list.textContent = '';
+      if (!msgs.length) {
+        const p = document.createElement('p');
+        p.className = 'msgline';
+        p.textContent = 'Nothing said yet.';
+        list.appendChild(p);
+        return;
+      }
+
+      msgs.forEach(m => {
+        const el = document.createElement('div');
+        el.className = 'msg' + (m.sender_id !== current.peer_id ? ' mine' : '');
+
+        const from = document.createElement('div');
+        from.className = 'from';
+        from.textContent = (m.sender_id === current.peer_id ? 'them' : 'you') + ' · ' +
+          new Date(m.at).toLocaleString(undefined,
+            { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        const txt = document.createElement('div');
+        txt.className = 'txt' + (m.text === null ? ' lost' : '');
+        // Everything a person typed goes in as text, never as markup.
+        txt.textContent = m.text === null
+          ? 'This one cannot be read — the key it was written for is gone.'
+          : m.text;
+
+        el.appendChild(from);
+        el.appendChild(txt);
+        list.appendChild(el);
+      });
+    }
+
+    document.getElementById('send').addEventListener('click', async () => {
+      const draft = document.getElementById('draft');
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('send');
+      const text = draft.value.trim();
+      if (!current || !text) return;
+
+      btn.disabled = true;
+      msg.textContent = 'Encrypting…';
+      try {
+        await bfChat.send(current.id, current.peer_id, text);
+        draft.value = '';
+        msg.textContent = '';
+        await draw();
+      } catch (e) {
+        msg.textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Make and publish the key before anything needs it, so the first
+    // message is not also the first round trip.
+    bfChat.ready().catch(() => { /* surfaces when a channel is opened */ });
+    loadChannels();
+  })();
+  </script>
+</body>
+</html>

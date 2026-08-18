@@ -235,6 +235,29 @@ on a screen can be photographed and sent to somebody at home.
 `bf_app` has no UPDATE on `attendances`. When somebody was somewhere
 is a fact, not a field — record it or delete it.
 
+## The channel is the one thing the server cannot read
+
+Messages arrive as AES-GCM ciphertext and are stored as ciphertext.
+The key is derived in the two browsers from a static ECDH exchange
+and never reaches this process — no column holds plaintext, and there
+is a test that fails if one appears.
+
+What is visible is metadata: that two members exchanged something,
+how much, and when. That is unavoidable. The words are not.
+
+`bf_app` has SELECT and INSERT on `messages` and nothing else. A
+message cannot be edited or unsaid, by anybody, including an admin.
+There is deliberately no audit entry either — `audit_events` is
+append-only, so a record of who wrote to whom could never come out.
+
+Reading requires the pairing to still be open, via
+`bf_pairing_is_open_for`. Blocking therefore ends the conversation
+for both people rather than leaving one side with a transcript.
+
+Static ECDH means no forward secrecy: a stolen private key reads
+everything that member received. Ratcheting would fix it and is a
+much larger machine.
+
 ## When you change a table
 
 1. Add the table to `migrations/0001_init.sql` (or a new

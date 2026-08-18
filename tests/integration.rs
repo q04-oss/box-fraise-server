@@ -24,6 +24,7 @@ use box_fraise::{
             service as members_service,
             types::{CreateMemberRequest, RecordAttendanceRequest},
         },
+        messages::{service as messages_service, types::SendMessageRequest},
         onboarding::{
             service as onboarding_service,
             types::{RegisterRequest, VerifyRequest},
@@ -2071,4 +2072,112 @@ async fn a_member_cannot_record_their_own_attendance() {
         attempt.is_err(),
         "attendance is something an admin says about you, not something you say"
     );
+}
+
+/// A channel exists only while the pairing is open. Waiting,
+/// deciding, lapsed or closed all carry nothing — the policies in
+/// 0026 say so, not a handler.
+#[tokio::test]
+async fn a_message_needs_an_open_channel() {
+    let pool = test_pool().await;
+    let (a, b, pairing_id) = seed_pair(&pool).await;
+
+    let say = |body: &str| SendMessageRequest {
+        ciphertext: URL_SAFE_NO_PAD.encode(body.repeat(4).as_bytes()),
+        iv: URL_SAFE_NO_PAD.encode([0u8; 12]),
+    };
+
+    // Nobody has decided yet, so there is nothing to talk through.
+    assert!(
+        messages_service::send(&pool, a, pairing_id, say("too soon"))
+            .await
+            .is_err(),
+        "a pairing that has not opened cannot carry a message"
+    );
+
+    // Both say yes, once the cooling period has passed.
+    wait_for_window().await;
+    for who in [a, b] {
+        pairings_service::decide(
+            &pool,
+            who,
+            pairing_id,
+            DecisionRequest {
+                decision: "yes".into(),
+            },
+        )
+        .await
+        .unwrap();
+    }
+
+    messages_service::send(&pool, a, pairing_id, say("hello there"))
+        .await
+        .unwrap();
+    assert_eq!(
+        messages_service::list(&pool, b, pairing_id)
+            .await
+            .unwrap()
+            .len(),
+        1,
+        "the other half of the channel can read it"
+    );
+
+    // A stranger sees nothing and cannot write.
+    let (outsider, _sk) = register_with_keypair(&pool).await;
+    assert!(messages_service::list(&pool, outsider, pairing_id)
+        .await
+        .unwrap()
+        .is_empty());
+    assert!(
+        messages_service::send(&pool, outsider, pairing_id, say("let me in"))
+            .await
+            .is_err()
+    );
+
+    // Blocking takes the channel away from both, rather than leaving
+    // one side holding a transcript of somebody who left.
+    pairings_service::block(&pool, b, pairing_id).await.unwrap();
+
+    assert!(messages_service::list(&pool, a, pairing_id)
+        .await
+        .unwrap()
+        .is_empty());
+    assert!(
+        messages_service::send(&pool, a, pairing_id, say("still there?"))
+            .await
+            .is_err()
+    );
+}
+
+/// The server stores what it was given and cannot do otherwise: no
+/// column holds plaintext, and nothing may edit or unsay a message.
+#[tokio::test]
+async fn messages_are_opaque_and_final() {
+    let pool = test_pool().await;
+
+    let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+    let columns: Vec<(String,)> = sqlx::query_as(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = 'messages'",
+    )
+    .fetch_all(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+
+    let names: Vec<&str> = columns.iter().map(|c| c.0.as_str()).collect();
+    assert!(
+        !names.contains(&"body") && !names.contains(&"text") && !names.contains(&"plaintext"),
+        "messages must carry no readable column: {names:?}"
+    );
+
+    // bf_app has SELECT and INSERT and nothing else.
+    for verb in ["UPDATE", "DELETE"] {
+        let granted: bool =
+            sqlx::query_scalar("SELECT has_table_privilege('bf_app', 'messages', $1)")
+                .bind(verb)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert!(!granted, "bf_app must not be able to {verb} a message");
+    }
 }
