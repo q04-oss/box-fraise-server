@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clubhouse — box fraise</title>
+  <meta name="description" content="The Box Fraise clubhouse. It operates like a monastery, and the rule is you run every morning.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 16px;
+    }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(34px, 6.4vw, 64px); letter-spacing: -0.03em;
+      line-height: 1.0; margin: 0 0 22px; text-wrap: balance;
+    }
+    .lede { font-size: 20px; line-height: 1.55; margin: 0 0 32px; max-width: 46ch; }
+    p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; }
+    p strong { font-weight: 500; }
+
+    /* What is in it. A list, because these are separate rooms and
+       prose would turn them into an atmosphere. */
+    .rooms { list-style: none; margin: 0 0 26px; padding: 0; border-top: 2px solid var(--ink); }
+    .rooms li {
+      display: flex; gap: 16px; align-items: baseline;
+      border-bottom: 1px solid var(--rule);
+      padding: 15px 0; font-size: 17px; line-height: 1.5;
+    }
+    .rooms .n {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.1em; color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/run">← run club</a>
+
+    <p class="kicker">Box Fraise clubhouse</p>
+
+    <h1>The rule is you run every morning.</h1>
+    <p class="lede">A place for a group of runners to sleep and live, a hair salon, a hot yoga
+    studio. It does not exist yet.</p>
+
+    <p><strong>Miss one and nothing happens.</strong> You run the next morning. There is no
+    penalty and nothing is taken away.</p>
+
+    <p><strong>It operates like a monastery.</strong> Not a school. Nobody enrols, there is no
+    course, and nobody graduates. There is a rule, a roof, and the people keeping it.</p>
+
+    <p><strong>What is in it.</strong></p>
+    <ul class="rooms">
+      <li><span class="n">01</span><span>A place for a group of runners to sleep and live.</span></li>
+      <li><span class="n">02</span><span>A hair salon.</span></li>
+      <li><span class="n">03</span><span>A hot yoga studio.</span></li>
+    </ul>
+
+    <p><strong>Who joins.</strong> People without housing join the ranks, on the same terms as
+    everybody else: turn up to a run, and somebody makes you an account while you are standing
+    there. There is no application and no assessment.</p>
+
+    <p><strong>You get the same number as everybody else.</strong> Numbers are given in the order
+    people joined and there is no other kind. Nothing about a number says who sleeps in the
+    building.</p>
+
+    <p><strong>Leaving.</strong> You stay while you find work. You stay after that until you have
+    savings. When you are ready you leave and rent somewhere — still part of the community, still
+    the same number.</p>
+
+    <p><strong>Two different runs.</strong> The clubhouse runs every morning. The club runs
+    <a class="inline" href="/run">Friday at six and Sunday at eight</a>, and anyone can come to
+    those.</p>
+
+    <p><strong>What it is part of.</strong> Box Fraise is the next generation of Playboy magazine,
+    and an attempt to imagine what the next generation of business school is going to be. The run
+    is the first thing it does; the clubhouse is where it would live.
+    <a class="inline" href="/about">The whole argument is here</a>.</p>
+
+    <p class="closer">Box Fraise × clubhouse · Edmonton</p>
+  </main>
+</body>
+</html>
