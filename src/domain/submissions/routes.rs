@@ -29,6 +29,7 @@ const MAX_UPLOAD_BODY_BYTES: usize = service::MAX_IMAGE_BYTES + 128 * 1024;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/submissions/published", get(published))
+        .route("/submissions/taste", get(taste))
         .route("/submissions/published/{id}/image", get(published_image))
         .route(
             "/submissions",
@@ -42,6 +43,13 @@ pub fn router() -> Router<AppState> {
 
 // ── Public ──────────────────────────────────────────────────────────
 
+/// One accepted "for better taste…" answer, at random. This is the
+/// strawberry sticker's endpoint — it replaced /v1/lines/draw when
+/// 0028 dropped the editor-written pool.
+async fn taste(State(state): State<AppState>) -> AppResult<Json<PublishedSubmission>> {
+    Ok(Json(service::draw_taste(&state.pool).await?))
+}
+
 /// Members only. There is one way to become one and it is turning up
 /// to the run club — see 0023, where the database enforces it rather
 /// than this handler.
@@ -54,6 +62,10 @@ async fn submit(
         title: None,
         body: None,
         image_bytes: None,
+        // The question that was there before there were three. A form
+        // that names no prompt is answering it, which keeps every
+        // caller written against the old shape working.
+        prompt: Prompt::RUN_COUNTRY.to_owned(),
     };
 
     while let Some(field) = multipart
@@ -69,6 +81,11 @@ async fn submit(
                     .map_err(|_| AppError::bad_request("could not read the image"))?;
                 if !bytes.is_empty() {
                     upload.image_bytes = Some(bytes.to_vec());
+                }
+            }
+            "prompt" => {
+                if let Ok(raw) = field.text().await {
+                    upload.prompt = raw;
                 }
             }
             "title" => upload.title = field.text().await.ok(),

@@ -74,7 +74,6 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::admin::routes::router())
         .merge(crate::domain::onboarding::routes::router())
         .merge(crate::domain::events::routes::router())
-        .merge(crate::domain::lines::routes::router())
         .merge(crate::domain::members::routes::router())
         .merge(crate::domain::messages::routes::router())
         .merge(crate::domain::businesses::routes::router())

@@ -11,7 +11,8 @@ use uuid::Uuid;
 use super::{
     repository,
     types::{
-        PendingSubmission, PublishedSubmission, SubmissionImage, SubmissionUpload, SubmitResponse,
+        PendingSubmission, Prompt, PublishedSubmission, SubmissionImage, SubmissionUpload,
+        SubmitResponse,
     },
 };
 use crate::{
@@ -49,6 +50,11 @@ pub async fn submit(
     user_id: Uuid,
     upload: SubmissionUpload,
 ) -> AppResult<SubmitResponse> {
+    // One of the three, or nothing. The CHECK added in 0028 would
+    // refuse anything else anyway; this is the polite half.
+    let prompt = Prompt::parse(&upload.prompt)
+        .ok_or_else(|| AppError::bad_request("that is not one of the three"))?;
+
     let title = clean_optional_text(upload.title.as_deref(), MAX_TITLE_CHARS)?;
     let body = clean_optional_text(upload.body.as_deref(), MAX_BODY_CHARS)?;
 
@@ -121,6 +127,7 @@ pub async fn submit(
         body.as_deref(),
         image,
         member_no,
+        prompt,
     )
     .await?;
     tx.commit().await?;
@@ -164,6 +171,19 @@ const FEED_LIMIT: i64 = 60;
 pub async fn list_published(pool: &Pool) -> AppResult<Vec<PublishedSubmission>> {
     let mut conn = pool.acquire().await?;
     Ok(repository::list_published(&mut conn, FEED_LIMIT).await?)
+}
+
+/// What a strawberry sticker returns: one accepted answer to "for
+/// better taste…", chosen at random.
+///
+/// NotFound when nothing has been accepted yet. The scanner treats that
+/// as "the pool is empty" rather than an error — a sticker in the
+/// street should say something human when there is nothing to say.
+pub async fn draw_taste(pool: &Pool) -> AppResult<PublishedSubmission> {
+    let mut conn = pool.acquire().await?;
+    repository::draw_taste(&mut conn)
+        .await?
+        .ok_or(AppError::NotFound)
 }
 
 pub async fn published_image(pool: &Pool, id: Uuid) -> AppResult<SubmissionImage> {

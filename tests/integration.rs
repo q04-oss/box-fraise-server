@@ -19,7 +19,6 @@ use box_fraise::{
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
         events::{service as events_service, types::CreateEventRequest},
-        lines::{service as lines_service, types::CreateLineRequest},
         members::{
             service as members_service,
             types::{CreateMemberRequest, RecordAttendanceRequest, ReissueRequest},
@@ -33,7 +32,10 @@ use box_fraise::{
             service as pairings_service,
             types::{ClaimInPersonRequest, ClaimRequest, DecisionRequest, SetDisplayNameRequest},
         },
-        submissions::{service as submissions_service, types::SubmissionUpload},
+        submissions::{
+            service as submissions_service,
+            types::{Prompt, SubmissionUpload},
+        },
     },
     error::AppError,
 };
@@ -96,6 +98,22 @@ async fn seed_test_event(pool: &PgPool, admin_id: Uuid) -> Uuid {
     .await
     .unwrap()
     .id
+}
+
+/// Delete a submission for real.
+///
+/// `submissions_admin_delete` requires app.is_admin, so a raw query on
+/// the bare pool matches no rows and silently deletes nothing — which
+/// is what several tests here used to do, leaving accepted rows behind
+/// in the feed on every run.
+async fn scrub_submission(pool: &PgPool, id: Uuid) {
+    let mut tx = AdminRlsTransaction::begin(pool).await.unwrap();
+    sqlx::query("DELETE FROM submissions WHERE id = $1")
+        .bind(id)
+        .execute(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
 }
 
 /// A member, made the only way there is: an admin signs somebody up
@@ -1338,6 +1356,7 @@ fn tiny_jpeg() -> Vec<u8> {
 
 fn column(text: &str) -> SubmissionUpload {
     SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
         title: None,
         body: Some(text.into()),
         image_bytes: None,
@@ -1406,6 +1425,7 @@ async fn empty_submission_is_refused() {
     let pool = test_pool().await;
     let member = seed_test_member(&pool).await;
     let empty = SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
         title: None,
         body: None,
         image_bytes: None,
@@ -1429,6 +1449,7 @@ async fn non_image_bytes_are_refused() {
     let pool = test_pool().await;
     let member = seed_test_member(&pool).await;
     let html = SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
         title: None,
         body: None,
         image_bytes: Some(
@@ -1452,6 +1473,7 @@ async fn photograph_alone_is_a_submission() {
         &pool,
         member,
         SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
             title: None,
             body: None,
             image_bytes: Some(tiny_jpeg()),
@@ -1516,6 +1538,7 @@ async fn rejection_deletes_the_submission() {
         &pool,
         member,
         SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
             title: Some("Doomed".into()),
             body: Some("A column that is about to be turned down by the editor.".into()),
             image_bytes: Some(tiny_jpeg()),
@@ -1552,128 +1575,75 @@ async fn rejection_deletes_the_submission() {
     assert_eq!(audited, 1, "the rejection must leave a record behind");
 }
 
-// ── Taste lines ─────────────────────────────────────────────────────
-
-fn a_line(body: &str, publish: bool) -> CreateLineRequest {
-    CreateLineRequest {
-        body: body.into(),
-        attribution: format!("Test {}", random_label()),
-        source: Some("editor".into()),
-        publish,
-    }
-}
-
-/// A draft is the editor still thinking. It must never be handed to
-/// somebody who scanned a strawberry, and the public SELECT policy
-/// must not show it either.
+/// A post records which of the three it answers, and the strawberry
+/// draws from one of them only.
+///
+/// 0028 replaced the editor-written taste_lines pool with member
+/// answers, so what a sticker in the street returns is now somebody's
+/// writing rather than an editor's line.
 #[tokio::test]
-async fn a_draft_line_is_never_public() {
+async fn a_post_belongs_to_a_prompt_and_the_sticker_draws_one() {
     let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let id = lines_service::create(&pool, admin_id, a_line("a draft nobody receives.", false))
-        .await
-        .unwrap();
-
-    // No GUCs: exactly what an unauthenticated request looks like.
-    let mut tx = pool.begin().await.unwrap();
-    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM taste_lines WHERE id = $1")
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap();
-    tx.commit().await.unwrap();
-    assert_eq!(seen, 0, "a draft line must not be publicly readable");
-
-    lines_service::delete(&pool, admin_id, id).await.unwrap();
-}
-
-/// Published lines are the one thing in this schema meant to be read
-/// by anyone.
-#[tokio::test]
-async fn a_published_line_is_public() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let id = lines_service::create(&pool, admin_id, a_line("published and readable.", true))
-        .await
-        .unwrap();
-
-    let mut tx = pool.begin().await.unwrap();
-    let seen: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM taste_lines WHERE id = $1")
-        .bind(id)
-        .fetch_one(&mut *tx)
-        .await
-        .unwrap();
-    tx.commit().await.unwrap();
-    assert_eq!(seen, 1, "a published line must be publicly readable");
-
-    lines_service::delete(&pool, admin_id, id).await.unwrap();
-}
-
-/// The draw only ever returns published rows. Runs enough times that
-/// a draft leaking through would be caught rather than missed by luck.
-#[tokio::test]
-async fn the_draw_never_returns_a_draft() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let draft = lines_service::create(&pool, admin_id, a_line("draft in the pool.", false))
-        .await
-        .unwrap();
-    let live = lines_service::create(&pool, admin_id, a_line("live in the pool.", true))
-        .await
-        .unwrap();
-
-    for _ in 0..25 {
-        let drawn = lines_service::draw(&pool).await.unwrap();
-        assert_ne!(drawn.id, draft, "the draw returned a draft");
-    }
-
-    lines_service::delete(&pool, admin_id, draft).await.unwrap();
-    lines_service::delete(&pool, admin_id, live).await.unwrap();
-}
-
-/// Withdrawing takes a line out of circulation, and withdrawing twice
-/// is a conflict rather than a silent no-op.
-#[tokio::test]
-async fn withdrawing_twice_conflicts() {
-    let pool = test_pool().await;
-    let admin_id = seed_test_admin(&pool).await;
-    let id = lines_service::create(&pool, admin_id, a_line("here then gone.", true))
-        .await
-        .unwrap();
-
-    lines_service::set_published(&pool, admin_id, id, false)
-        .await
-        .unwrap();
-    assert!(matches!(
-        lines_service::set_published(&pool, admin_id, id, false).await,
-        Err(AppError::Conflict)
-    ));
-
-    lines_service::delete(&pool, admin_id, id).await.unwrap();
-}
-
-/// A line is a line. Empty is refused, and so is a source outside the
-/// vocabulary the CHECK constraint allows.
-#[tokio::test]
-async fn line_validation_holds() {
-    let pool = test_pool().await;
+    let member = seed_test_member(&pool).await;
     let admin_id = seed_test_admin(&pool).await;
 
-    assert!(matches!(
-        lines_service::create(&pool, admin_id, a_line("   ", true)).await,
-        Err(AppError::BadRequest(_))
-    ));
-
-    let bad_source = CreateLineRequest {
-        body: "fine words".into(),
-        attribution: "Somebody".into(),
-        source: Some("hacker".into()),
-        publish: true,
+    let mk = |prompt: &str, text: &str| SubmissionUpload {
+        prompt: prompt.into(),
+        title: None,
+        body: Some(text.into()),
+        image_bytes: None,
     };
-    assert!(matches!(
-        lines_service::create(&pool, admin_id, bad_source).await,
-        Err(AppError::BadRequest(_))
-    ));
+
+    assert!(
+        submissions_service::submit(
+            &pool,
+            member,
+            mk("run_the_bath", "A prompt nobody ever wrote on the side of a sticker."),
+        )
+        .await
+        .is_err(),
+        "a prompt outside the three is refused before it reaches the CHECK"
+    );
+
+    let taste = submissions_service::submit(
+        &pool,
+        member,
+        mk(Prompt::BETTER_TASTE, "Pineapple is a rumour. Stop running the day before."),
+    )
+    .await
+    .unwrap();
+    let away = submissions_service::submit(
+        &pool,
+        member,
+        mk(Prompt::RUN_AWAY, "Because the alternative is staying where somebody put me."),
+    )
+    .await
+    .unwrap();
+
+    for id in [taste.id, away.id] {
+        submissions_service::accept(&pool, admin_id, id).await.unwrap();
+    }
+
+    let feed = submissions_service::list_published(&pool).await.unwrap();
+    assert_eq!(
+        feed.iter().find(|p| p.id == away.id).map(|p| p.prompt.as_str()),
+        Some(Prompt::RUN_AWAY),
+        "the feed says which one a post answers"
+    );
+
+    // The sticker only ever returns better_taste, however many other
+    // posts are accepted.
+    for _ in 0..8 {
+        let drawn = submissions_service::draw_taste(&pool).await.unwrap();
+        assert_eq!(
+            drawn.prompt, Prompt::BETTER_TASTE,
+            "a strawberry must never return an answer to a different question"
+        );
+    }
+
+    for id in [taste.id, away.id] {
+        scrub_submission(&pool, id).await;
+    }
 }
 
 /// The feed carries published posts and nothing else — a pending
@@ -1685,6 +1655,7 @@ async fn the_feed_shows_only_published_posts() {
     let admin_id = seed_test_admin(&pool).await;
 
     let mk = |text: &str| SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
         title: None,
         body: Some(text.into()),
         image_bytes: None,
@@ -1753,6 +1724,7 @@ async fn the_feed_exposes_only_the_fields_it_means_to() {
         &pool,
         member,
         SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
             title: Some("A title".into()),
             body: Some("A post used to pin down exactly what the feed gives out.".into()),
             image_bytes: None,
@@ -1784,6 +1756,7 @@ async fn the_feed_exposes_only_the_fields_it_means_to() {
             "has_image",
             "id",
             "member_no",
+            "prompt",
             "published_at",
             "title"
         ],
@@ -1852,6 +1825,7 @@ async fn a_post_carries_the_members_number() {
         &pool,
         created.user_id,
         SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
             title: None,
             body: Some("A post that should carry its author's name without being told it.".into()),
             image_bytes: None,
@@ -1928,6 +1902,7 @@ async fn posting_lapses_without_attendance() {
         .unwrap();
 
     let post = |body: &str| SubmissionUpload {
+        prompt: Prompt::RUN_COUNTRY.into(),
         title: None,
         body: Some(body.into()),
         image_bytes: None,

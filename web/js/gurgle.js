@@ -19,6 +19,41 @@
   // asked. See web/js/session.js, which must be loaded first.
   const member = () => window.bfSession && window.bfSession.signedIn();
 
+  // The three things there are to answer. Keys are the wire values —
+  // they match Prompt::ALL in src/domain/submissions/types.rs and the
+  // submissions_prompt_known CHECK from 0028, so a change here without
+  // a migration is a 400.
+  //
+  // "for better taste" is deliberately not explained anywhere. A gloss
+  // would kill it.
+  const PROMPTS = [
+    { key: 'run_country',  label: 'Do I Have What it Takes To Run This Country?' },
+    { key: 'run_away',     label: 'Why Do I Want To Run Away?' },
+    { key: 'better_taste', label: 'for better taste…' },
+  ];
+  window.bfPrompts = PROMPTS;
+  const promptLabel = key => (PROMPTS.find(p => p.key === key) || {}).label || '';
+  window.bfPromptLabel = promptLabel;
+
+  // Styles for the picker, injected once so neither host has to carry
+  // a copy. Scoped under .gg-prompts.
+  let styled = false;
+  function pickerStyles() {
+    if (styled) return;
+    styled = true;
+    const el = document.createElement('style');
+    el.textContent =
+      '.gg-prompts{display:flex;flex-direction:column;gap:8px;margin:0 0 18px}' +
+      '.gg-prompts button{font:inherit;text-align:left;cursor:pointer;' +
+      'border:1px solid var(--rule,#e6e6e6);background:none;color:inherit;' +
+      'border-radius:10px;padding:12px 14px;line-height:1.35;' +
+      'transition:border-color 120ms ease,color 120ms ease}' +
+      '.gg-prompts button:hover{border-color:var(--ink,#1a1a1a)}' +
+      '.gg-prompts button[aria-pressed="true"]{border-color:var(--accent,#b21b1b);' +
+      'color:var(--accent,#b21b1b)}';
+    document.head.appendChild(el);
+  }
+
   // Mirrors MIN_BODY_CHARS in src/domain/submissions/service.rs. A
   // column of two words is a mistake or a probe, not a column.
   const MIN_BODY = 40;
@@ -104,6 +139,29 @@
 
     if (!form || !isMember) return;
 
+    // Which of the three is being answered. Chosen before writing,
+    // because what you are answering changes what you write.
+    pickerStyles();
+    let prompt = PROMPTS[0].key;
+    const picker = document.createElement('div');
+    picker.className = 'gg-prompts';
+    picker.setAttribute('role', 'group');
+    picker.setAttribute('aria-label', 'What are you answering?');
+    const buttons = PROMPTS.map(p => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = p.label;
+      b.setAttribute('aria-pressed', String(p.key === prompt));
+      b.addEventListener('click', () => {
+        prompt = p.key;
+        buttons.forEach(other =>
+          other.setAttribute('aria-pressed', String(other === b)));
+      });
+      picker.appendChild(b);
+      return b;
+    });
+    form.insertBefore(picker, form.firstChild);
+
     const bodyEl  = document.getElementById('gg-body');
     const msgEl   = document.getElementById('gg-msg');
     const sendEl  = document.getElementById('gg-send');
@@ -144,6 +202,7 @@
 
       try {
         const fd = new FormData();
+        fd.append('prompt', prompt);
         if (title) fd.append('title', title);
         if (body)  fd.append('body', body);
         if (file) {
@@ -219,6 +278,13 @@
     posts.forEach(post => {
       const el = document.createElement('article');
       el.className = 'gf-post';
+
+      // What it is an answer to. Without this the feed is three
+      // conversations printed on top of each other.
+      const q = document.createElement('p');
+      q.className = 'gf-prompt';
+      q.textContent = (window.bfPromptLabel && window.bfPromptLabel(post.prompt)) || '';
+      if (q.textContent) el.appendChild(q);
 
       if (post.title) {
         const h = document.createElement('h3');

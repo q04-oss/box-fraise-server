@@ -368,7 +368,7 @@
       who.textContent  = '';
 
       try {
-        const r = await fetch('/v1/lines/draw', { cache: 'no-store' });
+        const r = await fetch('/v1/submissions/taste', { cache: 'no-store' });
         if (r.status === 404) {
           // An empty pool is a state, not a fault.
           body.textContent = 'nothing in the pool yet.';
@@ -378,7 +378,10 @@
         if (!r.ok) throw new Error('http ' + r.status);
         const line = await r.json();
         body.textContent = line.body;
-        who.textContent  = '— ' + line.attribution;
+        // A member is a number, not a name. 0028 replaced the
+          // editor-written pool with member answers, so a sticker now
+          // returns a byline rather than an attribution.
+          who.textContent  = '— no. ' + String(line.member_no).padStart(4, '0');
       } catch (e) {
         console.error(e);
         body.textContent = 'the pool could not be reached.';
