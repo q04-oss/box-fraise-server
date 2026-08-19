@@ -95,6 +95,9 @@
       color: var(--ink);
       margin: 0;
     }
+    /* The definition, not a shout. 500 rather than the browser's 700,
+       which Newsreader sets too heavy at this size. */
+    .intro .standfirst strong { font-weight: 500; font-style: italic; }
     /* The chain, in one paragraph. Smaller than the standfirst above
        it, because it is the explanation rather than the claim. */
     .intro .chain {
@@ -134,8 +137,8 @@
 
     <div class="intro">
       <p class="standfirst">Playboy was the most advanced advertising machine ever built.
-      Box Fraise is the next generation of it — a magazine whose question is answered
-      by a platform that lets you run.</p>
+      Box Fraise is the next generation of it: <strong>a consensual advertising
+      engine.</strong></p>
 
       <p class="chain">The magazine asks. <a class="chainlink" href="/runclub">The run club</a>
       answers. <a class="chainlink" href="/clubhouse">The clubhouse</a> is a run monastery.
