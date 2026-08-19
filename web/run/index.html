@@ -4,176 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Run club — box fraise</title>
-  <meta name="description" content="Box Fraise run club. Friday at six and Sunday at eight, Dr. Wilbert McIntyre Park, Edmonton — running for a car-free Whyte.">
-  <meta name="theme-color" content="#ffffff">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-
+  <!-- The run club page moved to /club, because the nav has always
+       called it Club and /club sits next to /clubhouse.
+       This is a redirect rather than a deletion for one reason:
+       unlike /chat, this page carried no robots meta, has been in the
+       homepage nav since before the rename, and is the URL anyone
+       telling somebody about the run club would have sent. Deleting it
+       breaks those links. -->
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0; url=/club">
+  <link rel="canonical" href="/club">
   <style>
-    :root {
-      --bg:     #ffffff;
-      --ink:    #1a1a1a;
-      --rule:   #e6e6e6;
-      --muted:  #666666;
-      --accent: #b21b1b;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: 'Newsreader', Georgia, serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      -webkit-font-smoothing: antialiased;
-      text-rendering: optimizeLegibility;
-    }
-    main { flex: 1; max-width: 640px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
-    .backlink {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
-      color: var(--muted); text-decoration: none;
-      display: inline-block; margin-bottom: 40px;
-      transition: color 120ms ease;
-    }
-    .backlink:hover { color: var(--ink); }
-    .kicker {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
-      color: var(--muted); margin: 0 0 16px;
-    }
-    h1 {
-      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
-      font-size: clamp(34px, 6.4vw, 64px); letter-spacing: -0.03em;
-      line-height: 1.0; margin: 0 0 22px; text-wrap: balance;
-    }
-    .lede { font-size: 20px; line-height: 1.55; margin: 0 0 32px; max-width: 46ch; }
-    p { font-size: 17px; line-height: 1.65; margin: 0 0 18px; }
-    p strong { font-weight: 500; }
-
-    .when {
-      border: 1px solid var(--rule);
-      border-left: 2px solid var(--accent);
-      padding: 24px 26px;
-      margin: 0 0 32px;
-      background: #fafafa;
-    }
-    .when-label {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;
-      color: var(--muted); margin-bottom: 14px;
-    }
-    .when .where { font-size: 19px; font-weight: 500; margin-bottom: 4px; }
-    .when .addr { font-size: 16px; color: var(--muted); margin-bottom: 16px; }
-    .when dl {
-      margin: 0; display: grid; grid-template-columns: auto 1fr;
-      gap: 8px 18px; align-items: baseline;
-    }
-    .when dt {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 13px; color: var(--accent); white-space: nowrap;
-    }
-    .when dd { margin: 0; font-size: 16px; line-height: 1.5; }
-    .maplink {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
-      display: inline-block; margin-top: 18px;
-      color: var(--ink); text-decoration: none;
-      border-bottom: 1px solid var(--rule); padding-bottom: 2px;
-      transition: border-color 120ms ease;
-    }
-    .maplink:hover { border-color: var(--accent); }
-
-    /* What the club is for. A list because these are separate
-       demands, and prose would blur them into one. */
-    .planks { list-style: none; margin: 0 0 26px; padding: 0; border-top: 2px solid var(--ink); }
-    .planks li {
-      display: flex; gap: 16px; align-items: baseline;
-      border-bottom: 1px solid var(--rule);
-      padding: 15px 0; font-size: 17px; line-height: 1.5;
-    }
-    .planks .n {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px; letter-spacing: 0.1em; color: var(--accent);
-      flex: 0 0 auto;
-    }
-
-    a.inline {
-      color: var(--ink); text-decoration: underline;
-      text-underline-offset: 3px; text-decoration-color: var(--rule);
-      transition: text-decoration-color 120ms ease;
-    }
-    a.inline:hover { text-decoration-color: var(--accent); }
-    .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+    body { font-family: Georgia, serif; margin: 0; padding: 64px 24px; color: #1a1a1a; }
+    main { max-width: 460px; margin: 0 auto; }
+    p { font-size: 17px; line-height: 1.6; }
+    a { color: #b21b1b; }
   </style>
 </head>
 <body>
   <main>
-    <a class="backlink" href="/">← box fraise</a>
-
-    <p class="kicker">Whyte Avenue run club</p>
-
-    <h1>Whyte Avenue should be pedestrian only.</h1>
-    <p class="lede">Friday at six and Sunday at eight, at Dr. Wilbert McIntyre Park. You do not need to be fast and you do not need to know anyone.</p>
-
-    <div class="when">
-      <div class="when-label">every week</div>
-      <div class="where">Dr. Wilbert McIntyre Park</div>
-      <div class="addr">Old Strathcona, Edmonton</div>
-      <dl>
-        <dt>Fri 18:00</dt><dd>Out of the week. Meet at the gazebo.</dd>
-        <dt>Sun 08:00</dt><dd>Back into it. Same place.</dd>
-      </dl>
-      <a class="maplink" href="https://www.google.com/maps/search/?api=1&query=Dr.+Wilbert+McIntyre+Park,+Edmonton,+AB"
-         target="_blank" rel="noopener noreferrer">Open in Maps →</a>
-    </div>
-
-    <p><strong>What this one is for.</strong> Whyte Avenue pedestrian only, and the ultimate entertainment destination. Which takes:</p>
-
-    <ul class="planks">
-      <li><span class="n">01</span><span>A land trust, started by the City of Edmonton, that every Edmontonian is bought into.</span></li>
-      <li><span class="n">02</span><span>The Princess Theatre as the most prestigious private theatre school in the world.</span></li>
-      <li><span class="n">03</span><span>Local business championed through affordable rent.</span></li>
-      <li><span class="n">04</span><span>Every business part of a case study project, which Edmontonians take part in by showing up in person.</span></li>
-      <li><span class="n">05</span><span>The Edmonton Protocol: how to start a business in a new, futuristic way.</span></li>
-    </ul>
-
-    <p><strong>Then make the protocol impressive enough</strong> that entrepreneurs from across the country want to join it and be incubated through the land trust. Part of it is helping a business open locations across the country, which is the ultimate presence of Edmonton in it.</p>
-
-    <p><strong>Where the protocol comes from.</strong> Box Fraise is an attempt at the next generation of business school, and the point of a business school is the community it builds. The case studies are the class, run in person with the businesses on the street. The protocol is the by-product: what gets learned that way, written down. <a class="inline" href="/about">The argument for the school</a>.</p>
-
-    <p><strong>Why Whyte.</strong> Whyte Avenue is the densest, most walked street in Edmonton and it is still organised around moving vehicles through it. The run is a weekly, physical version of that argument — a street being used the way we say it should be used, by people, at the hour when it is quiet enough to imagine.</p>
-
-    <p><strong>What a Box Fraise run club is.</strong> It builds the community the platform needs. Turning up is the count: this many people want businesses to adopt it.</p>
-
-    <p><strong>What every run club advocates for.</strong> Businesses leaving tipping out of their business model. <a class="inline" href="/tip">The ones we celebrate for it</a>.</p>
-
-    <p><strong>Two runs, one weekend.</strong> Friday at six turns the week off. Sunday at eight turns it back on. The point is not the mileage — it is that the weekend gets a shape, so Monday arrives at somebody who was put together on Sunday morning instead of recovering from Saturday night.</p>
-
-    <p><strong>And a race on Saturday.</strong> Between the two, eventually: pay to enter, one winner. It does not exist yet. It needs enough people first, which is what the other two runs are for.</p>
-
-    <p><strong>And a clubhouse.</strong> The run club is part of a physical club space. It operates like a monastery, the rule is you run every morning, and people without housing join the ranks on the same terms as everybody else. It does not exist yet, and it is what the money goes to. <a class="inline" href="/clubhouse">What is in it, and who joins →</a></p>
-
-    <p><strong>The route.</strong> From the park, along Whyte Avenue, out to the Canadian Pacific railyard, and back. It is a loop with a destination, and the destination is the point.</p>
-
-    <p><strong>Why the railyard.</strong> Not the rail line — the yard. The tracks that used to cross Whyte are gone, and people reach for that as though it settled the question. It did not. The yard is still there, and the yard is the reason a car-free Whyte Avenue has never happened.</p>
-
-    <p>So the run goes and looks at it. Advocacy usually points at what it wants. This points at what is in the way.</p>
-
-    <p><strong>Topless, if you want to be.</strong> This is a women's issue and the run is advocating on it. A man running shirtless down Whyte at eight in the morning is unremarkable; a woman doing exactly the same thing is not, and that difference is not written down anywhere — it is only enforced. So the run has one rule for everybody. Men running shirtless are there in support of that, not incidental to it.</p>
-
-    <p>The City of Edmonton <a class="inline" href="https://www.cbc.ca/news/canada/edmonton/no-top-no-problem-all-patrons-allowed-to-be-bare-chested-at-city-of-edmonton-pools-1.6750102" target="_blank" rel="noopener noreferrer">already allows it at its own pools</a>, for every patron, whatever their gender. The run asks why that stops at the pool doors. Nobody is expected to, and nobody is asked why not.</p>
-
-    <p><strong>No photographs.</strong> Not of anyone, at any point. Turning up is not permission to be photographed, and this is the run club of a project whose whole argument is that you get asked first.</p>
-
-    <p><strong>Just turn up.</strong> There is nothing to sign and nobody to email first. Friday at six, Sunday at eight, the park.</p>
-
-    <p><strong>What it is part of.</strong> Box Fraise is the next generation of Playboy magazine, and an attempt to imagine what the next generation of business school is going to be. The run is the first thing it does — a community organised around what is good for the nervous system, on the theory that better people make better work. <a class="inline" href="/about">The whole argument is here</a>.</p>
-
-    <p class="closer">Box Fraise × run club · Edmonton</p>
+    <p>The run club is at <a href="/club">/club</a> now.</p>
   </main>
+  <script>location.replace('/club');</script>
 </body>
 </html>
