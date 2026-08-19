@@ -193,6 +193,7 @@
     <div class="tabs" id="gg-tabs" role="tablist" hidden>
       <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="true">Feed</button>
       <button type="button" role="tab" id="tab-channels-btn" aria-controls="tab-channels" aria-selected="false">Channels</button>
+      <button type="button" role="tab" id="tab-calendar-btn" aria-controls="tab-calendar" aria-selected="false">Calendar</button>
     </div>
 
     <div id="tab-feed" role="tabpanel" aria-labelledby="tab-feed-btn">
@@ -242,6 +243,13 @@
       three days apart. Nothing here reaches the server as words.</p>
       <div id="gg-channels"></div>
     </div>
+
+    <div id="tab-calendar" role="tabpanel" aria-labelledby="tab-calendar-btn" hidden>
+      <h2 class="feed-q">Calendar</h2>
+      <p class="lede">Your shifts and the runs, in one place. A business on the platform
+      publishes what it needs and you do not have to go asking.</p>
+      <div id="gg-calendar"></div>
+    </div>
   </main>
 
   <script src="/js/session.js"></script>
@@ -249,6 +257,7 @@
   <script src="/js/gurgle.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/channels.js"></script>
+  <script src="/js/calendar.js"></script>
   <script>
   (() => {
     'use strict';
@@ -266,6 +275,7 @@
     const panes = {
       'tab-feed-btn': 'tab-feed',
       'tab-channels-btn': 'tab-channels',
+      'tab-calendar-btn': 'tab-calendar',
     };
 
     // Built the first time it is opened rather than on load: it asks
@@ -284,6 +294,9 @@
           built = true;
           renderChannels('gg-channels');
         }
+        // Rebuilt every time rather than once: a schedule that is
+        // stale is worse than no schedule.
+        if (btnId === 'tab-calendar-btn') renderCalendar('gg-calendar');
       });
     });
 

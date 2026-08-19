@@ -33,6 +33,15 @@ use crate::{audit, db::AdminRlsTransaction, db::Pool};
 const PRUNE_INTERVAL: Duration = Duration::from_secs(60 * 60); // 1h
 const PENDING_TTL_DAYS: i64 = 30;
 const SUBMISSION_TTL_DAYS: i64 = 180;
+/// How long a shift stays after it has been worked.
+///
+/// A calendar has to be binding in the present, but a year of shifts is
+/// a movement log — where somebody was, when, how often — and after a
+/// strike month it is precisely what an employer or a court would ask
+/// for. So the past ages out. Nothing about shifts is written to
+/// audit_events either, which is append-only and could never give it
+/// back; see 0029 and the note on messages in 0026.
+const SHIFT_TTL_DAYS: i64 = 60;
 
 pub fn spawn(pool: Pool) {
     tokio::spawn(async move {
@@ -85,13 +94,27 @@ async fn prune_once(pool: &Pool) -> anyhow::Result<()> {
     .fetch_one(tx.conn())
     .await?;
 
+    // Past shifts only. A shift still to come is somebody's plan and is
+    // never pruned out from under them.
+    let old_shifts = sqlx::query_scalar::<_, i64>(
+        "WITH deleted AS (
+             DELETE FROM shifts
+                   WHERE ends_at < now() - ($1::bigint || ' days')::interval
+                   RETURNING 1
+         ) SELECT COUNT(*)::bigint FROM deleted",
+    )
+    .bind(SHIFT_TTL_DAYS)
+    .fetch_one(tx.conn())
+    .await?;
+
     tx.commit().await?;
 
-    if expired_sessions > 0 || stale_pending > 0 || stale_submissions > 0 {
+    if expired_sessions > 0 || stale_pending > 0 || stale_submissions > 0 || old_shifts > 0 {
         tracing::info!(
             expired_admin_sessions = expired_sessions,
             stale_pending_users = stale_pending,
             stale_submissions = stale_submissions,
+            old_shifts = old_shifts,
             "prune tick"
         );
         audit::write(
@@ -104,6 +127,7 @@ async fn prune_once(pool: &Pool) -> anyhow::Result<()> {
                 "expired_admin_sessions": expired_sessions,
                 "stale_pending_users": stale_pending,
                 "stale_submissions": stale_submissions,
+                "old_shifts": old_shifts,
             }),
         )
         .await;

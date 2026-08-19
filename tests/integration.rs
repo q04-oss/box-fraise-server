@@ -18,6 +18,10 @@ use box_fraise::{
             service as consultations_service,
             types::{CompleteConsultationRequest, ReplaceCardRequest, RevokeCardRequest},
         },
+        calendar::{
+            service as calendar_service,
+            types::{PublishShiftRequest, RecordEmploymentRequest},
+        },
         events::{service as events_service, types::CreateEventRequest},
         members::{
             service as members_service,
@@ -2025,6 +2029,117 @@ async fn attendance_at_one_run_counts_once() {
         .unwrap();
     tx.commit().await.unwrap();
     assert_eq!(rows, 1);
+}
+
+/// A business publishes a shift; the member sees it and nobody else
+/// does; and a published shift can be cancelled but never rewritten.
+///
+/// The last part is the whole product — see 0029. A change is a
+/// cancellation plus a new shift, both on the record, which is the
+/// difference between this and a schedule an employer can quietly
+/// revise.
+#[tokio::test]
+async fn a_published_shift_is_visible_to_its_member_and_nobody_else() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let mine = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+    let theirs = members_service::create(&pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+
+    // A business to publish it.
+    let business_id: Uuid = {
+        let mut tx = AdminRlsTransaction::begin(&pool).await.unwrap();
+        let id = sqlx::query_scalar::<_, Uuid>(
+            "INSERT INTO businesses (name, slug, published) VALUES ($1, $2, true) RETURNING id",
+        )
+        .bind(format!("Test Cafe {}", random_label()))
+        .bind(random_label())
+        .fetch_one(tx.conn())
+        .await
+        .unwrap();
+        tx.commit().await.unwrap();
+        id
+    };
+
+    calendar_service::record_employment(
+        &pool,
+        admin_id,
+        RecordEmploymentRequest {
+            member_no: mine.member_no,
+            business_id,
+        },
+    )
+    .await
+    .unwrap();
+
+    let starts = Utc::now() + ChronoDuration::days(2);
+    let shift = calendar_service::publish_shift(
+        &pool,
+        admin_id,
+        PublishShiftRequest {
+            member_no: mine.member_no,
+            business_id,
+            starts_at: starts,
+            ends_at: starts + ChronoDuration::hours(6),
+        },
+    )
+    .await
+    .unwrap();
+
+    // A shift that ends before it starts is refused.
+    assert!(
+        calendar_service::publish_shift(
+            &pool,
+            admin_id,
+            PublishShiftRequest {
+                member_no: mine.member_no,
+                business_id,
+                starts_at: starts,
+                ends_at: starts - ChronoDuration::hours(1),
+            },
+        )
+        .await
+        .is_err()
+    );
+
+    let calendar = calendar_service::mine(&pool, mine.user_id).await.unwrap();
+    assert!(
+        calendar.iter().any(|e| e.id == shift.id && e.kind == "shift"),
+        "the member sees the shift published for them"
+    );
+    assert!(
+        calendar.iter().any(|e| e.kind == "run"),
+        "and the runs sit on the same calendar as the shifts"
+    );
+
+    let other = calendar_service::mine(&pool, theirs.user_id).await.unwrap();
+    assert!(
+        !other.iter().any(|e| e.id == shift.id),
+        "somebody else's shift is not on your calendar"
+    );
+
+    // Cancelling leaves it visible rather than vanishing it, and
+    // cancelling twice is a conflict.
+    calendar_service::cancel_shift(&pool, admin_id, shift.id)
+        .await
+        .unwrap();
+    assert!(calendar_service::cancel_shift(&pool, admin_id, shift.id)
+        .await
+        .is_err());
+
+    let after = calendar_service::mine(&pool, mine.user_id).await.unwrap();
+    let entry = after
+        .iter()
+        .find(|e| e.id == shift.id)
+        .expect("a cancelled shift stays on the calendar");
+    assert!(
+        entry.cancelled_at.is_some(),
+        "and it says it was taken away"
+    );
 }
 
 /// A member cannot mark themselves present.

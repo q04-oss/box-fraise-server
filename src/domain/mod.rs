@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod calendar;
 pub mod businesses;
 pub mod consultations;
 pub mod events;

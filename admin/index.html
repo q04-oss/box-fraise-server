@@ -205,6 +205,38 @@
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Who works where</legend>
+        <div class="muted">The link a shift needs, and the one the strike counts.
+        Businesses cannot sign in yet, so it is entered here on their behalf.</div>
+        <div class="row" style="margin-top: 14px;">
+          <input type="number" id="em-no" min="1" placeholder="member number" inputmode="numeric">
+          <select id="em-biz"></select>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <button id="em-add">Record</button>
+          <button id="em-end" class="secondary">They left</button>
+        </div>
+        <div id="em-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Publish a shift</legend>
+        <div class="muted">What is published here is what the member sees, and it is
+        binding. A shift can be cancelled — they will see that it was — but its times
+        cannot be edited. A change is a cancellation and a new shift.</div>
+        <div class="row" style="margin-top: 14px;">
+          <input type="number" id="sh-no" min="1" placeholder="member number" inputmode="numeric">
+          <select id="sh-biz"></select>
+        </div>
+        <div class="row" style="margin-top: 10px;">
+          <div><label for="sh-start">Starts</label><input id="sh-start" type="datetime-local"></div>
+          <div><label for="sh-end">Ends</label><input id="sh-end" type="datetime-local"></div>
+        </div>
+        <div style="margin-top: 12px;"><button id="sh-add">Publish</button></div>
+        <div id="sh-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
 
       <fieldset>
         <legend>Submissions <span id="sub-count" class="muted"></span></legend>
@@ -658,6 +690,75 @@
     document.getElementById('rc-link').textContent = '';
     document.getElementById('rc-out').style.display = 'none';
     document.getElementById('rc-msg').textContent = '';
+  });
+
+  // ── The calendar ─────────────────────────────────────────────────
+  // Businesses have no login, so an admin enters what a business asked
+  // for. A published shift is binding: cancellable, never editable.
+  async function loadBusinesses() {
+    let rows;
+    try { rows = await api('/businesses'); } catch { return; }
+    ['em-biz', 'sh-biz'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      sel.textContent = '';
+      rows.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = b.name;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  async function employment(path, label) {
+    const msg = document.getElementById('em-msg');
+    const no = parseInt(document.getElementById('em-no').value, 10);
+    const business_id = document.getElementById('em-biz').value;
+    if (!no || !business_id) {
+      msg.textContent = 'A member number and a business.';
+      return;
+    }
+    msg.textContent = 'Saving…';
+    try {
+      await api(path, { method: 'POST', body: JSON.stringify({ member_no: no, business_id }) });
+      msg.textContent = 'no. ' + String(no).padStart(4, '0') + ' — ' + label;
+    } catch (e) {
+      msg.textContent = e.message === 'not_found' ? 'No member has that number.' : e.message;
+    }
+  }
+
+  document.getElementById('em-add').addEventListener('click',
+    () => employment('/admin/employments', 'recorded.'));
+  document.getElementById('em-end').addEventListener('click',
+    () => employment('/admin/employments/end', 'no longer works there.'));
+
+  document.getElementById('sh-add').addEventListener('click', async () => {
+    const msg = document.getElementById('sh-msg');
+    const no = parseInt(document.getElementById('sh-no').value, 10);
+    const business_id = document.getElementById('sh-biz').value;
+    const starts = document.getElementById('sh-start').value;
+    const ends = document.getElementById('sh-end').value;
+    if (!no || !business_id || !starts || !ends) {
+      msg.textContent = 'A member, a business, and both ends of the shift.';
+      return;
+    }
+    msg.textContent = 'Publishing…';
+    try {
+      const r = await api('/admin/shifts', {
+        method: 'POST',
+        body: JSON.stringify({
+          member_no: no,
+          business_id,
+          starts_at: new Date(starts).toISOString(),
+          ends_at: new Date(ends).toISOString(),
+        }),
+      });
+      msg.textContent = 'Published for no. ' + String(r.member_no).padStart(4, '0') +
+        '. It is on their calendar now.';
+    } catch (e) {
+      msg.textContent = e.message === 'not_found' ? 'No member has that number.' : e.message;
+    }
   });
 
   // ── Submissions ──────────────────────────────────────────────────
