@@ -95,6 +95,23 @@
       color: var(--ink);
       margin: 0;
     }
+    /* The chain, in one paragraph. Smaller than the standfirst above
+       it, because it is the explanation rather than the claim. */
+    .intro .chain {
+      font-size: clamp(17px, 2vw, 20px);
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 22px 0 0;
+    }
+    .intro .chain strong { color: var(--ink); font-weight: 500; }
+    /* Underlined rather than coloured: these are two words inside a
+       sentence, and the sentence should still read as a sentence. */
+    .intro .chainlink {
+      color: inherit; text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease, color 120ms ease;
+    }
+    .intro .chainlink:hover { color: var(--ink); text-decoration-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -119,6 +136,10 @@
       <p class="standfirst">Playboy was the most advanced advertising machine ever built.
       Box Fraise is the next generation of it — a magazine whose question is answered
       by a platform that lets you run.</p>
+
+      <p class="chain">The magazine asks. <a class="chainlink" href="/run">The run club</a>
+      answers. <a class="chainlink" href="/clubhouse">The clubhouse</a> is a run monastery.
+      <strong>All of it makes the culture the business school needs.</strong></p>
     </div>
   </main>
 </body>
