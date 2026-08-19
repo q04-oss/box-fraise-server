@@ -4,16 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Run club — box fraise</title>
-  <!-- The run club page moved to /club, because the nav has always
-       called it Club and /club sits next to /clubhouse.
-       This is a redirect rather than a deletion for one reason:
-       unlike /chat, this page carried no robots meta, has been in the
-       homepage nav since before the rename, and is the URL anyone
-       telling somebody about the run club would have sent. Deleting it
-       breaks those links. -->
+  <!-- The run club page moved to /runclub. Not /club: that sits too
+       close to /clubhouse, and the two are different things — a weekly
+       run, and a building people live in. /runclub is also what the
+       site calls it everywhere in prose.
+
+       A redirect rather than a deletion, unlike the one removed from
+       /chat, for a reason that is checkable: /chat carried noindex and
+       was linked only briefly. /run carried no robots meta, has been in
+       the homepage nav since long before the rename, and is the URL
+       anyone telling somebody about the run club would have sent. -->
   <meta name="robots" content="noindex">
-  <meta http-equiv="refresh" content="0; url=/club">
-  <link rel="canonical" href="/club">
+  <meta http-equiv="refresh" content="0; url=/runclub">
+  <link rel="canonical" href="/runclub">
   <style>
     body { font-family: Georgia, serif; margin: 0; padding: 64px 24px; color: #1a1a1a; }
     main { max-width: 460px; margin: 0 auto; }
@@ -23,8 +26,8 @@
 </head>
 <body>
   <main>
-    <p>The run club is at <a href="/club">/club</a> now.</p>
+    <p>The run club is at <a href="/runclub">/runclub</a> now.</p>
   </main>
-  <script>location.replace('/club');</script>
+  <script>location.replace("/runclub");</script>
 </body>
 </html>
