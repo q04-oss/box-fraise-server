@@ -380,6 +380,40 @@ They are separate entry points on purpose. "Skip the check when they
 have no keys" would be the same behaviour today and a hole the day
 key registration stops being mandatory.
 
+## Migrations are applied by hand, and checked at boot
+
+There is no migration runner and there should not be one. `bf_app` has
+no CREATE privilege, and giving the runtime owner credentials so it
+could migrate itself would hand every bug in the process the ability to
+rewrite the schema. The two-role model is worth more than that
+convenience.
+
+The cost is that code can ship ahead of its migration. That has
+happened: 0028 added `submissions.prompt`, the code that selects it
+reached production first, and the gurgle feed answered
+`{"error":"internal"}` to every reader until somebody noticed. The
+database was healthy and the binary was healthy; they were different
+ages.
+
+So `src/schema.rs` runs at boot, before a port is bound. It lists
+`migrations/*.sql` from disk — the Dockerfile copies the directory into
+the image — and compares the filenames against the `schema_migrations`
+table added in 0030. Anything unapplied is logged by name and the
+process exits non-zero. An outage becomes a failed deploy.
+
+**Every new migration must end by recording itself:**
+
+```sql
+INSERT INTO schema_migrations (version) VALUES ('0031_your_migration')
+ON CONFLICT (version) DO NOTHING;
+```
+
+Forgetting it fails the boot check, which is the right direction to
+fail in. The check reads the directory rather than a list compiled into
+the binary on purpose: a list is one more thing to forget, and
+forgetting it would switch the check off for precisely the migration
+that needed it.
+
 ## When you change a table
 
 1. Add the table to `migrations/0001_init.sql` (or a new
@@ -390,5 +424,7 @@ key registration stops being mandatory.
 4. Add the GRANT to `bf_app` in the grants block.
 5. If the table holds something audit-worthy, write the audit on
    the success path of the mutating service.
+5b. End the migration with its `schema_migrations` row, or the server
+   will refuse to boot against it.
 6. Add an integration test that asserts the isolation property of
    the new policy.

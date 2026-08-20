@@ -3,7 +3,7 @@
 
 use std::net::SocketAddr;
 
-use box_fraise::{app, config, maintenance};
+use box_fraise::{app, config, maintenance, schema};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,6 +16,13 @@ async fn main() -> anyhow::Result<()> {
 
     let cfg = config::Config::from_env()?;
     let state = app::AppState::init(cfg.clone()).await?;
+
+    // Before anything else that touches the database, and before a
+    // port is bound. A build whose migrations have not been run must
+    // fail here rather than serve 500s from endpoints that select
+    // columns the schema does not have — which is exactly what happened
+    // when 0028 shipped ahead of its migration.
+    schema::verify(&state.pool).await?;
 
     state.seed_admin_if_configured().await?;
     maintenance::spawn(state.pool.clone());

@@ -11,3 +11,4 @@ pub mod domain;
 pub mod error;
 pub mod http;
 pub mod maintenance;
+pub mod schema;
