@@ -1390,6 +1390,14 @@
       const initials = document.getElementById('wh-initials');
       const boardEl = document.getElementById('wh-board');
       let lastRun = 0, minToPost = 0, mineId = null;
+      const WHO_KEY = 'bf_whyte_initials';
+      // Typed once and kept. Retyping the same three letters after
+      // every run is the kind of thing that stops somebody playing a
+      // fourth time.
+      try {
+        const saved = localStorage.getItem(WHO_KEY);
+        if (saved) initials.value = saved;
+      } catch { /* private mode */ }
 
       function drawBoard(rows) {
         boardEl.textContent = '';
@@ -1422,8 +1430,15 @@
       }
 
       function offerBoard(m) {
-        if (m > minToPost) {
-          enter.hidden = false;
+        if (m <= minToPost) return;
+        enter.hidden = false;
+        const post = document.getElementById('wh-post');
+        if (/^[A-Z]{3}$/.test(initials.value.trim().toUpperCase())) {
+          // Already known: one key, and the field is there to change.
+          post.textContent = 'Put it up as ' + initials.value.trim().toUpperCase();
+          post.focus();
+        } else {
+          post.textContent = 'Put it up';
           initials.focus();
         }
       }
@@ -1440,7 +1455,7 @@
           const body = await r.json();
           if (!r.ok) throw new Error(body.message || 'it did not save');
           enter.hidden = true;
-          initials.value = '';
+          try { localStorage.setItem(WHO_KEY, who); } catch { /* private mode */ }
           say(body.rank ? 'Number ' + body.rank + '. Space to run again.'
                         : 'Up there somewhere. Space to run again.');
           await loadBoard();
@@ -1542,6 +1557,7 @@
         if (!active()) return;
         // Not while somebody is typing their initials.
         if (document.activeElement === initials) return;
+        if (!enter.hidden && document.activeElement === document.getElementById('wh-post')) return;
         e.preventDefault();
         jump();
       });
