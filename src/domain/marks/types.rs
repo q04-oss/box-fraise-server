@@ -17,6 +17,9 @@ pub struct PublicMark {
 /// else is a form field.
 pub struct MarkUpload {
     pub label: String,
+    /// Whether the same artwork also appears as a billboard in the
+    /// game. Off unless somebody says so — see 0036.
+    pub in_game: bool,
     pub act: String,
     pub target: Option<String>,
     pub business_id: Option<Uuid>,
@@ -36,7 +39,16 @@ pub struct AdminMark {
     pub act: String,
     pub target: Option<String>,
     pub published: bool,
+    pub in_game: bool,
     pub business_name: Option<String>,
+}
+
+/// A billboard in the game. No act and no target: it is scenery a
+/// runner passes, not something to press.
+#[derive(Serialize, FromRow)]
+pub struct Billboard {
+    pub id: Uuid,
+    pub label: String,
 }
 
 #[derive(Deserialize)]

@@ -262,6 +262,8 @@
         </div>
         <label for="mk-biz">Business (optional)</label>
         <select id="mk-biz"></select>
+        <label style="margin-top: 10px;"><input id="mk-game" type="checkbox">
+          Also show it as a billboard in the game</label>
         <div style="margin-top: 12px;"><button id="mk-add">Register</button></div>
         <div id="mk-msg" class="muted" style="margin-top: 8px;"></div>
         <div id="mk-list" style="margin-top: 16px;"></div>
@@ -904,7 +906,8 @@
       name.textContent = m.label + (m.business_name ? ' · ' + m.business_name : '');
       const what = document.createElement('span');
       what.className = 'who';
-      what.textContent = m.act === 'go' ? (m.target || '') : 'taste line';
+      what.textContent = (m.act === 'go' ? (m.target || '') : 'taste line') +
+        (m.in_game ? ' · billboard' : '');
       const st = document.createElement('span');
       st.className = 'st';
       st.textContent = m.published ? 'live' : 'off';
@@ -947,6 +950,7 @@
       fd.append('act', act);
       if (target) fd.append('target', target);
       if (biz) fd.append('business_id', biz);
+      if (document.getElementById('mk-game').checked) fd.append('in_game', '1');
       fd.append('image', file, file.name);
       const r = await api('/admin/marks', { method: 'POST', body: fd });
       msg.textContent = r.label + ' is live. Point the scanner at it to check.';

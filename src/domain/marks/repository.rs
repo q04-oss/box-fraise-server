@@ -1,7 +1,7 @@
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::types::{AdminMark, PublicMark};
+use super::types::{AdminMark, Billboard, PublicMark};
 
 /// What the scanner asks for on load. Published only, in the order an
 /// editor chose — first match wins, so order is meaningful.
@@ -23,10 +23,22 @@ pub async fn image(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<Option<(Ve
         .await
 }
 
+/// What the game draws along the street.
+pub async fn billboards(conn: &mut PgConnection) -> sqlx::Result<Vec<Billboard>> {
+    sqlx::query_as::<_, Billboard>(
+        "SELECT id, label
+           FROM marks
+          WHERE published AND in_game
+          ORDER BY sort_order ASC, created_at ASC",
+    )
+    .fetch_all(conn)
+    .await
+}
+
 /// The editor's list, including unpublished ones.
 pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminMark>> {
     sqlx::query_as::<_, AdminMark>(
-        "SELECT m.id, m.label, m.act, m.target, m.published, b.name AS business_name
+        "SELECT m.id, m.label, m.act, m.target, m.published, m.in_game, b.name AS business_name
            FROM marks m
            LEFT JOIN businesses b ON b.id = m.business_id
           ORDER BY m.sort_order ASC, m.created_at ASC",
@@ -44,12 +56,14 @@ pub async fn insert(
     act: &str,
     target: Option<&str>,
     business_id: Option<Uuid>,
+    in_game: bool,
     admin_id: Uuid,
 ) -> sqlx::Result<Uuid> {
     sqlx::query_scalar(
         "INSERT INTO marks
-             (label, image_bytes, content_type, act, target, business_id, created_by_admin_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+             (label, image_bytes, content_type, act, target, business_id,
+              in_game, created_by_admin_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id",
     )
     .bind(label)
@@ -58,6 +72,7 @@ pub async fn insert(
     .bind(act)
     .bind(target)
     .bind(business_id)
+    .bind(in_game)
     .bind(admin_id)
     .fetch_one(conn)
     .await

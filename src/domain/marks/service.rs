@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use super::{
     repository,
-    types::{AdminMark, MarkUpload, PublicMark, RegisteredMark},
+    types::{AdminMark, Billboard, MarkUpload, PublicMark, RegisteredMark},
 };
 use crate::{
     audit,
@@ -30,6 +30,13 @@ const MIN_IMAGE_BYTES: usize = 512;
 pub async fn list_published(pool: &Pool) -> AppResult<Vec<PublicMark>> {
     let mut conn = pool.acquire().await?;
     Ok(repository::list_published(&mut conn).await?)
+}
+
+/// What the game draws. Public: these are pictures already printed and
+/// stuck to walls in the street.
+pub async fn billboards(pool: &Pool) -> AppResult<Vec<Billboard>> {
+    let mut conn = pool.acquire().await?;
+    Ok(repository::billboards(&mut conn).await?)
 }
 
 pub async fn image(pool: &Pool, id: Uuid) -> AppResult<(Vec<u8>, String)> {
@@ -86,6 +93,7 @@ pub async fn register(
         &upload.act,
         target,
         upload.business_id,
+        upload.in_game,
         admin_id,
     )
     .await?;

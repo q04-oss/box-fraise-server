@@ -60,6 +60,23 @@
 .bf-whyte .w-board .pos { width: 20px; flex: 0 0 auto; }
 .bf-whyte .w-board .who { flex: 1; color: var(--w-ink); letter-spacing: 0.14em; }
 .bf-whyte .w-board .far { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.bf-whyte .w-ask {
+  border-left: 2px solid var(--w-accent); padding: 2px 0 2px 14px; margin: 12px 0 0;
+}
+.bf-whyte .w-ask p { font-size: 14px; line-height: 1.5; margin: 0 0 8px; }
+.bf-whyte .w-ask .row { display: flex; gap: 8px; }
+.bf-whyte .w-ask button {
+  font-family: var(--w-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.12em; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--w-rule); background: none; color: var(--w-ink);
+}
+.bf-whyte .w-ask button.yes { border-color: var(--w-accent); color: var(--w-accent); }
+.bf-whyte .w-ads {
+  font-family: var(--w-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--w-muted); background: none; border: 0;
+  padding: 0; margin-top: 10px; cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px;
+}
 `;
 
   let styled = false;
@@ -116,8 +133,28 @@
     enter.appendChild(post);
     root.appendChild(enter);
 
+    // The ask. Shown once, before anything has been played, and
+    // reachable afterwards from the line under the board.
+    const ask = el('div', 'w-ask');
+    ask.hidden = true;
+    ask.appendChild(el('p', null,
+      'Businesses can put a billboard on this street. Nothing is tracked and nothing ' +
+      'changes about the game either way — the street is just emptier if you say no.'));
+    const askRow = el('div', 'row');
+    const yes = el('button', 'yes', 'Run past them');
+    const no = el('button', null, 'Empty street');
+    yes.type = no.type = 'button';
+    askRow.appendChild(yes);
+    askRow.appendChild(no);
+    ask.appendChild(askRow);
+    root.appendChild(ask);
+
     const boardEl = el('ol', 'w-board');
     root.appendChild(boardEl);
+
+    const adsToggle = el('button', 'w-ads');
+    adsToggle.type = 'button';
+    root.appendChild(adsToggle);
 
     // ── The game ─────────────────────────────────────────────────
     const ctx = cv.getContext('2d');
@@ -135,6 +172,45 @@
 
     let cars, speed, dist, best, running, over, held, heldFor, lamps, last;
     let lastRun = 0, minToPost = 0;
+
+    // ── Advertising ──────────────────────────────────────────────
+    // The consent is being asked and refusing being free. There is no
+    // reward for yes and no penalty for no — the moment one exists it
+    // stops being consent and becomes a price, which is the thing this
+    // project argues against everywhere else.
+    const ADS_KEY = 'bf_whyte_ads';
+    let adsOn = null, stock = [], boards = [];
+
+    function readAds() {
+      try { return localStorage.getItem(ADS_KEY); } catch { return null; }
+    }
+    function setAds(on) {
+      adsOn = on;
+      try { localStorage.setItem(ADS_KEY, on ? 'yes' : 'no'); } catch { /* private mode */ }
+      ask.hidden = true;
+      paintToggle();
+      if (on) loadBillboards(); else boards = [];
+    }
+    function paintToggle() {
+      adsToggle.textContent = adsOn
+        ? 'Advertising on — make the street empty'
+        : 'Advertising off — let businesses back on';
+    }
+
+    async function loadBillboards() {
+      if (stock.length) return;
+      try {
+        const r = await fetch('/v1/marks/billboards', { cache: 'no-store' });
+        if (!r.ok) return;
+        (await r.json()).forEach(b => {
+          const img = new Image();
+          img.src = '/v1/marks/' + b.id + '/image';
+          stock.push({ img, label: b.label });
+        });
+      } catch { /* a street with no billboards is the good outcome anyway */ }
+    }
+
+    adsToggle.addEventListener('click', () => setAds(!adsOn));
 
     try { initials.value = localStorage.getItem(WHO_KEY) || ''; } catch { /* private mode */ }
 
@@ -179,6 +255,14 @@
       if (runner.y > GROUND) { runner.y = GROUND; runner.vy = 0; }
 
       spawn();
+      if (adsOn && stock.length) {
+        const lastB = boards[boards.length - 1];
+        if (!lastB || W - lastB.x > 340) {
+          boards.push({ ad: stock[Math.floor(Math.random() * stock.length)], x: W + 40 });
+        }
+        boards.forEach(b => { b.x -= speed * dt * 0.45; });
+        boards = boards.filter(b => b.x > -90);
+      }
       cars.forEach(c => { c.x -= speed * dt; });
       cars = cars.filter(c => c.x + c.w > -10);
       lamps = lamps.map(x => (x - speed * dt * 0.45 < -20 ? W + 40 : x - speed * dt * 0.45));
@@ -216,6 +300,23 @@
 
       ctx.fillStyle = '#ddd8cf';
       lamps.forEach(x => ctx.fillRect(x, GROUND - 30, 2, 30));
+
+      // Billboards sit behind everything, at the height of a hoarding,
+      // and never in the runner's way. An advertisement that can end
+      // your run is an obstacle, and the obstacles here are cars.
+      boards.forEach(b => {
+        const w = 58, h = 34, top = GROUND - 74;
+        ctx.fillStyle = '#ddd8cf';
+        ctx.fillRect(b.x + w / 2 - 1, top + h, 2, 74 - h);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(b.x - 1, top - 1, w + 2, h + 2);
+        if (b.ad.img.complete && b.ad.img.naturalWidth) {
+          ctx.drawImage(b.ad.img, b.x, top, w, h);
+        }
+        ctx.strokeStyle = '#ddd8cf';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(b.x - 0.5, top - 0.5, w + 1, h + 1);
+      });
 
       ctx.fillStyle = INK;
       const airborne = runner.y < GROUND;
@@ -355,6 +456,19 @@
     cv.addEventListener('touchend', () => { held = false; });
     cv.addEventListener('mousedown', jump);
     window.addEventListener('mouseup', () => { held = false; });
+
+    // Asked once, before anything is played.
+    const saved = readAds();
+    if (saved === null) {
+      ask.hidden = false;
+      adsOn = false;
+    } else {
+      adsOn = saved === 'yes';
+      if (adsOn) loadBillboards();
+    }
+    paintToggle();
+    yes.addEventListener('click', () => setAds(true));
+    no.addEventListener('click', () => setAds(false));
 
     reset();
     running = false;

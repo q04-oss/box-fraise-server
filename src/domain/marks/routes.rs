@@ -19,6 +19,7 @@ use crate::{
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/marks", get(published))
+        .route("/marks/billboards", get(billboards))
         .route("/marks/{id}/image", get(image))
         .route("/admin/marks", get(admin_list))
         .route(
@@ -34,6 +35,12 @@ pub fn router() -> Router<AppState> {
 /// these pictures are already stuck to walls in the street.
 async fn published(State(state): State<AppState>) -> AppResult<Json<Vec<PublicMark>>> {
     Ok(Json(service::list_published(&state.pool).await?))
+}
+
+/// The billboards the game draws. Artwork comes from the same
+/// /v1/marks/{id}/image endpoint the scanner uses.
+async fn billboards(State(state): State<AppState>) -> AppResult<Json<Vec<Billboard>>> {
+    Ok(Json(service::billboards(&state.pool).await?))
 }
 
 async fn image(State(state): State<AppState>, Path(id): Path<Uuid>) -> AppResult<Response> {
@@ -60,6 +67,7 @@ async fn register(
 ) -> AppResult<(StatusCode, Json<RegisteredMark>)> {
     let mut upload = MarkUpload {
         label: String::new(),
+        in_game: false,
         act: "go".into(),
         target: None,
         business_id: None,
@@ -82,6 +90,9 @@ async fn register(
                 }
             }
             "label" => upload.label = field.text().await.unwrap_or_default(),
+            "in_game" => {
+                upload.in_game = matches!(field.text().await.as_deref(), Ok("1") | Ok("true"));
+            }
             "act" => upload.act = field.text().await.unwrap_or_else(|_| "go".into()),
             "target" => upload.target = field.text().await.ok(),
             "business_id" => {
