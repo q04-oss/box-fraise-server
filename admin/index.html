@@ -788,8 +788,11 @@
       card.className = 'sub';
       const when = document.createElement('div');
       when.className = 'who';
-      when.textContent = new Date(m.submitted_at).toLocaleString() +
-        ' · ' + m.body.length + ' characters';
+      when.textContent = [
+        PROMPTS[m.prompt] || m.prompt,
+        new Date(m.submitted_at).toLocaleString(),
+        m.body.length + ' characters',
+      ].join(' · ');
       const text = document.createElement('div');
       text.className = 'body';
       text.textContent = m.body;

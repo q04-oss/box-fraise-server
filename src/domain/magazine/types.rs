@@ -8,6 +8,9 @@ use uuid::Uuid;
 #[derive(Deserialize)]
 pub struct MagazineUpload {
     pub body: String,
+    /// Which of the three this answers. The same set members choose
+    /// from — see Prompt::ALL in the submissions domain.
+    pub prompt: String,
 }
 
 #[derive(Serialize)]
@@ -20,6 +23,7 @@ pub struct MagazineReceived {
 #[derive(Serialize, FromRow)]
 pub struct PendingMagazineSubmission {
     pub id: Uuid,
+    pub prompt: String,
     pub body: String,
     pub submitted_at: DateTime<Utc>,
 }

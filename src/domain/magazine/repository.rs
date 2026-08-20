@@ -10,11 +10,15 @@ use super::types::PendingMagazineSubmission;
 /// this table has no public SELECT policy at all, so RETURNING would
 /// fail with 42501 even though the insert is permitted. Same shape as
 /// submissions — see 0018 and CLAUDE.md.
-pub async fn insert(conn: &mut PgConnection, body: &str) -> sqlx::Result<Uuid> {
+pub async fn insert(conn: &mut PgConnection, body: &str, prompt: &str) -> sqlx::Result<Uuid> {
     let id = Uuid::new_v4();
-    sqlx::query("INSERT INTO magazine_submissions (id, body, status) VALUES ($1, $2, 'pending')")
+    sqlx::query(
+        "INSERT INTO magazine_submissions (id, body, prompt, status)
+         VALUES ($1, $2, $3, 'pending')",
+    )
         .bind(id)
         .bind(body)
+        .bind(prompt)
         .execute(conn)
         .await?;
     Ok(id)
@@ -30,7 +34,7 @@ pub async fn list_pending(
     conn: &mut PgConnection,
 ) -> sqlx::Result<Vec<PendingMagazineSubmission>> {
     sqlx::query_as::<_, PendingMagazineSubmission>(
-        "SELECT id, body, submitted_at
+        "SELECT id, prompt, body, submitted_at
            FROM magazine_submissions
           WHERE status = 'pending'
           ORDER BY submitted_at ASC",

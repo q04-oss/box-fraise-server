@@ -135,7 +135,8 @@
     <p class="kicker" style="margin-top: 44px;">Send something</p>
     <div class="ask">
       <p>No account, no name, no address. One person reads everything that arrives; some of
-      it goes in the first edition.</p>
+      it goes in the first edition. Answer one of the three, the same as a member would.</p>
+      <div id="mz-pick"></div>
       <textarea id="mz-body" maxlength="20000" placeholder="Anything worth printing."></textarea>
       <p class="note" id="mz-count">0</p>
       <button type="button" id="mz-send">Send it</button>
@@ -148,9 +149,11 @@
     <p class="closer">Box Fraise × gurgle · Edmonton</p>
   </main>
 
+  <script src="/js/prompts.js"></script>
   <script>
   (() => {
     'use strict';
+    const chosenPrompt = window.bfPromptPicker(document.getElementById('mz-pick'));
     const body  = document.getElementById('mz-body');
     const count = document.getElementById('mz-count');
     const send  = document.getElementById('mz-send');
@@ -176,7 +179,7 @@
         const r = await fetch('/v1/magazine/submissions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body: text }),
+          body: JSON.stringify({ body: text, prompt: chosenPrompt() }),
         });
         const raw = await r.text();
         let parsed = null;

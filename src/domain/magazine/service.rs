@@ -22,6 +22,7 @@ use super::{
 };
 use crate::{
     audit,
+    domain::submissions::types::Prompt,
     db::{AdminRlsTransaction, Pool},
     error::{AppError, AppResult},
 };
@@ -35,6 +36,11 @@ const MAX_CHARS: usize = 20_000;
 const MAX_PENDING: i32 = 200;
 
 pub async fn submit(pool: &Pool, upload: MagazineUpload) -> AppResult<MagazineReceived> {
+    // One of the three, or nothing. Anonymous writing goes into the
+    // same magazine as member answers and has to be the same shape.
+    let prompt = Prompt::parse(&upload.prompt)
+        .ok_or_else(|| AppError::bad_request("that is not one of the three"))?;
+
     let body = upload.body.trim();
     let chars = body.chars().count();
     if chars < MIN_CHARS {
@@ -55,7 +61,7 @@ pub async fn submit(pool: &Pool, upload: MagazineUpload) -> AppResult<MagazineRe
             "there is a backlog waiting to be read; try again in a few days".into(),
         ));
     }
-    let id = repository::insert(&mut conn, body).await?;
+    let id = repository::insert(&mut conn, body, prompt).await?;
 
     // 'public': no user, no admin, nobody. Length and never the writing
     // — audit_events is append-only, and anonymous writing is exactly
@@ -66,7 +72,7 @@ pub async fn submit(pool: &Pool, upload: MagazineUpload) -> AppResult<MagazineRe
         None,
         "magazine.submitted",
         Some(&id.to_string()),
-        serde_json::json!({ "chars": chars }),
+        serde_json::json!({ "chars": chars, "prompt": prompt }),
     )
     .await;
 
