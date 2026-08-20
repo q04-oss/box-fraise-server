@@ -167,6 +167,10 @@
       display: flex; gap: 26px; margin: 26px 0 4px;
       border-bottom: 1px solid var(--rule);
     }
+    /* An author display rule beats the browser's [hidden] { display:
+       none }, so a hidden flex container stays on screen. Without this
+       a signed-out visitor sees tabs that nothing is listening to. */
+    .tabs[hidden] { display: none; }
     .tabs button {
       font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
       font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
