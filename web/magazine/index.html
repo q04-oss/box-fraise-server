@@ -64,6 +64,26 @@
     }
     a.inline:hover { text-decoration-color: var(--accent); }
     .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+
+    /* The open box. One of two places on this site anybody can write
+       without a membership. */
+    .ask { border-left: 2px solid var(--accent); padding: 2px 0 2px 18px; margin: 34px 0; }
+    .ask textarea {
+      width: 100%; font: inherit; font-size: 17px; margin-top: 10px;
+      border: 1px solid var(--rule); border-radius: 8px; padding: 13px 14px;
+      min-height: 200px; resize: vertical; line-height: 1.55;
+    }
+    .ask textarea:focus { outline: none; border-color: var(--accent); }
+    .ask button {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em;
+      padding: 16px 28px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer;
+      margin-top: 14px; min-height: 52px;
+    }
+    .ask button[disabled] { background: #ccc; cursor: default; }
+    .ask .note { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+    .ask .msg { font-size: 16px; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -77,10 +97,15 @@
     in their houses. Gurgle is the magazine, and it has never been a thing you can hold. It
     does not exist yet.</p>
 
-    <p><strong>What it is made of.</strong> What members wrote. Everything in it comes from
-    <a class="inline" href="/gurgle">the feed</a> — answers to the three questions, chosen by
-    an editor, printed under the number of the person who wrote them. No names, because there
-    are none. Nothing is commissioned and nothing is written by staff.</p>
+    <p><strong>What it is made of.</strong> What members wrote — answers to the three
+    questions from <a class="inline" href="/gurgle">the feed</a>, chosen by an editor and
+    printed under the number of the person who wrote them. No names, because there are none.
+    Nothing is commissioned and nothing is written by staff.</p>
+
+    <p><strong>Except the first one.</strong> A first edition made of member writing needs
+    members, and there are none yet. So for the first one it can come from anybody: send
+    something below without an account and without a name. After that the magazine is made
+    the way it is meant to be made.</p>
 
     <p class="kicker" style="margin-top: 40px;">The three questions</p>
     <ul class="inside">
@@ -107,7 +132,66 @@
     the price, not how often, not how it is printed. What it needs first is enough writing to
     make one out of, and that comes from people turning up.</p>
 
+    <p class="kicker" style="margin-top: 44px;">Send something</p>
+    <div class="ask">
+      <p>No account, no name, no address. One person reads everything that arrives; some of
+      it goes in the first edition.</p>
+      <textarea id="mz-body" maxlength="20000" placeholder="Anything worth printing."></textarea>
+      <p class="note" id="mz-count">0</p>
+      <button type="button" id="mz-send">Send it</button>
+      <p class="msg" id="mz-msg"></p>
+      <p class="note">Writing only. Photographs come from people who turned up — that is not
+      squeamishness, it is that a picture from a stranger is the one thing nobody here can
+      stand behind.</p>
+    </div>
+
     <p class="closer">Box Fraise × gurgle · Edmonton</p>
   </main>
+
+  <script>
+  (() => {
+    'use strict';
+    const body  = document.getElementById('mz-body');
+    const count = document.getElementById('mz-count');
+    const send  = document.getElementById('mz-send');
+    const msg   = document.getElementById('mz-msg');
+    const MIN = 40;
+
+    body.addEventListener('input', () => {
+      const n = body.value.trim().length;
+      count.textContent = n === 0 ? '0'
+        : n < MIN ? n + ' — a piece needs ' + MIN
+        : String(n);
+    });
+
+    send.addEventListener('click', async () => {
+      const text = body.value.trim();
+      if (text.length < MIN) {
+        msg.textContent = 'A little more than that.';
+        return;
+      }
+      send.disabled = true;
+      msg.textContent = 'Sending…';
+      try {
+        const r = await fetch('/v1/magazine/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body: text }),
+        });
+        const raw = await r.text();
+        let parsed = null;
+        if (raw) { try { parsed = JSON.parse(raw); } catch { /* leave null */ } }
+        if (!r.ok) throw new Error((parsed && (parsed.message || parsed.error)) || 'http ' + r.status);
+        body.value = '';
+        count.textContent = '0';
+        msg.textContent = 'Sent. One person will read it.';
+      } catch (e) {
+        msg.textContent = e.message || 'It did not send. Try again in a moment.';
+      } finally {
+        send.disabled = false;
+      }
+    });
+  })();
+  </script>
 </body>
 </html>

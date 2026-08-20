@@ -224,6 +224,14 @@
       </fieldset>
 
       <fieldset>
+        <legend>Magazine — sent in anonymously <span id="mz-count" class="muted"></span></legend>
+        <div class="muted">Writing from people who are not members, for the first edition.
+        Nothing here is ever shown on the site in any state — keeping a piece marks it for
+        print, and rejecting deletes it.</div>
+        <div id="mz-queue" style="margin-top: 14px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Run away — anonymous answers <span id="ra-count" class="muted"></span></legend>
         <div class="muted">The only thing on this platform anybody can write without a
         membership. Nothing appears on /runaway until it is put up here.</div>
@@ -375,6 +383,7 @@
       loadEvents().catch(e => setMsg($('login-msg'), 'err', e.message));
       loadSubmissions();
       loadRunaway();
+      loadMagazine();
       loadBusinesses();
       loadReach();
       loadMarks();
@@ -756,6 +765,65 @@
     document.getElementById('rc-out').style.display = 'none';
     document.getElementById('rc-msg').textContent = '';
   });
+
+  // ── Magazine, sent in anonymously ────────────────────────────────
+  // Material for the first edition, from people who are not members.
+  // Never served to the web in any state — see 0033. Everything here
+  // was typed by a stranger, so it goes in through textContent.
+  async function loadMagazine() {
+    const holder = document.getElementById('mz-queue');
+    const count = document.getElementById('mz-count');
+    let rows;
+    try { rows = await api('/admin/magazine/submissions'); } catch (e) { holder.textContent = e.message; return; }
+    count.textContent = rows.length ? '(' + rows.length + ' waiting)' : '';
+    holder.textContent = '';
+    if (!rows.length) {
+      holder.className = 'muted';
+      holder.textContent = 'Nothing waiting.';
+      return;
+    }
+    holder.className = '';
+    rows.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'sub';
+      const when = document.createElement('div');
+      when.className = 'who';
+      when.textContent = new Date(m.submitted_at).toLocaleString() +
+        ' · ' + m.body.length + ' characters';
+      const text = document.createElement('div');
+      text.className = 'body';
+      text.textContent = m.body;
+      const acts = document.createElement('div');
+      acts.className = 'acts';
+      const keep = document.createElement('button');
+      keep.textContent = 'Keep for the edition';
+      const no = document.createElement('button');
+      no.className = 'secondary';
+      no.textContent = 'Reject';
+      const act = async (path) => {
+        keep.disabled = no.disabled = true;
+        try {
+          await api('/admin/magazine/submissions/' + m.id + path, { method: 'POST' });
+          await loadMagazine();
+        } catch (e) {
+          when.textContent = e.message;
+          keep.disabled = no.disabled = false;
+        }
+      };
+      keep.addEventListener('click', () => act('/keep'));
+      no.addEventListener('click', () => {
+        if (confirm('Reject this? It is deleted, and the audit row is all that is left.')) {
+          act('/reject');
+        }
+      });
+      acts.appendChild(keep);
+      acts.appendChild(no);
+      card.appendChild(when);
+      card.appendChild(text);
+      card.appendChild(acts);
+      holder.appendChild(card);
+    });
+  }
 
   // ── Anonymous answers ────────────────────────────────────────────
   // The one open write on the platform. Everything here was typed by a
