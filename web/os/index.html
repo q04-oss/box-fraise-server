@@ -177,6 +177,20 @@
       font-size: 11px; flex: 0 0 auto;
     }
 
+    /* Whyte. Flat shapes in the site's palette rather than art — it is
+       a mock operating system, and its game should look like one. */
+    #wh-canvas {
+      display: block; width: 100%; height: auto;
+      background: #f7f6f3; border: 1px solid var(--rule); border-radius: 6px;
+    }
+    .wh-hud {
+      display: flex; justify-content: space-between;
+      font-size: 11px; color: var(--muted); margin-top: 8px;
+    }
+    .wh-note { font-size: 13px; color: var(--ink); margin: 8px 0 0; min-height: 19px; }
+    .wh-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
+    .wh-fine a { color: var(--ink); }
+
     /* ticketing.app */
     .tk { border: 1px solid var(--rule); border-left: 3px solid var(--accent);
           border-radius: 8px; padding: 12px 13px; }
@@ -654,6 +668,21 @@
       </div>
     </section>
 
+    <!-- ── Whyte ── -->
+    <section class="win" id="win-whyte" style="left:300px; top:118px; width:452px;">
+      <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Whyte</span></header>
+      <div class="body">
+        <canvas id="wh-canvas" width="420" height="180"></canvas>
+        <div class="wh-hud mono">
+          <span id="wh-score">0 m</span>
+          <span id="wh-best">best 0 m</span>
+        </div>
+        <p class="wh-note" id="wh-msg">Space to jump. Hold it to jump further.</p>
+        <p class="wh-fine">The street is organised around moving vehicles through it. That is
+        the whole game, and it is also <a href="/runclub">the whole argument</a>.</p>
+      </div>
+    </section>
+
     <!-- ── Scan ── -->
     <section class="win" id="win-scan" style="left:660px; top:430px; width:320px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Scan</span></header>
@@ -887,6 +916,7 @@
       { id: 'win-perms',    name: 'Permissions', glyph: '⚿' },
       { id: 'win-inbox',    name: 'Inbox',       glyph: '✉' },
       { id: 'win-map',      name: 'Map',         glyph: '◎' },
+      { id: 'win-whyte',    name: 'Whyte',       glyph: '⚑' },
       { id: 'win-scan',     name: 'Scan',        glyph: '◉' },
       { id: 'win-run',      name: 'Run club',    glyph: '▲' },
       { id: 'win-tip',      name: 'Tip',         glyph: '★' },
@@ -1209,6 +1239,210 @@
         });
       });
     }
+
+    // ── Whyte ──────────────────────────────────────────────────────
+    // An endless runner where the obstacles are cars, because that is
+    // the argument: the street is organised around moving vehicles
+    // through it, and the person on foot is the one who has to get out
+    // of the way. Nothing here is scored against the platform and
+    // nothing is sent anywhere — it is a game on a mock desktop.
+    (() => {
+      const cv = document.getElementById('wh-canvas');
+      if (!cv) return;
+      const ctx = cv.getContext('2d');
+      const W = cv.width, H = cv.height;
+      const GROUND = H - 34;
+
+      const INK = '#1a1a1a', ACCENT = '#b21b1b', MUTED = '#8b867d';
+      const BEST_KEY = 'bf_whyte_best';
+
+      // The runner. Fixed on the left; the street moves past.
+      const runner = { x: 46, y: GROUND, vy: 0, w: 9, h: 20 };
+      // Tuned against the obstacles rather than by feel: a tap clears a
+      // 13px car with room, a held jump clears a 15px one, and airtime
+      // is short enough that you never come down on the car behind the
+      // one you jumped. A floatier jump made the game trivial and then
+      // unfair, in that order.
+      const GRAVITY = 0.9;
+      const JUMP = -7.8, HOLD = -0.22, HOLD_MS = 160;
+
+      let cars, speed, dist, best, running, over, held, heldFor, lamps, last;
+
+      function reset() {
+        cars = [];
+        lamps = [120, 300, 480];
+        speed = 3.1;
+        dist = 0;
+        over = false;
+        held = false;
+        heldFor = 0;
+        runner.y = GROUND;
+        runner.vy = 0;
+        try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; }
+        catch { best = 0; }
+        paintHud();
+      }
+
+      function paintHud() {
+        document.getElementById('wh-score').textContent = Math.floor(dist) + ' m';
+        document.getElementById('wh-best').textContent = 'best ' + best + ' m';
+      }
+
+      function say(text) {
+        document.getElementById('wh-msg').textContent = text;
+      }
+
+      function spawn() {
+        // A gap that shrinks with speed but never below something a
+        // held jump can clear. A game you cannot win is not an
+        // argument, it is a complaint.
+        const lastCar = cars[cars.length - 1];
+        const gap = 150 + Math.random() * 130 - Math.min(40, speed * 5);
+        if (!lastCar || W - lastCar.x > gap) {
+          const long = Math.random() < 0.28;
+          cars.push({ x: W + 20, w: long ? 46 : 30, h: long ? 15 : 13 });
+        }
+      }
+
+      function step(dt) {
+        dist += speed * dt * 0.34;
+        speed = 3.1 + Math.min(3.6, dist / 260);
+
+        if (held && heldFor < HOLD_MS && runner.vy < 0) {
+          runner.vy += HOLD;
+          heldFor += dt * 16.7;
+        }
+        runner.vy += GRAVITY;
+        runner.y += runner.vy;
+        if (runner.y > GROUND) { runner.y = GROUND; runner.vy = 0; }
+
+        spawn();
+        cars.forEach(c => { c.x -= speed * dt; });
+        cars = cars.filter(c => c.x + c.w > -10);
+
+        lamps = lamps.map(x => (x - speed * dt * 0.45 < -20 ? W + 40 : x - speed * dt * 0.45));
+
+        // Collision, generous by a pixel or two on each side: being
+        // clipped by a wing mirror should not end a run.
+        const rx = runner.x + 1, rw = runner.w - 2;
+        for (const c of cars) {
+          if (rx < c.x + c.w - 2 && rx + rw > c.x + 2 && runner.y > GROUND - c.h) {
+            return end();
+          }
+        }
+      }
+
+      function end() {
+        over = true;
+        running = false;
+        const m = Math.floor(dist);
+        if (m > best) {
+          best = m;
+          try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* private mode */ }
+          say('Furthest yet: ' + m + ' m. Space to run again.');
+        } else {
+          say('Stopped by a car at ' + m + ' m. Space to run again.');
+        }
+        paintHud();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // The street.
+        ctx.strokeStyle = INK;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND + 0.5);
+        ctx.lineTo(W, GROUND + 0.5);
+        ctx.stroke();
+
+        // Lamp posts, so the speed is legible.
+        ctx.fillStyle = '#ddd8cf';
+        lamps.forEach(x => ctx.fillRect(x, GROUND - 30, 2, 30));
+
+        // The runner: a body and two legs that alternate. Enough to
+        // read as running without being a sprite.
+        ctx.fillStyle = INK;
+        const airborne = runner.y < GROUND;
+        ctx.fillRect(runner.x, runner.y - runner.h, runner.w, runner.h - 6);
+        const swing = airborne ? 3 : (Math.floor(dist * 2.2) % 2 ? 3 : -3);
+        ctx.fillRect(runner.x + 1, runner.y - 6, 3, 6);
+        ctx.fillRect(runner.x + runner.w - 4 + swing * 0.4, runner.y - 6, 3, 6);
+
+        // The cars.
+        cars.forEach(c => {
+          ctx.fillStyle = ACCENT;
+          ctx.fillRect(c.x, GROUND - c.h, c.w, c.h);
+          ctx.fillStyle = '#f7f6f3';
+          ctx.fillRect(c.x + c.w - 9, GROUND - c.h + 3, 6, 4);
+          ctx.fillStyle = INK;
+          ctx.fillRect(c.x + 5, GROUND - 2, 5, 3);
+          ctx.fillRect(c.x + c.w - 11, GROUND - 2, 5, 3);
+        });
+
+        if (over) {
+          ctx.fillStyle = 'rgba(247,246,243,0.86)';
+          ctx.fillRect(0, GROUND / 2 - 16, W, 34);
+          ctx.fillStyle = INK;
+          ctx.font = 'italic 17px Newsreader, Georgia, serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('The street was organised around them.', W / 2, GROUND / 2 + 6);
+          ctx.textAlign = 'left';
+        }
+        if (!running && !over) {
+          ctx.fillStyle = MUTED;
+          ctx.font = '12px "IBM Plex Mono", ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('space to run', W / 2, GROUND / 2 + 4);
+          ctx.textAlign = 'left';
+        }
+      }
+
+      function frame(now) {
+        const dt = Math.min(3, (now - (last || now)) / 16.67);
+        last = now;
+        if (running) { step(dt); paintHud(); }
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      function jump() {
+        if (!running) {
+          if (over) reset();
+          running = true;
+          say('');
+          return;
+        }
+        if (runner.y >= GROUND) {
+          runner.vy = JUMP;
+          held = true;
+          heldFor = 0;
+        }
+      }
+
+      // Only while the window is open and on top, so space does not
+      // fire a jump at somebody using the rest of the desktop.
+      const win = document.getElementById('win-whyte');
+      function active() {
+        return win && win.style.display !== 'none' && !win.hidden;
+      }
+      window.addEventListener('keydown', e => {
+        if (e.code !== 'Space' && e.code !== 'ArrowUp') return;
+        if (!active()) return;
+        e.preventDefault();
+        jump();
+      });
+      window.addEventListener('keyup', e => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') held = false;
+      });
+      cv.addEventListener('mousedown', () => { if (active()) jump(); });
+      window.addEventListener('mouseup', () => { held = false; });
+
+      reset();
+      running = false;
+      requestAnimationFrame(frame);
+    })();
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');
