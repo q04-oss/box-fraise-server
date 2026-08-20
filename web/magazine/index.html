@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The magazine — box fraise</title>
+  <meta name="description" content="Gurgle, printed. Made from what members wrote, sold for cash at the run, and scannable on the cover.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 800px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+    }
+    .backlink:hover { color: var(--ink); }
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 16px;
+    }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(34px, 6.4vw, 64px); letter-spacing: -0.03em;
+      line-height: 1.0; margin: 0 0 22px; text-wrap: balance;
+    }
+    .lede { font-size: 20px; line-height: 1.55; margin: 0 0 32px; max-width: 54ch; }
+    p { font-size: 18px; line-height: 1.65; margin: 0 0 18px; }
+    p strong { font-weight: 500; }
+    .inside { list-style: none; margin: 0 0 26px; padding: 0; border-top: 2px solid var(--ink); }
+    .inside li {
+      display: flex; gap: 16px; align-items: baseline;
+      border-bottom: 1px solid var(--rule); padding: 15px 0;
+      font-size: 17px; line-height: 1.5;
+    }
+    .inside .n {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.1em; color: var(--accent); flex: 0 0 auto;
+    }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <p class="kicker">Gurgle</p>
+
+    <h1>Playboy was paper.</h1>
+    <p class="lede">The scene, the clubs and the argument all grew off an object people kept
+    in their houses. Gurgle is the magazine, and it has never been a thing you can hold. It
+    does not exist yet.</p>
+
+    <p><strong>What it is made of.</strong> What members wrote. Everything in it comes from
+    <a class="inline" href="/gurgle">the feed</a> — answers to the three questions, chosen by
+    an editor, printed under the number of the person who wrote them. No names, because there
+    are none. Nothing is commissioned and nothing is written by staff.</p>
+
+    <p class="kicker" style="margin-top: 40px;">The three questions</p>
+    <ul class="inside">
+      <li><span class="n">01</span><span>Do I Have What it Takes To Run This Country?</span></li>
+      <li><span class="n">02</span><span>Why Do I Want To Run Away?</span></li>
+      <li><span class="n">03</span><span>for better taste…</span></li>
+    </ul>
+
+    <p><strong>The cover is scannable.</strong> It is registered the same way any
+    advertisement is, so pointing a camera at the front of the magazine opens the platform —
+    <a class="inline" href="/scan">the scanner</a> does not care whether it is looking at a
+    poster, a sticker or a cover. The magazine advertises the thing that made it.</p>
+
+    <p><strong>Why an object at all.</strong> A website is read where it is found and nowhere
+    else. A magazine goes home with somebody, sits on a table, gets picked up by a person who
+    was not looking for it, and travels to places the run club does not. It is the only part
+    of this that can leave the city on its own.</p>
+
+    <p><strong>How you get one.</strong> Cash, in person, at the run — the same as
+    <a class="inline" href="/clubhouse">the sticker and the donation</a>, and for the same
+    reason. <a class="inline" href="/cash">Money you can leave with</a>.</p>
+
+    <p><strong>It does not exist yet.</strong> Nothing has been decided — not the size, not
+    the price, not how often, not how it is printed. What it needs first is enough writing to
+    make one out of, and that comes from people turning up.</p>
+
+    <p class="closer">Box Fraise × gurgle · Edmonton</p>
+  </main>
+</body>
+</html>
