@@ -184,19 +184,22 @@
     <a class="backlink" href="/">← box fraise</a>
 
     <p class="kicker">Gurgle</p>
-    <h1>Do I Have What it Takes To Run This Country?</h1>
-    <p class="lede">Everybody here is answering that about themselves — in writing, in
-    photographs, from people who turned up. The magazine is made by taking some of it.</p>
+    <h1>Everything you have to turn up to.</h1>
+    <p class="lede">Your shifts, published by the business rather than sent to you at
+    eleven at night, and the runs, on one page. A magazine sits underneath it.</p>
 
     <p class="standing" id="gg-standing" hidden></p>
 
     <div class="tabs" id="gg-tabs" role="tablist" hidden>
-      <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="true">Feed</button>
+      <button type="button" role="tab" id="tab-calendar-btn" aria-controls="tab-calendar" aria-selected="true">Calendar</button>
+      <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="false">Feed</button>
       <button type="button" role="tab" id="tab-channels-btn" aria-controls="tab-channels" aria-selected="false">Channels</button>
-      <button type="button" role="tab" id="tab-calendar-btn" aria-controls="tab-calendar" aria-selected="false">Calendar</button>
     </div>
 
-    <div id="tab-feed" role="tabpanel" aria-labelledby="tab-feed-btn">
+    <div id="tab-feed" role="tabpanel" aria-labelledby="tab-feed-btn" hidden>
+    <h2 class="feed-q">Do I Have What it Takes To Run This Country?</h2>
+    <p class="fine">Everybody here is answering that about themselves — in writing, in
+    photographs, from people who turned up. The magazine is made by taking some of it.</p>
     <button type="button" class="open" id="gg-open" aria-expanded="false" aria-controls="gg-panel">post, or whatever</button>
 
     <div class="panel" id="gg-panel" hidden>
@@ -244,10 +247,7 @@
       <div id="gg-channels"></div>
     </div>
 
-    <div id="tab-calendar" role="tabpanel" aria-labelledby="tab-calendar-btn" hidden>
-      <h2 class="feed-q">Calendar</h2>
-      <p class="lede">Your shifts and the runs, in one place. A business on the platform
-      publishes what it needs and you do not have to go asking.</p>
+    <div id="tab-calendar" role="tabpanel" aria-labelledby="tab-calendar-btn">
       <div id="gg-calendar"></div>
     </div>
   </main>
@@ -265,18 +265,26 @@
     renderGurgleFeed('gg-feed');
     renderMembership('gg-standing');
 
-    // Channels are a member's own conversations, so there is nothing
-    // behind this tab for anybody else. A stranger sees the page they
-    // have always seen.
-    if (!bfSession.signedIn()) return;
+    // A member opens this page for the calendar, so that is the tab
+    // that is already open. A stranger has no calendar and no channels
+    // — for them the page is the magazine, which anyone may read, so
+    // the feed is what they land on and the tabs never appear.
+    if (!bfSession.signedIn()) {
+      document.getElementById('tab-calendar').hidden = true;
+      document.getElementById('tab-feed').hidden = false;
+      return;
+    }
 
     const tabs = document.getElementById('gg-tabs');
     tabs.hidden = false;
     const panes = {
+      'tab-calendar-btn': 'tab-calendar',
       'tab-feed-btn': 'tab-feed',
       'tab-channels-btn': 'tab-channels',
-      'tab-calendar-btn': 'tab-calendar',
     };
+    // The calendar is why somebody opens this page, so it is drawn
+    // before anything is clicked.
+    renderCalendar('gg-calendar');
 
     // Built the first time it is opened rather than on load: it asks
     // the server for pairings and generates a keypair, and most visits
