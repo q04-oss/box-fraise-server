@@ -9,6 +9,9 @@ use crate::{config::Config, crypto, db};
 pub struct AppState {
     pub pool: PgPool,
     pub cfg: Arc<Config>,
+    /// Live game streams. In memory on purpose — a stream that ends
+    /// leaves nothing behind. See domain::whyte::streams.
+    pub streams: crate::domain::whyte::streams::Streams,
 }
 
 impl AppState {
@@ -17,6 +20,7 @@ impl AppState {
         Ok(Self {
             pool,
             cfg: Arc::new(cfg),
+            streams: Default::default(),
         })
     }
 

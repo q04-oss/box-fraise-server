@@ -71,6 +71,31 @@
   border: 1px solid var(--w-rule); background: none; color: var(--w-ink);
 }
 .bf-whyte .w-ask button.yes { border-color: var(--w-accent); color: var(--w-accent); }
+.bf-whyte .w-live { margin-top: 14px; border-top: 1px solid var(--w-rule); padding-top: 12px; }
+.bf-whyte .w-live-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--w-mono); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--w-muted); margin-bottom: 6px;
+}
+.bf-whyte .w-live-head button {
+  font: inherit; text-transform: uppercase; letter-spacing: 0.12em;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--w-accent); text-decoration: underline; text-underline-offset: 3px;
+}
+.bf-whyte .w-streams { list-style: none; margin: 0; padding: 0;
+  font-family: var(--w-mono); font-size: 11px; }
+.bf-whyte .w-streams li { border-bottom: 1px solid var(--w-rule); }
+.bf-whyte .w-streams li:last-child { border-bottom: 0; }
+.bf-whyte .w-streams button {
+  display: flex; gap: 10px; width: 100%; text-align: left;
+  font: inherit; background: none; border: 0; padding: 5px 0; cursor: pointer;
+  color: var(--w-muted);
+}
+.bf-whyte .w-streams button:hover .who { color: var(--w-accent); }
+.bf-whyte .w-streams .who { flex: 1; color: var(--w-ink); letter-spacing: 0.14em; }
+.bf-whyte .w-streams .far { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.bf-whyte .w-streams li.on .who { color: var(--w-accent); }
+.bf-whyte .w-none { font-family: var(--w-mono); font-size: 11px; color: var(--w-muted); }
 .bf-whyte .w-ads {
   font-family: var(--w-mono); font-size: 10px; text-transform: uppercase;
   letter-spacing: 0.12em; color: var(--w-muted); background: none; border: 0;
@@ -151,6 +176,21 @@
 
     const boardEl = el('ol', 'w-board');
     root.appendChild(boardEl);
+
+    // Who is live. Nobody has to sign up to be on this list — there is
+    // no camera and no microphone, so there is nothing to verify.
+    const live = el('div', 'w-live');
+    const liveHead = el('div', 'w-live-head');
+    liveHead.appendChild(el('span', null, 'Live now'));
+    const goLive = el('button', null, 'stream this');
+    goLive.type = 'button';
+    liveHead.appendChild(goLive);
+    live.appendChild(liveHead);
+    const streamsEl = el('ul', 'w-streams');
+    live.appendChild(streamsEl);
+    const liveNote = el('p', 'w-none', 'Nobody is running.');
+    live.appendChild(liveNote);
+    root.appendChild(live);
 
     const adsToggle = el('button', 'w-ads');
     adsToggle.type = 'button';
@@ -377,15 +417,20 @@
       }
     }
 
-    function frame(now) {
+    function tick(now) {
       const dt = Math.min(3, (now - (last || now)) / 16.67);
       last = now;
-      if (running) { step(dt); paintHud(); }
+      if (running && !watching) {
+        step(dt);
+        paintHud();
+        if (sock && sock.readyState === 1) sock.send(frame());
+      }
       draw();
-      requestAnimationFrame(frame);
+      requestAnimationFrame(tick);
     }
 
     function jump() {
+      if (watching) return;
       if (!running) {
         if (over) reset();
         running = true;
@@ -454,6 +499,116 @@
       e.stopPropagation();
     });
 
+    // ── Streaming ────────────────────────────────────────────────
+    // Frames are game state, not pictures: a runner's height, the cars,
+    // the distance. A viewer runs this same renderer. See
+    // src/domain/whyte/streams.rs.
+    const WS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host;
+    let sock = null, watchSock = null, watchingId = null;
+
+    function frame() {
+      return JSON.stringify({
+        d: Math.floor(dist),
+        y: Math.round(runner.y),
+        c: cars.map(c => [Math.round(c.x), c.w, c.h]),
+        b: boards.map(b => Math.round(b.x)),
+      });
+    }
+
+    function startStreaming() {
+      const who = (initials.value.trim().toUpperCase() || 'AAA');
+      if (!/^[A-Z]{3}$/.test(who)) {
+        msg.textContent = 'Put three letters in the initials box first.';
+        initials.focus();
+        return;
+      }
+      stopWatching();
+      sock = new WebSocket(WS + '/v1/whyte/stream');
+      sock.onopen = () => { sock.send(who); goLive.textContent = 'stop streaming'; };
+      sock.onclose = () => { sock = null; goLive.textContent = 'stream this'; };
+      sock.onerror = () => { msg.textContent = 'Could not start streaming.'; };
+    }
+
+    function stopStreaming() {
+      if (sock) { sock.close(); sock = null; }
+      goLive.textContent = 'stream this';
+    }
+
+    goLive.addEventListener('click', () => (sock ? stopStreaming() : startStreaming()));
+
+    // ── Watching ─────────────────────────────────────────────────
+    // The renderer is the same; only where the state comes from
+    // changes. Physics stops, input stops, frames arrive instead.
+    let watching = false;
+
+    function stopWatching() {
+      if (watchSock) { watchSock.close(); watchSock = null; }
+      watching = false;
+      watchingId = null;
+      paintStreams(lastStreams);
+      msg.textContent = '';
+      reset();
+      running = false;
+    }
+
+    function watch(id, who) {
+      if (watchingId === id) { stopWatching(); return; }
+      stopStreaming();
+      if (watchSock) watchSock.close();
+      watching = true;
+      watchingId = id;
+      running = false;
+      over = false;
+      msg.textContent = 'Watching ' + who + '. Tap the name again to stop.';
+      watchSock = new WebSocket(WS + '/v1/whyte/watch/' + id);
+      watchSock.onmessage = e => {
+        let f;
+        try { f = JSON.parse(e.data); } catch { return; }
+        if (f.id) return;
+        dist = f.d || 0;
+        runner.y = f.y != null ? f.y : GROUND;
+        cars = (f.c || []).map(a => ({ x: a[0], w: a[1], h: a[2] }));
+        boards = (f.b || []).map((x, i) => ({ x, ad: stock[i % Math.max(1, stock.length)] }))
+                            .filter(b => b.ad);
+        paintHud();
+      };
+      watchSock.onclose = () => {
+        if (watchingId === id) {
+          msg.textContent = who + ' stopped.';
+          stopWatching();
+        }
+      };
+      paintStreams(lastStreams);
+    }
+
+    let lastStreams = [];
+    function paintStreams(rows) {
+      lastStreams = rows;
+      streamsEl.textContent = '';
+      const others = rows.filter(r => !sock || r.initials !== initials.value.trim().toUpperCase());
+      liveNote.hidden = others.length > 0;
+      others.forEach(r => {
+        const li = el('li');
+        if (r.id === watchingId) li.className = 'on';
+        const b = el('button');
+        b.type = 'button';
+        b.appendChild(el('span', 'who', r.initials));
+        b.appendChild(el('span', 'far', r.metres + ' m'));
+        b.addEventListener('click', () => watch(r.id, r.initials));
+        li.appendChild(b);
+        streamsEl.appendChild(li);
+      });
+    }
+
+    async function loadStreams() {
+      try {
+        const r = await fetch('/v1/whyte/streams', { cache: 'no-store' });
+        if (r.ok) paintStreams(await r.json());
+      } catch { /* an empty street is the usual state anyway */ }
+    }
+    loadStreams();
+    setInterval(loadStreams, 4000);
+
     // ── Input ────────────────────────────────────────────────────
     // Space only when this game is the thing on screen — on /os the
     // desktop has other windows, and a jump fired at somebody reading
@@ -497,6 +652,6 @@
     reset();
     running = false;
     loadBoard();
-    requestAnimationFrame(frame);
+    requestAnimationFrame(tick);
   };
 })();
