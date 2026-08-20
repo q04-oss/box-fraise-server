@@ -61,6 +61,33 @@
     }
     a.inline:hover { text-decoration-color: var(--accent); }
     .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+
+    /* The open answer box. The only place on this site anybody can
+       write without a membership. */
+    .ask { border-left: 2px solid var(--accent); padding: 2px 0 2px 18px; margin: 34px 0; }
+    .ask textarea {
+      width: 100%; font: inherit; font-size: 17px; margin-top: 10px;
+      border: 1px solid var(--rule); border-radius: 8px; padding: 13px 14px;
+      min-height: 130px; resize: vertical; line-height: 1.55;
+    }
+    .ask textarea:focus { outline: none; border-color: var(--accent); }
+    .ask button {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em;
+      padding: 16px 28px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer;
+      margin-top: 14px; min-height: 52px;
+    }
+    .ask button[disabled] { background: #ccc; cursor: default; }
+    .ask .note { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+    .ask .msg { font-size: 16px; margin-top: 12px; }
+
+    /* Answers. Set as testimony rather than as posts — no byline,
+       because there is nobody to name. */
+    .answers { border-top: 2px solid var(--ink); margin-top: 34px; }
+    .answer { border-bottom: 1px solid var(--rule); padding: 24px 0; }
+    .answer p { font-size: 19px; line-height: 1.55; margin: 0; white-space: pre-wrap; }
+    .answers .none { font-size: 16px; color: var(--muted); padding: 24px 0 0; }
   </style>
 </head>
 <body>
@@ -105,7 +132,101 @@
     answer on <a class="inline" href="/gurgle">gurgle</a>, and you get an account by turning
     up to <a class="inline" href="/runclub">the run club</a>.</p>
 
+    <p class="kicker" style="margin-top: 44px;">Answer it</p>
+    <div class="ask">
+      <p>You do not need an account and you will not be asked for a name. An editor reads
+      everything; some of it goes on this page.</p>
+      <textarea id="ra-body" maxlength="2000" placeholder="Why do you want to run away?"></textarea>
+      <p class="note" id="ra-count">0</p>
+      <button type="button" id="ra-send">Send it</button>
+      <p class="msg" id="ra-msg"></p>
+      <p class="note">Anonymous gets you read. A member number gets you published in the
+      magazine, and you get one by turning up to
+      <a class="inline" href="/runclub">a run</a>.</p>
+    </div>
+
+    <p class="kicker">What people said</p>
+    <div class="answers" id="ra-list"></div>
+
     <p class="closer">Box Fraise × run away · Edmonton</p>
   </main>
+
+  <script>
+  (() => {
+    'use strict';
+    const body  = document.getElementById('ra-body');
+    const count = document.getElementById('ra-count');
+    const send  = document.getElementById('ra-send');
+    const msg   = document.getElementById('ra-msg');
+    const list  = document.getElementById('ra-list');
+    const MIN = 20;
+
+    body.addEventListener('input', () => {
+      const n = body.value.trim().length;
+      count.textContent = n === 0 ? '0'
+        : n < MIN ? n + ' — an answer needs ' + MIN
+        : String(n);
+    });
+
+    send.addEventListener('click', async () => {
+      const text = body.value.trim();
+      if (text.length < MIN) {
+        msg.textContent = 'A little more than that.';
+        return;
+      }
+      send.disabled = true;
+      msg.textContent = 'Sending…';
+      try {
+        const r = await fetch('/v1/runaway/answers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body: text }),
+        });
+        const raw = await r.text();
+        let parsed = null;
+        if (raw) { try { parsed = JSON.parse(raw); } catch { /* leave null */ } }
+        if (!r.ok) throw new Error((parsed && (parsed.message || parsed.error)) || 'http ' + r.status);
+        body.value = '';
+        count.textContent = '0';
+        msg.textContent = 'Sent. Somebody will read it.';
+      } catch (e) {
+        msg.textContent = e.message || 'It did not send. Try again in a moment.';
+      } finally {
+        send.disabled = false;
+      }
+    });
+
+    // Everything here was typed by a stranger on an open form, so it
+    // goes in through textContent and never as markup.
+    (async () => {
+      let rows;
+      try {
+        const r = await fetch('/v1/runaway/answers');
+        if (!r.ok) throw new Error('http ' + r.status);
+        rows = await r.json();
+      } catch {
+        list.className = 'answers none';
+        list.textContent = 'The answers could not be reached.';
+        return;
+      }
+      list.textContent = '';
+      if (!rows.length) {
+        const p = document.createElement('p');
+        p.className = 'none';
+        p.textContent = 'Nothing has been put up yet. Yours could be the first.';
+        list.appendChild(p);
+        return;
+      }
+      rows.forEach(a => {
+        const el = document.createElement('div');
+        el.className = 'answer';
+        const p = document.createElement('p');
+        p.textContent = a.body;
+        el.appendChild(p);
+        list.appendChild(el);
+      });
+    })();
+  })();
+  </script>
 </body>
 </html>

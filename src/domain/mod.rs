@@ -8,4 +8,5 @@ pub mod members;
 pub mod messages;
 pub mod onboarding;
 pub mod pairings;
+pub mod runaway;
 pub mod submissions;

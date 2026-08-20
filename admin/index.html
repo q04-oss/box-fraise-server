@@ -224,6 +224,13 @@
       </fieldset>
 
       <fieldset>
+        <legend>Run away — anonymous answers <span id="ra-count" class="muted"></span></legend>
+        <div class="muted">The only thing on this platform anybody can write without a
+        membership. Nothing appears on /runaway until it is put up here.</div>
+        <div id="ra-queue" style="margin-top: 14px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Advertisements</legend>
         <div class="muted">A picture in the street and what happens when a camera is pointed
         at it. Registering one here puts it live — no redeploy. The artwork is only ever
@@ -367,6 +374,10 @@
       $('dashboard').classList.remove('hidden');
       loadEvents().catch(e => setMsg($('login-msg'), 'err', e.message));
       loadSubmissions();
+      loadRunaway();
+      loadBusinesses();
+      loadReach();
+      loadMarks();
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
@@ -745,6 +756,63 @@
     document.getElementById('rc-out').style.display = 'none';
     document.getElementById('rc-msg').textContent = '';
   });
+
+  // ── Anonymous answers ────────────────────────────────────────────
+  // The one open write on the platform. Everything here was typed by a
+  // stranger, so every field goes in through textContent.
+  async function loadRunaway() {
+    const holder = document.getElementById('ra-queue');
+    const count = document.getElementById('ra-count');
+    let rows;
+    try { rows = await api('/admin/runaway/answers'); } catch (e) { holder.textContent = e.message; return; }
+    count.textContent = rows.length ? '(' + rows.length + ' waiting)' : '';
+    holder.textContent = '';
+    if (!rows.length) {
+      holder.className = 'muted';
+      holder.textContent = 'Nothing waiting.';
+      return;
+    }
+    holder.className = '';
+    rows.forEach(a => {
+      const card = document.createElement('div');
+      card.className = 'sub';
+      const when = document.createElement('div');
+      when.className = 'who';
+      when.textContent = new Date(a.submitted_at).toLocaleString();
+      const text = document.createElement('div');
+      text.className = 'body';
+      text.textContent = a.body;
+      const acts = document.createElement('div');
+      acts.className = 'acts';
+      const up = document.createElement('button');
+      up.textContent = 'Put it up';
+      const no = document.createElement('button');
+      no.className = 'secondary';
+      no.textContent = 'Reject';
+      const act = async (path) => {
+        up.disabled = no.disabled = true;
+        try {
+          await api('/admin/runaway/answers/' + a.id + path, { method: 'POST' });
+          await loadRunaway();
+        } catch (e) {
+          when.textContent = e.message;
+          up.disabled = no.disabled = false;
+        }
+      };
+      up.addEventListener('click', () => act('/accept'));
+      no.addEventListener('click', () => {
+        if (confirm('Reject this? It is deleted, and the audit row is all that is left.')) {
+          act('/reject');
+        }
+      });
+      acts.appendChild(up);
+      acts.appendChild(no);
+      card.appendChild(when);
+      card.appendChild(text);
+      card.appendChild(acts);
+      holder.appendChild(card);
+    });
+  }
 
   // ── Advertisements ───────────────────────────────────────────────
   // The scanner reads this list. Registering a mark is how a sold
