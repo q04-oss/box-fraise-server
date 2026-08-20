@@ -212,12 +212,21 @@
       <p>Somebody will make you an account while you are standing there. That is the
       only way there is — and it lasts a month. Come back within it and it keeps going;
       miss it and posting stops until you turn up again. Nothing is deleted either way.</p>
-      <p class="when">Friday at six · Sunday at eight<br>
-      Dr. Wilbert McIntyre Park, Old Strathcona</p>
+      <p class="when">Wednesday at eight, Friday at six, Sunday at eight<br>
+      Coffee Bureau on Jasper &middot; Dr. Wilbert McIntyre Park</p>
       <p><a class="inline" href="/runclub">Where and why →</a></p>
-      <p>In the meantime there are two things you can do without an account.
-      <a class="inline" href="/runaway#answer">Answer the other question →</a><br>
-      <a class="inline" href="/magazine#send">Send something for the first magazine →</a></p>
+
+      <p><strong>You can still answer one of them.</strong> Without an account and without a
+      name. It does not go in the feed — the byline there is a member number and that means
+      somebody turned up. It goes to an editor, and some of it goes in
+      <a class="inline" href="/magazine">the first magazine</a>.</p>
+      <div id="an-pick"></div>
+      <textarea id="an-body" maxlength="20000" placeholder="Answer it."></textarea>
+      <div class="count" id="an-count">0</div>
+      <button type="button" class="send" id="an-send">Send it</button>
+      <div class="msg" id="an-msg"></div>
+      <p style="margin-top: 16px;"><a class="inline" href="/runaway#answer">Or answer
+      &ldquo;why do you want to run away?&rdquo; where the answers are published &rarr;</a></p>
     </div>
 
     <form id="gg-form" hidden>
@@ -272,6 +281,56 @@
     'use strict';
     wireGurgle();
     renderGurgleFeed('gg-feed');
+
+    // The open box, for somebody who has not turned up yet. It is here
+    // rather than only on /magazine because this is where the questions
+    // are, and a door nobody can find is not a door. Nothing it takes
+    // ever reaches the feed — see 0033.
+    (() => {
+      const pick = document.getElementById('an-pick');
+      if (!pick) return;
+      const chosen = window.bfPromptPicker(pick);
+      const body = document.getElementById('an-body');
+      const count = document.getElementById('an-count');
+      const send = document.getElementById('an-send');
+      const msg = document.getElementById('an-msg');
+      const MIN = 40;
+
+      body.addEventListener('input', () => {
+        const n = body.value.trim().length;
+        count.textContent = n === 0 ? '0'
+          : n < MIN ? n + ' — a piece needs ' + MIN
+          : String(n);
+      });
+
+      send.addEventListener('click', async () => {
+        const text = body.value.trim();
+        if (text.length < MIN) { msg.className = 'msg err'; msg.textContent = 'A little more than that.'; return; }
+        send.disabled = true;
+        msg.className = 'msg err';
+        msg.textContent = 'Sending…';
+        try {
+          const r = await fetch('/v1/magazine/submissions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body: text, prompt: chosen() }),
+          });
+          const raw = await r.text();
+          let parsed = null;
+          if (raw) { try { parsed = JSON.parse(raw); } catch { /* leave null */ } }
+          if (!r.ok) throw new Error((parsed && (parsed.message || parsed.error)) || 'http ' + r.status);
+          body.value = '';
+          count.textContent = '0';
+          msg.className = 'msg ok';
+          msg.textContent = 'Sent. One person will read it.';
+        } catch (e) {
+          msg.className = 'msg err';
+          msg.textContent = e.message || 'It did not send.';
+        } finally {
+          send.disabled = false;
+        }
+      });
+    })();
     renderMembership('gg-standing');
 
     // The tabs are for everybody. A stranger gets Calendar and Feed —
