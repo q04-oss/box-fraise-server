@@ -188,6 +188,35 @@
       font-size: 11px; color: var(--muted); margin-top: 8px;
     }
     .wh-note { font-size: 13px; color: var(--ink); margin: 8px 0 0; min-height: 19px; }
+    .wh-enter { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .wh-enter[hidden] { display: none; }
+    .wh-enter label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+    }
+    .wh-enter input {
+      width: 62px; font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 15px; letter-spacing: 0.18em; text-transform: uppercase;
+      text-align: center; padding: 5px 6px;
+      border: 1px solid var(--rule); border-radius: 5px; background: #fff; color: var(--ink);
+    }
+    .wh-enter input:focus { outline: none; border-color: var(--accent); }
+    .wh-enter button {
+      font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+      padding: 6px 12px; border: 1px solid var(--ink); border-radius: 999px;
+      background: none; color: var(--ink); cursor: pointer;
+    }
+    .wh-enter button:hover { border-color: var(--accent); color: var(--accent); }
+    .wh-board { list-style: none; margin: 10px 0 0; padding: 0; font-size: 11px; }
+    .wh-board li {
+      display: flex; gap: 10px; padding: 3px 0;
+      border-bottom: 1px solid var(--rule); color: var(--muted);
+    }
+    .wh-board li:last-child { border-bottom: 0; }
+    .wh-board .pos { width: 18px; flex: 0 0 auto; }
+    .wh-board .who { flex: 1; color: var(--ink); letter-spacing: 0.12em; }
+    .wh-board .far { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+    .wh-board li.mine .who, .wh-board li.mine .far { color: var(--accent); }
     .wh-fine { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
     .wh-fine a { color: var(--ink); }
 
@@ -678,6 +707,12 @@
           <span id="wh-best">best 0 m</span>
         </div>
         <p class="wh-note" id="wh-msg">Space to jump. Hold it to jump further.</p>
+        <div class="wh-enter" id="wh-enter" hidden>
+          <label for="wh-initials" class="mono">Initials</label>
+          <input id="wh-initials" maxlength="3" autocomplete="off" spellcheck="false">
+          <button type="button" id="wh-post">Put it up</button>
+        </div>
+        <ol class="wh-board mono" id="wh-board"></ol>
         <p class="wh-fine">The street is organised around moving vehicles through it. That is
         the whole game, and it is also <a href="/runclub">the whole argument</a>.</p>
       </div>
@@ -1336,6 +1371,7 @@
         over = true;
         running = false;
         const m = Math.floor(dist);
+        lastRun = m;
         if (m > best) {
           best = m;
           try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* private mode */ }
@@ -1344,7 +1380,81 @@
           say('Stopped by a car at ' + m + ' m. Space to run again.');
         }
         paintHud();
+        offerBoard(m);
       }
+
+      // ── The board ────────────────────────────────────────────────
+      // Three letters, no account. See 0035 for why this one is not
+      // behind a membership like everything else here.
+      const enter = document.getElementById('wh-enter');
+      const initials = document.getElementById('wh-initials');
+      const boardEl = document.getElementById('wh-board');
+      let lastRun = 0, minToPost = 0, mineId = null;
+
+      function drawBoard(rows) {
+        boardEl.textContent = '';
+        rows.forEach((r, i) => {
+          const li = document.createElement('li');
+          if (r.id === mineId) li.className = 'mine';
+          const pos = document.createElement('span');
+          pos.className = 'pos';
+          pos.textContent = (i + 1) + '.';
+          const who = document.createElement('span');
+          who.className = 'who';
+          who.textContent = r.initials;
+          const far = document.createElement('span');
+          far.className = 'far';
+          far.textContent = r.metres + ' m';
+          li.appendChild(pos); li.appendChild(who); li.appendChild(far);
+          boardEl.appendChild(li);
+        });
+        // The tenth score is what a new run has to beat to be offered a
+        // place, once there are ten.
+        minToPost = rows.length >= 10 ? rows[rows.length - 1].metres : 0;
+      }
+
+      async function loadBoard() {
+        try {
+          const r = await fetch('/v1/whyte/scores', { cache: 'no-store' });
+          if (!r.ok) return;
+          drawBoard(await r.json());
+        } catch { /* a board that will not load is not worth a message */ }
+      }
+
+      function offerBoard(m) {
+        if (m > minToPost) {
+          enter.hidden = false;
+          initials.focus();
+        }
+      }
+
+      document.getElementById('wh-post').addEventListener('click', async () => {
+        const who = initials.value.trim().toUpperCase();
+        if (!/^[A-Z]{3}$/.test(who)) { say('Three letters, A to Z.'); initials.focus(); return; }
+        try {
+          const r = await fetch('/v1/whyte/scores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initials: who, metres: lastRun }),
+          });
+          const body = await r.json();
+          if (!r.ok) throw new Error(body.message || 'it did not save');
+          enter.hidden = true;
+          initials.value = '';
+          say(body.rank ? 'Number ' + body.rank + '. Space to run again.'
+                        : 'Up there somewhere. Space to run again.');
+          await loadBoard();
+        } catch (e) {
+          say(e.message);
+        }
+      });
+
+      // Enter posts, so a hand already on the keyboard does not have to
+      // find the mouse.
+      initials.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('wh-post').click(); }
+        e.stopPropagation();
+      });
 
       function draw() {
         ctx.clearRect(0, 0, W, H);
@@ -1430,6 +1540,8 @@
       window.addEventListener('keydown', e => {
         if (e.code !== 'Space' && e.code !== 'ArrowUp') return;
         if (!active()) return;
+        // Not while somebody is typing their initials.
+        if (document.activeElement === initials) return;
         e.preventDefault();
         jump();
       });
@@ -1441,6 +1553,7 @@
 
       reset();
       running = false;
+      loadBoard();
       requestAnimationFrame(frame);
     })();
 

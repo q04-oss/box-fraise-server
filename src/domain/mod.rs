@@ -10,4 +10,5 @@ pub mod messages;
 pub mod onboarding;
 pub mod pairings;
 pub mod runaway;
+pub mod whyte;
 pub mod submissions;
