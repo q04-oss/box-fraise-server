@@ -78,11 +78,11 @@
   // calendar. Mirrors /runclub, which is where the argument for the
   // times lives.
   const RUN_CLUB = {
-    where: 'Dr. Wilbert McIntyre Park, Old Strathcona',
-    // 5 = Friday, 0 = Sunday.
+    // 3 = Wednesday, 5 = Friday, 0 = Sunday.
     days: [
-      { day: 5, hour: 18, minute: 0, what: 'Run club — out of the week' },
-      { day: 0, hour: 8,  minute: 0, what: 'Run club — back into it' },
+      { day: 3, hour: 8,  minute: 0, what: 'Jasper run club — Coffee Bureau' },
+      { day: 5, hour: 18, minute: 0, what: 'Whyte run club — out of the week' },
+      { day: 0, hour: 8,  minute: 0, what: 'Whyte run club — back into it' },
     ],
   };
   const RUN_WEEKS = 3;
