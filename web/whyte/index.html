@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Whyte — a game about a street</title>
+  <meta name="description" content="An endless runner down Whyte Avenue where the obstacles are cars. Made by a run club that wants the street closed to them.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 560px; margin: 0 auto; padding: 40px 20px 72px; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 26px;
+    }
+    .backlink:hover { color: var(--ink); }
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 12px;
+    }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 8vw, 44px); letter-spacing: -0.03em;
+      line-height: 1.02; margin: 0 0 14px; text-wrap: balance;
+    }
+    .lede { font-size: 18px; line-height: 1.55; margin: 0 0 24px; color: var(--muted); }
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 16px; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .after { margin-top: 34px; border-top: 1px solid var(--rule); padding-top: 22px; }
+    .closer { color: var(--muted); font-size: 14px; margin-top: 28px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <p class="kicker">Whyte</p>
+    <h1>The obstacles are cars.</h1>
+    <p class="lede">That is not a theme. Whyte Avenue is the densest, most walked street in
+    Edmonton and it is still organised around moving vehicles through it.</p>
+
+    <div id="game"></div>
+
+    <div class="after">
+      <p><strong>Made by a run club that wants the street closed to them.</strong> Friday at
+      six and Sunday at eight, along Whyte, out to the railyard and back. You do not need to
+      be fast and you do not need to know anyone.
+      <a class="inline" href="/runclub">Where and why →</a></p>
+
+      <p>Box Fraise is <a class="inline" href="/">the next generation of Playboy magazine</a>,
+      and this is the smallest thing it makes.</p>
+    </div>
+
+    <p class="closer">Box Fraise × whyte · Edmonton</p>
+  </main>
+
+  <script src="/js/whyte.js"></script>
+  <script>renderWhyte('game');</script>
+</body>
+</html>
