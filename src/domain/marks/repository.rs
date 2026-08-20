@@ -38,7 +38,10 @@ pub async fn billboards(conn: &mut PgConnection) -> sqlx::Result<Vec<Billboard>>
 /// The editor's list, including unpublished ones.
 pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminMark>> {
     sqlx::query_as::<_, AdminMark>(
-        "SELECT m.id, m.label, m.act, m.target, m.published, m.in_game, b.name AS business_name
+        "SELECT m.id, m.label, m.act, m.target, m.published, m.in_game,
+                b.name AS business_name,
+                COALESCE((SELECT SUM(i.seen) FROM mark_impressions i
+                           WHERE i.mark_id = m.id), 0)::bigint AS impressions
            FROM marks m
            LEFT JOIN businesses b ON b.id = m.business_id
           ORDER BY m.sort_order ASC, m.created_at ASC",
@@ -78,9 +81,27 @@ pub async fn insert(
     .await
 }
 
-/// Taking a mark down is not deleting it: the poster is still on a wall
-/// somewhere, and an editor may want it back. Unpublishing stops the
-/// scanner offering it without losing what it was.
+/// Add to today's counter for a mark.
+///
+/// Through the SECURITY DEFINER function from 0037 rather than an
+/// upsert here. `ON CONFLICT DO UPDATE` has to see the conflicting row
+/// to add to it, and SELECT on this table is admin-only — a business's
+/// figures are not published. `bf_app` has no INSERT or UPDATE on it at
+/// all, which is tighter than a policy: it can add to a counter and
+/// cannot write an arbitrary row.
+pub async fn record_impression(
+    conn: &mut PgConnection,
+    mark_id: Uuid,
+    seen: i32,
+) -> sqlx::Result<()> {
+    sqlx::query("SELECT bf_record_impression($1, $2)")
+        .bind(mark_id)
+        .bind(seen)
+        .execute(conn)
+        .await?;
+    Ok(())
+}
+
 pub async fn set_published(
     conn: &mut PgConnection,
     id: Uuid,

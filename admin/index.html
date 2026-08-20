@@ -906,8 +906,9 @@
       name.textContent = m.label + (m.business_name ? ' · ' + m.business_name : '');
       const what = document.createElement('span');
       what.className = 'who';
+      // The figure a business is quoted, next to what they bought.
       what.textContent = (m.act === 'go' ? (m.target || '') : 'taste line') +
-        (m.in_game ? ' · billboard' : '');
+        (m.in_game ? ' · billboard · ' + m.impressions + ' seen' : '');
       const st = document.createElement('span');
       st.className = 'st';
       st.textContent = m.published ? 'live' : 'off';

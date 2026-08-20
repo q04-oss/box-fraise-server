@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use super::{
     repository,
-    types::{AdminMark, Billboard, MarkUpload, PublicMark, RegisteredMark},
+    types::{AdminMark, Billboard, ImpressionBatch, MarkUpload, PublicMark, RegisteredMark},
 };
 use crate::{
     audit,
@@ -42,6 +42,37 @@ pub async fn billboards(pool: &Pool) -> AppResult<Vec<Billboard>> {
 pub async fn image(pool: &Pool, id: Uuid) -> AppResult<(Vec<u8>, String)> {
     let mut conn = pool.acquire().await?;
     repository::image(&mut conn, id).await?.ok_or(AppError::NotFound)
+}
+
+/// The most one run can report for a single billboard. A run lasting
+/// long enough to pass more than this is not a run, it is a script.
+const MAX_PER_MARK: i32 = 200;
+/// And the most marks one report can mention.
+const MAX_MARKS: usize = 20;
+
+/// Record what the game says was run past.
+///
+/// Unverifiable, like the leaderboard, and for the same reason: the
+/// browser is the only thing that knows. The cap is for garbage. The
+/// real defence is that a number a business does not believe is worth
+/// nothing to sell.
+pub async fn record_impressions(pool: &Pool, batch: ImpressionBatch) -> AppResult<()> {
+    if batch.seen.len() > MAX_MARKS {
+        return Err(AppError::bad_request("too many at once"));
+    }
+    let mut conn = pool.acquire().await?;
+    for item in batch.seen {
+        if item.seen <= 0 || item.seen > MAX_PER_MARK {
+            continue;
+        }
+        // A mark that has been deleted takes its counters with it — the
+        // foreign key means this simply fails, and one bad id should not
+        // lose the rest of the batch.
+        repository::record_impression(&mut conn, item.id, item.seen)
+            .await
+            .ok();
+    }
+    Ok(())
 }
 
 pub async fn list_all(pool: &Pool) -> AppResult<Vec<AdminMark>> {

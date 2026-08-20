@@ -20,6 +20,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/marks", get(published))
         .route("/marks/billboards", get(billboards))
+        .route("/marks/impressions", post(impressions))
         .route("/marks/{id}/image", get(image))
         .route("/admin/marks", get(admin_list))
         .route(
@@ -51,6 +52,16 @@ async fn image(State(state): State<AppState>, Path(id): Path<Uuid>) -> AppResult
         .header(header::CACHE_CONTROL, "public, max-age=86400")
         .body(Body::from(bytes))
         .expect("image response"))
+}
+
+/// What the game reports after a run. Public: the page has no session,
+/// and the row is a mark, a date and a number.
+async fn impressions(
+    State(state): State<AppState>,
+    Json(batch): Json<ImpressionBatch>,
+) -> AppResult<StatusCode> {
+    service::record_impressions(&state.pool, batch).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn admin_list(

@@ -36,11 +36,28 @@ pub struct RegisteredMark {
 pub struct AdminMark {
     pub id: Uuid,
     pub label: String,
+    /// Times its billboard has been run past, all time. The figure a
+    /// business is quoted.
+    pub impressions: i64,
     pub act: String,
     pub target: Option<String>,
     pub published: bool,
     pub in_game: bool,
     pub business_name: Option<String>,
+}
+
+/// What the game reports after a run: a mark and how many times its
+/// billboard scrolled past. Batched, so a run is one request rather
+/// than one per billboard.
+#[derive(Deserialize)]
+pub struct ImpressionBatch {
+    pub seen: Vec<Impression>,
+}
+
+#[derive(Deserialize)]
+pub struct Impression {
+    pub id: Uuid,
+    pub seen: i32,
 }
 
 /// A billboard in the game. No act and no target: it is scenery a

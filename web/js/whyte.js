@@ -180,6 +180,10 @@
     // project argues against everywhere else.
     const ADS_KEY = 'bf_whyte_ads';
     let adsOn = null, stock = [], boards = [];
+    // Counted when a billboard leaves the screen, so it is a thing that
+    // was actually run past rather than a thing that was queued. Sent
+    // once at the end of a run: one request, not one per hoarding.
+    let seen = new Map();
 
     function readAds() {
       try { return localStorage.getItem(ADS_KEY); } catch { return null; }
@@ -205,7 +209,7 @@
         (await r.json()).forEach(b => {
           const img = new Image();
           img.src = '/v1/marks/' + b.id + '/image';
-          stock.push({ img, label: b.label });
+          stock.push({ id: b.id, img, label: b.label });
         });
       } catch { /* a street with no billboards is the good outcome anyway */ }
     }
@@ -261,7 +265,11 @@
           boards.push({ ad: stock[Math.floor(Math.random() * stock.length)], x: W + 40 });
         }
         boards.forEach(b => { b.x -= speed * dt * 0.45; });
-        boards = boards.filter(b => b.x > -90);
+        boards = boards.filter(b => {
+          if (b.x > -90) return true;
+          seen.set(b.ad.id, (seen.get(b.ad.id) || 0) + 1);
+          return false;
+        });
       }
       cars.forEach(c => { c.x -= speed * dt; });
       cars = cars.filter(c => c.x + c.w > -10);
@@ -287,6 +295,22 @@
       }
       paintHud();
       offerBoard(m);
+      reportSeen();
+    }
+
+    /// What was run past, once, at the end. Fire and forget: a figure
+    /// that does not arrive is worth less than a run interrupted to
+    /// send it.
+    function reportSeen() {
+      if (!seen.size) return;
+      const payload = { seen: [...seen].map(([id, n]) => ({ id, seen: n })) };
+      seen = new Map();
+      fetch('/v1/marks/impressions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => { /* nothing to say to a player about this */ });
     }
 
     function draw() {
