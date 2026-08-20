@@ -1165,11 +1165,14 @@
     // Channels sit behind a tab in the same window rather than in an
     // app of their own, because that is how they sit on /gurgle, and
     // the point of this window is that it is the real thing.
+    // Same as /gurgle: the calendar is shown to everybody because it is
+    // the advertisement. Channels is the only tab with nothing behind it
+    // for a stranger.
     if (!bfSession.signedIn()) {
-      document.getElementById('tab-calendar').hidden = true;
-      document.getElementById('tab-feed').hidden = false;
+      document.getElementById('tab-channels-btn').remove();
+      document.getElementById('tab-channels').remove();
     }
-    if (bfSession.signedIn()) {
+    {
       document.getElementById('gg-tabs').hidden = false;
       const panes = {
         'tab-calendar-btn': 'tab-calendar',
@@ -1179,11 +1182,16 @@
       renderCalendar('gg-calendar');
       let built = false;
       Object.keys(panes).forEach(btnId => {
-        document.getElementById(btnId).addEventListener('click', () => {
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+        btn.addEventListener('click', () => {
           Object.entries(panes).forEach(([b, p]) => {
             const on = b === btnId;
-            document.getElementById(b).setAttribute('aria-selected', String(on));
-            document.getElementById(p).hidden = !on;
+            const bEl = document.getElementById(b);
+            const pEl = document.getElementById(p);
+            if (!bEl || !pEl) return;
+            bEl.setAttribute('aria-selected', String(on));
+            pEl.hidden = !on;
           });
           // Built on first open: it asks the server for pairings and
           // generates a keypair, and most visits here are somebody

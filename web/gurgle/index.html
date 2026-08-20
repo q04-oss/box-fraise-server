@@ -269,14 +269,15 @@
     renderGurgleFeed('gg-feed');
     renderMembership('gg-standing');
 
-    // A member opens this page for the calendar, so that is the tab
-    // that is already open. A stranger has no calendar and no channels
-    // — for them the page is the magazine, which anyone may read, so
-    // the feed is what they land on and the tabs never appear.
-    if (!bfSession.signedIn()) {
-      document.getElementById('tab-calendar').hidden = true;
-      document.getElementById('tab-feed').hidden = false;
-      return;
+    // The tabs are for everybody. A stranger gets Calendar and Feed —
+    // the calendar because it is the reason to want an account and an
+    // advertisement nobody can look at is not one, the feed because
+    // anyone may read the magazine. Channels is the one thing with
+    // genuinely nothing behind it for them, so it goes.
+    const member = bfSession.signedIn();
+    if (!member) {
+      document.getElementById('tab-channels-btn').remove();
+      document.getElementById('tab-channels').remove();
     }
 
     const tabs = document.getElementById('gg-tabs');
@@ -296,11 +297,16 @@
     let built = false;
 
     Object.keys(panes).forEach(btnId => {
-      document.getElementById(btnId).addEventListener('click', () => {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', () => {
         Object.entries(panes).forEach(([b, p]) => {
           const on = b === btnId;
-          document.getElementById(b).setAttribute('aria-selected', String(on));
-          document.getElementById(p).hidden = !on;
+          const bEl = document.getElementById(b);
+          const pEl = document.getElementById(p);
+          if (!bEl || !pEl) return;
+          bEl.setAttribute('aria-selected', String(on));
+          pEl.hidden = !on;
         });
         if (btnId === 'tab-channels-btn' && !built) {
           built = true;
@@ -314,18 +320,17 @@
 
     // A tab worth having is a tab worth linking to — /gurgle#channels
     // opens straight onto it.
-    if (location.hash === '#channels') {
-      document.getElementById('tab-channels-btn').click();
-    }
+    const chTab = document.getElementById('tab-channels-btn');
+    if (location.hash === '#channels' && chTab) chTab.click();
 
     // A pairing that is waiting on an answer is time-limited, so it is
     // worth saying before somebody has to go looking for it.
-    fetch('/v1/pairings').then(r => r.ok ? r.json() : []).then(rows => {
-      const waiting = rows.filter(p => p.status === 'deciding' && !p.my_decision).length;
-      if (waiting) {
-        document.getElementById('tab-channels-btn').textContent = 'Channels · ' + waiting;
-      }
-    }).catch(() => { /* the tab still works */ });
+    if (member) {
+      fetch('/v1/pairings').then(r => r.ok ? r.json() : []).then(rows => {
+        const waiting = rows.filter(p => p.status === 'deciding' && !p.my_decision).length;
+        if (waiting && chTab) chTab.textContent = 'Channels · ' + waiting;
+      }).catch(() => { /* the tab still works */ });
+    }
   })();
   </script>
 </body>

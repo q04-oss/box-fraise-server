@@ -50,6 +50,9 @@
 }
 .bf-cal .cal-head-when { font-size: 18px; margin: 0 0 3px; }
 .bf-cal .cal-head-where { font-size: 14px; color: var(--cal-muted); margin: 0; }
+.bf-cal .cal-link { color: inherit; text-decoration: underline;
+  text-underline-offset: 3px; text-decoration-color: var(--cal-rule); }
+.bf-cal .cal-link:hover { text-decoration-color: var(--cal-accent); }
 .bf-cal .cal-note { font-size: 13px; line-height: 1.6; color: var(--cal-muted); margin-top: 26px; }
 `;
 
@@ -121,19 +124,29 @@
 
   window.renderCalendar = async function renderCalendar(rootId) {
     const root = document.getElementById(rootId);
-    if (!root || !window.bfSession || !bfSession.signedIn()) return;
+    if (!root) return;
     injectStyles();
     root.classList.add('bf-cal');
-    root.textContent = 'Loading…';
 
-    let entries;
-    try {
-      const r = await fetch('/v1/members/calendar');
-      if (!r.ok) throw new Error('http ' + r.status);
-      entries = await r.json();
-    } catch {
-      root.textContent = 'The calendar could not be reached.';
-      return;
+    // A stranger sees the calendar too. It is the reason to want an
+    // account, and an advertisement nobody can look at is not one.
+    //
+    // What they get is true rather than staged: the run club actually
+    // does meet at those times, so those rows are real. No invented
+    // shifts — the half they do not have is named underneath instead.
+    const member = !!(window.bfSession && bfSession.signedIn());
+
+    let entries = [];
+    if (member) {
+      root.textContent = 'Loading…';
+      try {
+        const r = await fetch('/v1/members/calendar');
+        if (!r.ok) throw new Error('http ' + r.status);
+        entries = await r.json();
+      } catch {
+        root.textContent = 'The calendar could not be reached.';
+        return;
+      }
     }
 
     // The runs the club holds every week, folded in with whatever the
@@ -178,8 +191,24 @@
       root.appendChild(row);
     });
 
-    root.appendChild(el('p', 'cal-note',
-      'A published shift is not a suggestion. It can be cancelled — and you will see that ' +
-      'it was — but it cannot be quietly moved to a different time.'));
+    if (member) {
+      root.appendChild(el('p', 'cal-note',
+        'A published shift is not a suggestion. It can be cancelled — and you will see that ' +
+        'it was — but it cannot be quietly moved to a different time.'));
+    } else {
+      // The pitch, and it is the honest one: this is the calendar, and
+      // the empty half of it is the half a membership fills.
+      const note = el('p', 'cal-note');
+      note.appendChild(document.createTextNode(
+        'Your shifts would sit between these, published by the business you work for ' +
+        'rather than sent to you at eleven at night — and once published they cannot be ' +
+        'quietly moved. You get an account by turning up to a run. '));
+      const a = document.createElement('a');
+      a.href = '/runclub';
+      a.className = 'cal-link';
+      a.textContent = 'Friday at six, Sunday at eight →';
+      note.appendChild(a);
+      root.appendChild(note);
+    }
   };
 })();
