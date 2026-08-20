@@ -207,18 +207,29 @@
   (() => {
     'use strict';
 
-    // The marks this page knows how to recognise.
-    const MARKS = [
-      { id: 'ad',        src: '/ads/run-club.jpg',           act: 'go', to: '/run' },
-      // Two references for one sticker, on purpose. The guide box is
-      // portrait — it was drawn for the advertisement — and a landscape
-      // sticker can be framed two ways inside it: fitted by width with
-      // paper above and below, or pushed in close so the sides run off
-      // the edge. Those hash very differently, so both are listed and
-      // either one is a match.
-      { id: 'strawberry',       src: '/marks/strawberry.jpg',       act: 'line' },
-      { id: 'strawberry-tight', src: '/marks/strawberry-tight.jpg', act: 'line' },
-    ];
+    // The marks this page recognises come from the server.
+    //
+    // They used to be a hardcoded array here, which meant selling a
+    // business a scannable poster required editing this file and
+    // redeploying it. See 0031.
+    //
+    // One picture is sometimes registered twice on purpose. The guide
+    // box is portrait — it was drawn for the advertisement — and a
+    // landscape sticker can be framed two ways inside it: fitted by
+    // width with paper above and below, or pushed in close so the sides
+    // run off the edge. Those hash very differently, so both are
+    // registered and either one is a match.
+    async function loadMarks() {
+      const r = await fetch('/v1/marks', { cache: 'no-store' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      return (await r.json()).map(m => ({
+        id: m.id,
+        label: m.label,
+        src: '/v1/marks/' + m.id + '/image',
+        act: m.act,
+        to: m.target,
+      }));
+    }
     // Reference artwork is small on purpose: it is only ever used to
     // compute a fingerprint, never displayed.
     //
@@ -278,7 +289,16 @@
       // that one mark rather than the whole page — the strawberry
       // artwork is supplied separately, and the advertisement has to
       // keep working whether or not it is there yet.
-      marks = (await Promise.all(MARKS.map(async m => {
+      let registered = [];
+      try {
+        registered = await loadMarks();
+      } catch (e) {
+        // A scanner with no list is a scanner with nothing to match, and
+        // the message below already says so.
+        console.warn('could not load the marks', e);
+      }
+
+      marks = (await Promise.all(registered.map(async m => {
         try {
           return Object.assign({}, m, { hash: await hashImage(m.src) });
         } catch (e) {

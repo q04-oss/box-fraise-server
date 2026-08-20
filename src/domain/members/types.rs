@@ -77,3 +77,23 @@ pub struct MembershipStatus {
     pub last_seen: Option<DateTime<Utc>>,
     pub current_until: Option<DateTime<Utc>>,
 }
+
+/// The pitch, in numbers. Read by an admin standing in a cafe.
+#[derive(Serialize)]
+pub struct Reach {
+    /// Distinct people who turned up in the last 30 days. This is the
+    /// figure an advertisement reaches — not attendances, because
+    /// somebody who came eight times is one person.
+    pub people_30d: i64,
+    pub people_90d: i64,
+    /// Everybody who has ever been given a number.
+    pub members_all_time: i64,
+    pub runs: Vec<RunCount>,
+}
+
+#[derive(Serialize)]
+pub struct RunCount {
+    pub name: String,
+    pub starts_at: DateTime<Utc>,
+    pub turned_up: i64,
+}

@@ -60,6 +60,12 @@
       border: 1px solid #eee; border-radius: 4px; margin-bottom: 10px;
     }
     .sub .acts { display: flex; gap: 8px; }
+    /* One row per run in the count. */
+    .tl { display: flex; align-items: baseline; gap: 10px;
+          border-bottom: 1px solid #eee; padding: 9px 0; }
+    .tl .txt { flex: 1; font-size: 14px; }
+    .tl .who { color: #666; font-size: 13px; flex: 0 0 auto; min-width: 82px; }
+    .tl .st { font-size: 15px; font-weight: 600; flex: 0 0 auto; }
     /* The membership QR. White quiet zone around it or phones
        struggle to lock on. */
     #mb-qr { background: #fff; padding: 12px; display: inline-block; }
@@ -142,6 +148,18 @@
       </fieldset>
 
       <fieldset>
+        <legend>The count</legend>
+        <div class="muted">What a business is buying. People, not attendances — somebody who
+        came to eight runs is one person an advertisement reaches.</div>
+        <div class="row" style="margin-top: 14px; align-items: flex-start;">
+          <div><div class="count" id="rx-30">—</div><div class="muted">turned up, last 30 days</div></div>
+          <div><div class="count" id="rx-90">—</div><div class="muted">last 90 days</div></div>
+          <div><div class="count" id="rx-all">—</div><div class="muted">members, all time</div></div>
+        </div>
+        <div id="rx-runs" style="margin-top: 14px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Who turned up</legend>
         <div class="muted">A membership lasts a month. Ask for their number and type it
         in — nothing to scan, nothing that works from a sofa. Marking somebody twice at
@@ -203,6 +221,35 @@
             <button id="rc-done" class="secondary">Done</button>
           </div>
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Advertisements</legend>
+        <div class="muted">A picture in the street and what happens when a camera is pointed
+        at it. Registering one here puts it live — no redeploy. The artwork is only ever
+        fingerprinted, never shown, so a small file is fine.</div>
+        <label for="mk-label">Name</label>
+        <input id="mk-label" placeholder="Ferngrove Bakery, spring poster">
+        <label for="mk-image">Artwork</label>
+        <input id="mk-image" type="file" accept="image/*">
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label for="mk-act">What it does</label>
+            <select id="mk-act">
+              <option value="go">Open a page</option>
+              <option value="line">Return a taste line</option>
+            </select>
+          </div>
+          <div>
+            <label for="mk-target">Page</label>
+            <input id="mk-target" placeholder="/runclub">
+          </div>
+        </div>
+        <label for="mk-biz">Business (optional)</label>
+        <select id="mk-biz"></select>
+        <div style="margin-top: 12px;"><button id="mk-add">Register</button></div>
+        <div id="mk-msg" class="muted" style="margin-top: 8px;"></div>
+        <div id="mk-list" style="margin-top: 16px;"></div>
       </fieldset>
 
       <fieldset>
@@ -272,7 +319,14 @@
 
   // ── HTTP helper ──────────────────────────────────────────────────
   async function api(path, opts = {}) {
-    const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    // FormData sets its own Content-Type, including the multipart
+    // boundary. Forcing application/json over it makes the body
+    // unparseable at the other end.
+    const isForm = opts.body instanceof FormData;
+    const headers = Object.assign(
+      isForm ? {} : { 'Content-Type': 'application/json' },
+      opts.headers || {},
+    );
     if (token) headers['Authorization'] = 'Bearer ' + token;
     const r = await fetch('/v1' + path, Object.assign({}, opts, { headers }));
     if (r.status === 401) {
@@ -692,16 +746,132 @@
     document.getElementById('rc-msg').textContent = '';
   });
 
+  // ── Advertisements ───────────────────────────────────────────────
+  // The scanner reads this list. Registering a mark is how a sold
+  // advertisement goes live; before 0031 it meant editing scan's HTML
+  // and redeploying, which is fine for the first one and not a product.
+  async function loadMarks() {
+    const holder = document.getElementById('mk-list');
+    let rows;
+    try { rows = await api('/admin/marks'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    if (!rows.length) { holder.className = 'muted'; holder.textContent = 'Nothing registered.'; return; }
+    holder.className = '';
+    rows.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = m.label + (m.business_name ? ' · ' + m.business_name : '');
+      const what = document.createElement('span');
+      what.className = 'who';
+      what.textContent = m.act === 'go' ? (m.target || '') : 'taste line';
+      const st = document.createElement('span');
+      st.className = 'st';
+      st.textContent = m.published ? 'live' : 'off';
+      const toggle = document.createElement('button');
+      toggle.className = 'secondary';
+      toggle.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+      toggle.textContent = m.published ? 'Take down' : 'Put up';
+      toggle.addEventListener('click', async () => {
+        toggle.disabled = true;
+        try {
+          await api('/admin/marks/' + m.id + (m.published ? '/withdraw' : '/publish'),
+                    { method: 'POST' });
+          await loadMarks();
+        } catch (e) {
+          document.getElementById('mk-msg').textContent = e.message;
+          toggle.disabled = false;
+        }
+      });
+      row.appendChild(name);
+      row.appendChild(what);
+      row.appendChild(st);
+      row.appendChild(toggle);
+      holder.appendChild(row);
+    });
+  }
+
+  document.getElementById('mk-add').addEventListener('click', async () => {
+    const msg = document.getElementById('mk-msg');
+    const file = document.getElementById('mk-image').files[0];
+    const label = document.getElementById('mk-label').value.trim();
+    const act = document.getElementById('mk-act').value;
+    const target = document.getElementById('mk-target').value.trim();
+    const biz = document.getElementById('mk-biz').value;
+    if (!label || !file) { msg.textContent = 'A name and the artwork.'; return; }
+    if (act === 'go' && !target) { msg.textContent = 'A page for it to open.'; return; }
+    msg.textContent = 'Registering…';
+    try {
+      const fd = new FormData();
+      fd.append('label', label);
+      fd.append('act', act);
+      if (target) fd.append('target', target);
+      if (biz) fd.append('business_id', biz);
+      fd.append('image', file, file.name);
+      const r = await api('/admin/marks', { method: 'POST', body: fd });
+      msg.textContent = r.label + ' is live. Point the scanner at it to check.';
+      document.getElementById('mk-label').value = '';
+      document.getElementById('mk-image').value = '';
+      await loadMarks();
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  // ── The count ────────────────────────────────────────────────────
+  // The number quoted to a business, read from the database rather than
+  // from memory. Distinct people, because that is what an advertisement
+  // reaches — eight visits by one person is one person.
+  async function loadReach() {
+    let r;
+    try { r = await api('/admin/reach'); } catch { return; }
+    document.getElementById('rx-30').textContent = r.people_30d;
+    document.getElementById('rx-90').textContent = r.people_90d;
+    document.getElementById('rx-all').textContent = r.members_all_time;
+
+    const holder = document.getElementById('rx-runs');
+    holder.textContent = '';
+    if (!r.runs.length) {
+      holder.className = 'muted';
+      holder.textContent = 'No run has had anybody marked present yet.';
+      return;
+    }
+    r.runs.forEach(run => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const when = document.createElement('span');
+      when.className = 'who';
+      when.textContent = new Date(run.starts_at).toLocaleDateString();
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = run.name;
+      const n = document.createElement('span');
+      n.className = 'st';
+      n.textContent = run.turned_up;
+      row.appendChild(when);
+      row.appendChild(name);
+      row.appendChild(n);
+      holder.appendChild(row);
+    });
+  }
+
   // ── The calendar ─────────────────────────────────────────────────
   // Businesses have no login, so an admin enters what a business asked
   // for. A published shift is binding: cancellable, never editable.
   async function loadBusinesses() {
     let rows;
     try { rows = await api('/businesses'); } catch { return; }
-    ['em-biz', 'sh-biz'].forEach(id => {
+    ['em-biz', 'sh-biz', 'mk-biz'].forEach(id => {
       const sel = document.getElementById(id);
       if (!sel) return;
       sel.textContent = '';
+      if (id === 'mk-biz') {
+        const none = document.createElement('option');
+        none.value = '';
+        none.textContent = String.fromCharCode(8212) + ' none ' + String.fromCharCode(8212);
+        sel.appendChild(none);
+      }
       rows.forEach(b => {
         const opt = document.createElement('option');
         opt.value = b.id;

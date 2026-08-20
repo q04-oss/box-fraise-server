@@ -20,7 +20,7 @@ use super::{
     repository,
     types::{
         AttendanceRecorded, CreateMemberRequest, CreatedMember, MembershipStatus,
-        RecordAttendanceRequest, ReissueRequest, ReissuedCredential,
+        RecordAttendanceRequest, Reach, ReissueRequest, ReissuedCredential, RunCount,
     },
 };
 use crate::{
@@ -214,5 +214,28 @@ pub async fn standing(pool: &Pool, user_id: Uuid) -> AppResult<MembershipStatus>
         current,
         last_seen,
         current_until: last_seen.map(|t| t + chrono::Duration::days(MEMBERSHIP_DAYS)),
+    })
+}
+
+/// How many people turn up. Admin-only, because it is the number a
+/// business is quoted and it should come from the database rather than
+/// from memory.
+pub async fn reach(pool: &Pool) -> AppResult<Reach> {
+    let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let (people_30d, people_90d, members_all_time) = repository::reach(tx.conn()).await?;
+    let runs = repository::recent_runs(tx.conn()).await?;
+    tx.commit().await?;
+    Ok(Reach {
+        people_30d,
+        people_90d,
+        members_all_time,
+        runs: runs
+            .into_iter()
+            .map(|(name, starts_at, turned_up)| RunCount {
+                name,
+                starts_at,
+                turned_up,
+            })
+            .collect(),
     })
 }

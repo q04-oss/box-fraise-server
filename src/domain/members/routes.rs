@@ -21,6 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/admin/members", post(create))
         .route("/admin/members/credential", post(reissue))
         .route("/admin/attendances", post(attend))
+        .route("/admin/reach", get(reach))
         .route("/members/me", get(me))
         // One path, two verbs: taking a credential into this browser
         // and giving it up again.
@@ -72,6 +73,14 @@ async fn reissue(
     Json(req): Json<ReissueRequest>,
 ) -> AppResult<Json<ReissuedCredential>> {
     Ok(Json(service::reissue(&state.pool, admin_id, req).await?))
+}
+
+/// The count a business is quoted. Admin-only.
+async fn reach(
+    AuthedAdmin(_): AuthedAdmin,
+    State(state): State<AppState>,
+) -> AppResult<Json<Reach>> {
+    Ok(Json(service::reach(&state.pool).await?))
 }
 
 /// A member's own standing — how long they may keep posting.

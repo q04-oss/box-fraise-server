@@ -126,3 +126,40 @@ pub async fn standing(
         .fetch_one(conn)
         .await
 }
+
+/// What a business is being sold: how many people turn up.
+///
+/// Distinct people rather than attendances — somebody who came to eight
+/// runs is one person an advertisement would reach, not eight. The
+/// per-run counts are the other half of the pitch, because "twenty a
+/// week, every week" is a different product from "eighty once".
+pub async fn reach(
+    conn: &mut PgConnection,
+) -> sqlx::Result<(i64, i64, i64)> {
+    sqlx::query_as(
+        "SELECT
+            (SELECT COUNT(DISTINCT user_id) FROM attendances
+              WHERE recorded_at >= now() - interval '30 days')::bigint,
+            (SELECT COUNT(DISTINCT user_id) FROM attendances
+              WHERE recorded_at >= now() - interval '90 days')::bigint,
+            (SELECT COUNT(*) FROM users WHERE member_no IS NOT NULL)::bigint",
+    )
+    .fetch_one(conn)
+    .await
+}
+
+/// The last few runs, newest first, with how many turned up to each.
+pub async fn recent_runs(
+    conn: &mut PgConnection,
+) -> sqlx::Result<Vec<(String, chrono::DateTime<chrono::Utc>, i64)>> {
+    sqlx::query_as(
+        "SELECT e.name, e.starts_at, COUNT(a.user_id)::bigint
+           FROM events e
+           JOIN attendances a ON a.event_id = e.id
+          GROUP BY e.id, e.name, e.starts_at
+          ORDER BY e.starts_at DESC
+          LIMIT 8",
+    )
+    .fetch_all(conn)
+    .await
+}

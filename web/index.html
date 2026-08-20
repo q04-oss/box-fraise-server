@@ -63,8 +63,10 @@
       transition: color 120ms ease;
     }
     .links a:hover { color: var(--ink); }
-    /* The scanner is the one thing in the nav that does something
-       rather than explains something, so it carries the accent. */
+    /* Two accents, for the two things that are not just pages. The
+       scanner does something rather than explains something; Run away
+       is what the rest of this is for. */
+    .links a.thesis { color: var(--accent); }
     .links a.scan { color: var(--accent); }
     .links a.scan:hover { color: var(--accent); opacity: 0.75; }
 
@@ -122,11 +124,12 @@
     <h1 class="wordmark"><a href="/">box fraise</a></h1>
     <nav class="links" aria-label="Elsewhere">
       <a href="/about">About</a>
+      <a class="thesis" href="/runaway">Run away</a>
       <a href="/mvp">MVP</a>
       <a href="/runclub">Run club</a>
       <a href="/clubhouse">Clubhouse</a>
-      <a href="/runaway">Run away</a>
       <a href="/gurgle">Gurgle</a>
+      <a href="/advertise">Advertise</a>
       <a href="/tip">Tip</a>
       <a href="/os">OS</a>
       <a class="scan" href="/scan">Scan</a>
@@ -143,7 +146,9 @@
 
       <p class="chain">The magazine asks. <a class="chainlink" href="/runclub">The run club</a>
       answers. <a class="chainlink" href="/clubhouse">The clubhouse</a> is a run monastery.
-      <strong>All of it makes the culture the business school needs.</strong></p>
+      All of it makes the culture the business school needs — and all of it exists so that one
+      question can be answered somewhere it gets heard:
+      <strong><a class="chainlink" href="/runaway">why do you want to run away?</a></strong></p>
     </div>
   </main>
 </body>

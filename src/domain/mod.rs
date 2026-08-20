@@ -3,6 +3,7 @@ pub mod calendar;
 pub mod businesses;
 pub mod consultations;
 pub mod events;
+pub mod marks;
 pub mod members;
 pub mod messages;
 pub mod onboarding;
