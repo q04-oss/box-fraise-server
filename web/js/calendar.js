@@ -80,9 +80,9 @@
   const RUN_CLUB = {
     // 3 = Wednesday, 5 = Friday, 0 = Sunday.
     days: [
-      { day: 3, hour: 8,  minute: 0, what: 'Jasper run club — Coffee Bureau' },
-      { day: 5, hour: 18, minute: 0, what: 'Whyte run club — out of the week' },
-      { day: 0, hour: 8,  minute: 0, what: 'Whyte run club — back into it' },
+      { day: 3, hour: 8,  minute: 0, what: 'Run club — Coffee Bureau, Jasper' },
+      { day: 5, hour: 18, minute: 0, what: 'Run club — the gazebo, out of the week' },
+      { day: 0, hour: 8,  minute: 0, what: 'Run club — the gazebo, back into it' },
     ],
   };
   const RUN_WEEKS = 3;
