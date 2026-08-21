@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Games — box fraise</title>
+  <meta name="description" content="Two games about the same street, played from opposite sides. Dodge the cars, or end them.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 620px; margin: 0 auto; padding: 48px 22px 80px; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 30px;
+    }
+    .backlink:hover { color: var(--ink); }
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 14px;
+    }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 7vw, 48px); letter-spacing: -0.03em;
+      line-height: 1.02; margin: 0 0 16px; text-wrap: balance;
+    }
+    .lede { font-size: 18px; line-height: 1.55; margin: 0 0 34px; color: var(--muted); }
+
+    .game {
+      display: block; text-decoration: none; color: inherit;
+      border-top: 1px solid var(--rule); padding: 22px 0;
+    }
+    .game:last-of-type { border-bottom: 1px solid var(--rule); }
+    .game .name {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: 30px; line-height: 1.05; margin: 0 0 6px;
+    }
+    .game:hover .name { color: var(--accent); }
+    .game .what { font-size: 17px; line-height: 1.55; margin: 0 0 8px; }
+    .game .how {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.13em;
+      color: var(--muted); margin: 0;
+    }
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 16px; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .after { margin-top: 30px; }
+    .closer { color: var(--muted); font-size: 14px; margin-top: 26px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <p class="kicker">Games</p>
+    <h1>Two games about the same street.</h1>
+    <p class="lede">Played from opposite sides of the same argument.</p>
+
+    <a class="game" href="/whyte">
+      <p class="name">Whyte</p>
+      <p class="what">You run down Whyte Avenue and the obstacles are cars. That is not a
+      theme — it is the street as it is now.</p>
+      <p class="how">One button · a leaderboard · watch other people play</p>
+    </a>
+
+    <a class="game" href="/stand">
+      <p class="name">Stand</p>
+      <p class="what">You send people into the road. Whoever survives becomes part of the
+      street, until there is no lane left to drive down.</p>
+      <p class="how">One button · the street as it could be</p>
+    </a>
+
+    <div class="after">
+      <p>Both were made by <a class="inline" href="/runclub">a run club</a> that meets three
+      times a week on two streets and wants both of them closed to cars.
+      <a class="inline" href="/os">There is a desktop with them on it</a>, too.</p>
+    </div>
+
+    <p class="closer">Box Fraise × games · Edmonton</p>
+  </main>
+</body>
+</html>
