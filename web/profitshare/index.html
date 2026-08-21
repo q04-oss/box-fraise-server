@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profit share — box fraise</title>
+  <meta name="description" content="The people the advertising is sold on get a share of the sale. Employment and profit share at Box Fraise — the argument, the arithmetic, and what has not been decided.">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+    main { flex: 1; max-width: 800px; margin: 0 auto; padding: 56px 24px 80px; width: 100%; }
+    .backlink {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 40px;
+      transition: color 120ms ease;
+    }
+    .backlink:hover { color: var(--ink); }
+    .kicker {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em;
+      color: var(--muted); margin: 0 0 16px;
+    }
+    h1 {
+      font-family: 'Newsreader', serif; font-style: italic; font-weight: 500;
+      font-size: clamp(34px, 6.4vw, 64px); letter-spacing: -0.03em;
+      line-height: 1.0; margin: 0 0 22px; text-wrap: balance;
+    }
+    .lede { font-size: 20px; line-height: 1.55; margin: 0 0 32px; max-width: 54ch; }
+    p { font-size: 18px; line-height: 1.65; margin: 0 0 18px; }
+    p strong { font-weight: 500; }
+    .three { list-style: none; margin: 0 0 26px; padding: 0; border-top: 2px solid var(--ink); }
+    .three li {
+      display: flex; gap: 16px; align-items: baseline;
+      border-bottom: 1px solid var(--rule); padding: 15px 0;
+      font-size: 17px; line-height: 1.5;
+    }
+    .three .n {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px; letter-spacing: 0.1em; color: var(--accent); flex: 0 0 auto;
+    }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease;
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+
+    /* The arithmetic. Set apart because it is the one part of this page
+       that is a number rather than an argument, and a number should be
+       checkable at a glance. */
+    .sum { border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); margin: 30px 0; }
+    .sum div {
+      display: flex; justify-content: space-between; gap: 20px;
+      padding: 13px 0; border-bottom: 1px solid var(--rule);
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 13px; letter-spacing: 0.02em;
+    }
+    .sum div:last-child { border-bottom: 0; }
+    .sum .v { color: var(--muted); text-align: right; }
+    .sum .total { color: var(--ink); }
+    .sum .total .v { color: var(--accent); }
+    .caption { font-size: 15px; color: var(--muted); margin: -12px 0 24px; }
+
+    .closer { color: var(--muted); font-size: 15px; margin-top: 32px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <p class="kicker">Profit share</p>
+
+    <h1>A cut of what your attention earned.</h1>
+    <p class="lede">The people an advertising machine is sold on should be on the revenue side
+    of the sale. None of it exists yet — the argument does, and so does the arithmetic.</p>
+
+    <p><strong>Playboy paid its readers in a magazine.</strong> That is the arrangement every
+    ad-funded business runs on, not an abuse of it: the attention of the people using the
+    thing is the inventory, it is sold, and none of the money comes back to them. Box Fraise
+    is <a class="inline" href="/">the next generation of that machine</a>, so it inherits the
+    arrangement unless something is done about it.</p>
+
+    <p><strong>Consent alone does not do it.</strong> A checkbox costs a platform nothing and
+    changes nothing about who the machine is for. Consent without a share is permission.
+    Consent with a share is a wage.</p>
+
+    <p><strong>Every fight about this has gone the other direction.</strong> The gig
+    economy's actual innovation was classifying labour downward — Uber spent years and a
+    fortune arguing its drivers were not workers, lost in the UK Supreme Court in 2021, and
+    then bought the loss back in California with a ballot initiative that traded employment
+    for a floor. Going the other way is only affordable at the beginning, at nothing, before
+    there is anyone whose permission is needed.</p>
+
+    <p><strong>So the share is currently zero, because the profit is.</strong> That is worth
+    writing down rather than leaving to be discovered. A share of nothing is nothing, and it
+    stays nothing until this project sells something.</p>
+
+    <p class="kicker" style="margin-top: 40px;">The run club is not a job</p>
+
+    <p>Nobody is paid to turn up at six in the morning, and nobody will be. That is what makes
+    turning up mean anything — it is evidence precisely because there is no money in it, and
+    <a class="inline" href="/clubhouse">nothing happens if you miss</a> cannot survive a wage.
+    Attach a rate to running and the rate becomes the reason, and the people it attracts leave
+    for a better one.</p>
+
+    <p>Employment attaches only to work that is unmistakably work.</p>
+
+    <ul class="three">
+      <li><span class="n">01</span><span><strong>Carrying a mark.</strong> A run across a
+      province with an advertiser's name on it. A sandwich board is a job and always has
+      been.</span></li>
+      <li><span class="n">02</span><span><strong>Writing an edition.</strong>
+      <a class="inline" href="/magazine">The magazine</a> is commissioned work the moment
+      anybody is paid for it.</span></li>
+      <li><span class="n">03</span><span><strong>Running a leg.</strong> A fixed distance on
+      a fixed day, filed at the end of it.</span></li>
+    </ul>
+
+    <p class="kicker" style="margin-top: 40px;">The first one that could be a job</p>
+
+    <p><strong>Somebody running across the country, paid out of the advertising.</strong> It
+    is a defined term with a start and an end, which is a shape employment law already
+    handles. St. John's to Victoria is roughly seven thousand two hundred kilometres; at
+    forty-two a day that is about a hundred and seventy of them.</p>
+
+    <div class="sum">
+      <div><span>Distance</span><span class="v">~7,200 km</span></div>
+      <div><span>At 42 km a day</span><span class="v">~170 days</span></div>
+      <div><span>Eight hours a day, Alberta minimum</span><span class="v">~$20,400</span></div>
+      <div><span>Overtime, vacation pay, CPP, EI, WCB</span><span class="v">the rest</span></div>
+      <div class="total"><span>Wages for one crossing</span><span class="v">~$30,000</span></div>
+    </div>
+    <p class="caption">An estimate, before a support vehicle, food or a bed. It is what an
+    advertiser would be asked to cover.</p>
+
+    <p><strong>Which is a legible thing to sell.</strong> Not reach on a website, which is
+    why <a class="inline" href="/">there is no page here selling that</a> — a route, a number
+    of days, and a person. One serious sponsor rather than a hundred small ones.</p>
+
+    <p><strong>And employment is the point rather than the paperwork.</strong> Somebody on the
+    shoulder of the Trans-Canada for six months gets hit eventually. An employee is covered by
+    workers' compensation with wage replacement; a contractor with a sponsorship is a person
+    with an injury and no income, and the project ends the same afternoon.</p>
+
+    <p class="kicker" style="margin-top: 40px;">The timesheet and the autobiography are the same rows</p>
+
+    <p>Employment needs a record of hours. A share needs a record of participation. The
+    calendar needs a record of where you were. Those are one file: every run, every leg, every
+    day on the road, written down once. What you are owed is decided by the same document
+    somebody would want to read.</p>
+
+    <p><strong>And it points at <a class="inline" href="/runaway">the month everyone takes at
+    once</a>.</strong> A platform whose members are users can only stop posting. A platform
+    whose members are workers with a share can strike, including against this one. That is a
+    demonstration rather than an essay, and it is the version worth building.</p>
+
+    <p class="kicker" style="margin-top: 40px;">What has not been decided</p>
+
+    <ul class="three">
+      <li><span class="n">01</span><span><strong>The form.</strong> Employment brings minimum
+      wage, payroll and the obligations that go with it. A co-operative — a real filing in
+      Alberta — distributes surplus to members as a patronage return based on how much they
+      took part, and owes no wages at all. The second is closer to what this is.</span></li>
+      <li><span class="n">02</span><span><strong>The share.</strong> What fraction, of which
+      revenue. A percentage published on a page is a different promise from
+      &ldquo;a share&rdquo;, and only the published one is worth making.</span></li>
+      <li><span class="n">03</span><span><strong>Who is in it.</strong> Everyone with a
+      number, or only the people who took part that period. Whether a member with two hundred
+      runs outranks a founder.</span></li>
+    </ul>
+
+    <p><strong>It would be paid in cash, at a run.</strong> That is already the only payment
+    mechanism this project has designed — <a class="inline" href="/cash">across a counter, in
+    person</a> — and the only one that reaches somebody without a bank account.</p>
+
+    <p class="closer">Box Fraise × profit share · Edmonton</p>
+  </main>
+</body>
+</html>
