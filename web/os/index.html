@@ -670,6 +670,16 @@
       </div>
     </section>
 
+    <!-- ── Stand ── -->
+    <section class="win" id="win-stand" style="left:352px; top:190px; width:452px;">
+      <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Stand</span></header>
+      <div class="body">
+        <div id="st-game"></div>
+        <p class="wh-fine">The other way round from Whyte: there you dodge the cars, here you
+        end them. <a href="/stand">Its own page →</a></p>
+      </div>
+    </section>
+
     <!-- ── Scan ── -->
     <section class="win" id="win-scan" style="left:660px; top:430px; width:320px;">
       <header class="titlebar"><button class="dot close" aria-label="Close"></button><span class="title">Scan</span></header>
@@ -821,6 +831,7 @@
   <script src="/js/chat.js"></script>
   <script src="/js/channels.js"></script>
   <script src="/js/whyte.js"></script>
+  <script src="/js/stand.js"></script>
   <script>
   (() => {
     'use strict';
@@ -901,6 +912,7 @@
       { id: 'win-inbox',    name: 'Inbox',       glyph: '✉' },
       { id: 'win-map',      name: 'Map',         glyph: '◎' },
       { id: 'win-whyte',    name: 'Whyte',       glyph: '⚑' },
+      { id: 'win-stand',    name: 'Stand',       glyph: '⌷' },
       { id: 'win-scan',     name: 'Scan',        glyph: '◉' },
       { id: 'win-run',      name: 'Run club',    glyph: '▲' },
       { id: 'win-tip',      name: 'Tip',         glyph: '★' },
@@ -1224,6 +1236,7 @@
     // The game lives in /js/whyte.js, shared with the page at /whyte.
     // Two copies of the physics and the leaderboard would drift.
     renderWhyte('wh-game');
+    renderStand('st-game');
 
     // ── Chrome ─────────────────────────────────────────────────────
     const clock = document.getElementById('clock');
