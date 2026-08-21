@@ -270,6 +270,41 @@
       </fieldset>
 
       <fieldset>
+        <legend>Offers</legend>
+        <div class="muted">What a member finds in their inbox. Nothing here charges anybody:
+        the business handed over cash at a run first, and this records what it bought. The
+        amount is per yes, and the count is how many yeses were paid for.</div>
+        <label for="of-mark">Advertisement</label>
+        <select id="of-mark"></select>
+        <label for="of-head">What it says</label>
+        <input id="of-head" placeholder="A loaf and a coffee, Saturday morning.">
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label for="of-amount">Paid per yes</label>
+            <input id="of-amount" type="number" min="0.25" step="0.25" value="3.00">
+          </div>
+          <div>
+            <label for="of-views">Yeses bought</label>
+            <input id="of-views" type="number" min="1" step="1" value="50">
+          </div>
+        </div>
+        <label style="margin-top: 10px;"><input id="of-explicit" type="checkbox">
+          The artwork is a nude</label>
+        <div style="margin-top: 12px;"><button id="of-add">Put it in the inbox</button></div>
+        <div id="of-msg" class="muted" style="margin-top: 8px;"></div>
+        <div id="of-list" style="margin-top: 16px;"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Money owed</legend>
+        <div class="muted">Members who said yes and have not been handed the money yet.
+        Pay in cash at a run, then mark it here — the same shape as attendance, a fact
+        recorded by somebody who was standing there. It cannot be undone.</div>
+        <div id="ow-list" style="margin-top: 14px;"></div>
+        <div id="ow-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Who works where</legend>
         <div class="muted">The link a shift needs, and the one the strike counts.
         Businesses cannot sign in yet, so it is entered here on their behalf.</div>
@@ -389,6 +424,8 @@
       loadBusinesses();
       loadReach();
       loadMarks();
+      loadOffers();
+      loadOwed();
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
@@ -962,6 +999,155 @@
       msg.textContent = e.message;
     }
   });
+
+  // ── Offers ───────────────────────────────────────────────────────
+  // The inbox, from the other side. An offer is created after a business
+  // has handed over cash at a run — amount × count is money that already
+  // changed hands. Nothing in this panel takes a payment.
+  const money = c => '$' + (c / 100).toFixed(2);
+
+  async function loadOffers() {
+    const sel = document.getElementById('of-mark');
+    const holder = document.getElementById('of-list');
+
+    // An offer hangs off a mark, so the artwork and the business come
+    // from a registration that already happened.
+    try {
+      const marks = await api('/admin/marks');
+      const chosen = sel.value;
+      sel.textContent = '';
+      marks.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id;
+        o.textContent = m.label + (m.business_name ? ' · ' + m.business_name : '');
+        sel.appendChild(o);
+      });
+      if (chosen) sel.value = chosen;
+    } catch { /* the list below is the useful half */ }
+
+    let rows;
+    try { rows = await api('/admin/offers'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    if (!rows.length) { holder.className = 'muted'; holder.textContent = 'No offer has been made.'; return; }
+    holder.className = '';
+    rows.forEach(o => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = (o.business_name || o.label) + ' · ' + o.headline;
+      const what = document.createElement('span');
+      what.className = 'who';
+      what.textContent = money(o.amount_cents) + ' × ' + o.views_taken + '/' + o.views_paid +
+        (o.explicit ? ' · nude' : '');
+      const st = document.createElement('span');
+      st.className = 'st';
+      st.textContent = o.status === 'open'
+        ? (o.views_taken >= o.views_paid ? 'spent' : 'live')
+        : 'closed';
+      row.appendChild(name);
+      row.appendChild(what);
+      row.appendChild(st);
+      if (o.status === 'open') {
+        const stop = document.createElement('button');
+        stop.className = 'secondary';
+        stop.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+        stop.textContent = 'Close';
+        stop.addEventListener('click', async () => {
+          stop.disabled = true;
+          try {
+            await api('/admin/offers/' + o.id + '/close', { method: 'POST' });
+            await loadOffers();
+          } catch (e) {
+            document.getElementById('of-msg').textContent = e.message;
+            stop.disabled = false;
+          }
+        });
+        row.appendChild(stop);
+      }
+      holder.appendChild(row);
+    });
+  }
+
+  document.getElementById('of-add').addEventListener('click', async () => {
+    const msg = document.getElementById('of-msg');
+    const mark_id = document.getElementById('of-mark').value;
+    const headline = document.getElementById('of-head').value.trim();
+    const dollars = parseFloat(document.getElementById('of-amount').value);
+    const views_paid = parseInt(document.getElementById('of-views').value, 10);
+    if (!mark_id) { msg.textContent = 'Register the advertisement first.'; return; }
+    if (!headline) { msg.textContent = 'A sentence for the inbox.'; return; }
+    if (!(dollars > 0) || !(views_paid > 0)) { msg.textContent = 'An amount and a count.'; return; }
+    msg.textContent = 'Putting it up…';
+    try {
+      await api('/admin/offers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mark_id,
+          headline,
+          amount_cents: Math.round(dollars * 100),
+          views_paid,
+          explicit: document.getElementById('of-explicit').checked,
+        }),
+      });
+      msg.textContent = 'It is in every current member’s inbox. Total owed if all of it is '
+        + 'taken: ' + money(Math.round(dollars * 100) * views_paid) + '.';
+      document.getElementById('of-head').value = '';
+      await loadOffers();
+    } catch (e) {
+      msg.textContent = e.message;
+    }
+  });
+
+  // ── Money owed ───────────────────────────────────────────────────
+  async function loadOwed() {
+    const holder = document.getElementById('ow-list');
+    let rows;
+    try { rows = await api('/admin/offers/owed'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    if (!rows.length) { holder.className = 'muted'; holder.textContent = 'Nobody is owed anything.'; return; }
+    holder.className = '';
+    rows.forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = 'no. ' + String(w.member_no).padStart(4, '0');
+      const what = document.createElement('span');
+      what.className = 'who';
+      what.textContent = w.views + (w.views === 1 ? ' yes' : ' yeses');
+      const st = document.createElement('span');
+      st.className = 'st';
+      st.textContent = money(w.owed_cents);
+      const pay = document.createElement('button');
+      pay.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+      pay.textContent = 'Handed over';
+      pay.addEventListener('click', async () => {
+        if (!confirm('Count out ' + money(w.owed_cents) + ' to no. ' +
+                     String(w.member_no).padStart(4, '0') + '? This cannot be undone.')) return;
+        pay.disabled = true;
+        try {
+          const r = await api('/admin/offers/pay', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ member_no: w.member_no }),
+          });
+          document.getElementById('ow-msg').textContent =
+            money(r.amount_cents) + ' marked paid to no. ' + String(r.member_no).padStart(4, '0') + '.';
+          await loadOwed();
+        } catch (e) {
+          document.getElementById('ow-msg').textContent = e.message;
+          pay.disabled = false;
+        }
+      });
+      row.appendChild(name);
+      row.appendChild(what);
+      row.appendChild(st);
+      row.appendChild(pay);
+      holder.appendChild(row);
+    });
+  }
 
   // ── The count ────────────────────────────────────────────────────
   // The number quoted to a business, read from the database rather than

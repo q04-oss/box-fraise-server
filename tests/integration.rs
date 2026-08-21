@@ -23,6 +23,7 @@ use box_fraise::{
             types::{PublishShiftRequest, RecordEmploymentRequest},
         },
         events::{service as events_service, types::CreateEventRequest},
+        inbox::{service as inbox_service, types::NewOffer},
         members::{
             service as members_service,
             types::{CreateMemberRequest, RecordAttendanceRequest, ReissueRequest},
@@ -2463,4 +2464,162 @@ async fn two_members_can_pair_without_device_keys() {
     )
     .await
     .unwrap();
+}
+
+// ── The inbox (0038) ────────────────────────────────────────────────
+// A business asks, a member decides, the member is paid. Three
+// properties are worth a test, because getting any of them wrong means
+// either somebody reading a receipt that is not theirs or an advertiser
+// paying for the same yes twice.
+
+/// A mark to hang an offer on. The bytes are never read by anything
+/// under test — the scanner fingerprints artwork in the browser — so a
+/// single byte satisfies the CHECK and keeps the fixture cheap.
+async fn seed_test_mark(pool: &PgPool, admin_id: Uuid) -> Uuid {
+    let mut tx = AdminRlsTransaction::begin(pool).await.unwrap();
+    let id: Uuid = sqlx::query_scalar(
+        "INSERT INTO marks (label, image_bytes, content_type, act, target,
+                            created_by_admin_id)
+         VALUES ('a test poster', decode('00', 'hex'), 'image/png', 'go', '/', $1)
+         RETURNING id",
+    )
+    .bind(admin_id)
+    .fetch_one(tx.conn())
+    .await
+    .unwrap();
+    tx.commit().await.unwrap();
+    id
+}
+
+/// A member who turned up, so `bf_member_is_current` is satisfied and
+/// they may take an offer at all.
+async fn seed_current_member(pool: &PgPool, admin_id: Uuid, event_id: Uuid) -> (Uuid, i32) {
+    let member = members_service::create(pool, admin_id, CreateMemberRequest { event_id })
+        .await
+        .unwrap();
+    members_service::record_attendance(
+        pool,
+        admin_id,
+        RecordAttendanceRequest {
+            event_id,
+            member_no: member.member_no,
+        },
+    )
+    .await
+    .ok();
+    (member.user_id, member.member_no)
+}
+
+async fn seed_offer(pool: &PgPool, admin_id: Uuid, mark_id: Uuid, views_paid: i32) -> Uuid {
+    inbox_service::create(
+        pool,
+        admin_id,
+        NewOffer {
+            mark_id,
+            headline: "A loaf and a coffee.".into(),
+            amount_cents: 300,
+            views_paid,
+            explicit: false,
+        },
+    )
+    .await
+    .unwrap()
+}
+
+/// The isolation property on `ad_views`: what somebody was paid is
+/// theirs. A receipt is the record of a decision one person made about
+/// their own attention, and nobody else's transaction may see it.
+#[tokio::test]
+async fn a_member_cannot_read_another_members_receipts() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let mark_id = seed_test_mark(&pool, admin_id).await;
+    let offer_id = seed_offer(&pool, admin_id, mark_id, 10).await;
+
+    let (a, _) = seed_current_member(&pool, admin_id, event_id).await;
+    let (b, _) = seed_current_member(&pool, admin_id, event_id).await;
+
+    inbox_service::accept(&pool, a, offer_id).await.unwrap();
+
+    // A sees their own money.
+    let mine = inbox_service::inbox(&pool, a).await.unwrap();
+    assert_eq!(mine.owed_cents, 300, "A cannot see what A is owed");
+
+    // B sees none of it — not the balance, and not the row.
+    let theirs = inbox_service::inbox(&pool, b).await.unwrap();
+    assert_eq!(theirs.owed_cents, 0, "B was credited with A's decision");
+
+    let mut tx = RlsTransaction::begin(&pool, b).await.unwrap();
+    let rows: Vec<(Uuid,)> = sqlx::query_as("SELECT id FROM ad_views WHERE user_id = $1")
+        .bind(a)
+        .fetch_all(tx.conn())
+        .await
+        .unwrap();
+    tx.commit().await.unwrap();
+    assert!(rows.is_empty(), "B read A's receipt under RLS");
+}
+
+/// An advertiser buys a number of yeses and pays for exactly that many.
+/// The same member saying yes twice must not cost them a second one, and
+/// neither must a third member arriving after the budget is spent.
+#[tokio::test]
+async fn an_offer_pays_once_per_member_and_stops_at_its_budget() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let event_id = seed_test_event(&pool, admin_id).await;
+    let mark_id = seed_test_mark(&pool, admin_id).await;
+    // One yes, bought and paid for.
+    let offer_id = seed_offer(&pool, admin_id, mark_id, 1).await;
+
+    let (a, _) = seed_current_member(&pool, admin_id, event_id).await;
+    let (b, _) = seed_current_member(&pool, admin_id, event_id).await;
+
+    inbox_service::accept(&pool, a, offer_id).await.unwrap();
+
+    // Twice by the same person is not two impressions.
+    assert!(
+        inbox_service::accept(&pool, a, offer_id).await.is_err(),
+        "the same member was paid twice for one offer"
+    );
+    assert_eq!(
+        inbox_service::inbox(&pool, a).await.unwrap().owed_cents,
+        300,
+        "a refused second yes still moved the balance"
+    );
+
+    // And the budget is a ceiling, not a suggestion.
+    assert!(
+        inbox_service::accept(&pool, b, offer_id).await.is_err(),
+        "an offer paid out past what the business bought"
+    );
+    assert_eq!(inbox_service::inbox(&pool, b).await.unwrap().owed_cents, 0);
+}
+
+/// Earning stops where posting stops. `bf_accept_offer` calls
+/// `bf_member_is_current`, so being paid by the platform is something a
+/// member does — and a membership is kept rather than got.
+///
+/// The subject here is somebody who registered a device and never turned
+/// up to a run, which is the state a lapsed member returns to. Ageing an
+/// existing attendance would be the more literal test and is not
+/// available: `bf_app` has no UPDATE on `attendances` on purpose, because
+/// when somebody was somewhere is a fact rather than a field.
+#[tokio::test]
+async fn somebody_who_never_turned_up_cannot_take_an_offer() {
+    let pool = test_pool().await;
+    let admin_id = seed_test_admin(&pool).await;
+    let mark_id = seed_test_mark(&pool, admin_id).await;
+    let offer_id = seed_offer(&pool, admin_id, mark_id, 10).await;
+
+    let (user_id, _) = register_with_keypair(&pool).await;
+
+    assert!(
+        inbox_service::accept(&pool, user_id, offer_id).await.is_err(),
+        "somebody who has never been marked present was being paid"
+    );
+    assert_eq!(
+        inbox_service::inbox(&pool, user_id).await.unwrap().owed_cents,
+        0
+    );
 }

@@ -185,7 +185,7 @@
     }
     .tabs button:hover { color: var(--ink); }
     .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-    #tab-channels { margin-top: 30px; }
+    #tab-channels, #tab-inbox { margin-top: 30px; }
   </style>
 </head>
 <body>
@@ -202,6 +202,7 @@
 
     <div class="tabs" id="gg-tabs" role="tablist" hidden>
       <button type="button" role="tab" id="tab-feed-btn" aria-controls="tab-feed" aria-selected="true">Feed</button>
+      <button type="button" role="tab" id="tab-inbox-btn" aria-controls="tab-inbox" aria-selected="false">Inbox</button>
       <button type="button" role="tab" id="tab-channels-btn" aria-controls="tab-channels" aria-selected="false">Channels</button>
     </div>
 
@@ -258,6 +259,14 @@
     <a class="inline" href="/runclub">Friday at six, Sunday at eight</a>.</p>
     </div>
 
+    <div id="tab-inbox" role="tabpanel" aria-labelledby="tab-inbox-btn" hidden>
+      <h2 class="feed-q">Inbox</h2>
+      <p class="lede">Businesses ask. You decide. You are paid when you say yes — in cash,
+      in person, at a run. Nothing here was chosen for you: every member is looking at the
+      same offers in the same order.</p>
+      <div id="gg-inbox"></div>
+    </div>
+
     <div id="tab-channels" role="tabpanel" aria-labelledby="tab-channels-btn" hidden>
       <h2 class="feed-q">Channels</h2>
       <p class="lede">Each one opened because two people met at a run and both said so,
@@ -273,6 +282,7 @@
   <script src="/js/gurgle.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/channels.js"></script>
+  <script src="/js/inbox.js"></script>
   <script>
   (() => {
     'use strict';
@@ -335,21 +345,25 @@
     // them it goes and the strip is left with a single tab.
     const member = bfSession.signedIn();
     if (!member) {
-      document.getElementById('tab-channels-btn').remove();
-      document.getElementById('tab-channels').remove();
+      ['tab-channels', 'tab-inbox'].forEach(id => {
+        document.getElementById(id + '-btn').remove();
+        document.getElementById(id).remove();
+      });
     }
 
     const tabs = document.getElementById('gg-tabs');
     tabs.hidden = false;
     const panes = {
       'tab-feed-btn': 'tab-feed',
+      'tab-inbox-btn': 'tab-inbox',
       'tab-channels-btn': 'tab-channels',
     };
 
-    // Built the first time it is opened rather than on load: it asks
-    // the server for pairings and generates a keypair, and most visits
+    // Both are built the first time they are opened rather than on
+    // load. Channels asks the server for pairings and generates a
+    // keypair; the inbox fetches artwork for every offer. Most visits
     // are somebody reading the feed.
-    let built = false;
+    const built = {};
 
     Object.keys(panes).forEach(btnId => {
       const btn = document.getElementById(btnId);
@@ -363,17 +377,28 @@
           bEl.setAttribute('aria-selected', String(on));
           pEl.hidden = !on;
         });
-        if (btnId === 'tab-channels-btn' && !built) {
-          built = true;
-          renderChannels('gg-channels');
-        }
+        if (built[btnId]) return;
+        built[btnId] = true;
+        if (btnId === 'tab-channels-btn') renderChannels('gg-channels');
+        if (btnId === 'tab-inbox-btn') renderInbox('gg-inbox');
       });
     });
 
     // A tab worth having is a tab worth linking to — /gurgle#channels
-    // opens straight onto it.
+    // and /gurgle#inbox open straight onto them.
     const chTab = document.getElementById('tab-channels-btn');
+    const inTab = document.getElementById('tab-inbox-btn');
     if (location.hash === '#channels' && chTab) chTab.click();
+    if (location.hash === '#inbox' && inTab) inTab.click();
+
+    // What is waiting, on the tab itself. An offer nobody opens is an
+    // advertiser who paid for silence, so the count is worth carrying
+    // before somebody has to go looking.
+    if (member) {
+      fetch('/v1/inbox').then(r => r.ok ? r.json() : null).then(d => {
+        if (d && d.offers.length && inTab) inTab.textContent = 'Inbox · ' + d.offers.length;
+      }).catch(() => { /* the tab still works */ });
+    }
 
     // A pairing that is waiting on an answer is time-limited, so it is
     // worth saying before somebody has to go looking for it.

@@ -235,6 +235,56 @@ on a screen can be photographed and sent to somebody at home.
 `bf_app` has no UPDATE on `attendances`. When somebody was somewhere
 is a fact, not a field — record it or delete it.
 
+## The inbox is the business
+
+`ad_offers` and `ad_views` (0038) are the transaction the rest of the
+platform is an argument for: a business asks, a member decides, the
+member is paid. Four absences are load-bearing, and each one is a thing
+somebody will eventually propose adding.
+
+**No targeting.** An offer is not addressed to anybody. Every current
+member sees the same open offers in the same order, oldest first. There
+is no scoring function in `domain::inbox` and there must not be one — a
+machine that decides what you are shown from what it knows about you is
+the thing this whole project exists to argue against.
+
+**No proof of attention.** No dwell timer, no scroll depth, no beacon.
+Saying yes *is* the product being sold — a person choosing to give
+attention to a named business. Measuring whether they really looked
+would bolt surveillance onto the one transaction here built on consent.
+
+**No stored balance.** What a member is owed is a SUM over unpaid
+`ad_views` computed every time it is asked for. A balance column is a
+number that can drift from the rows justifying it, and this one ends in
+cash being counted into somebody's hand.
+
+**No payment processing.** `amount_cents * views_paid` changed hands as
+cash at a run before the offer row existed, and leaves as cash at a run
+when an admin marks the member paid. Nothing in this domain talks to a
+card network. See `/cash` for why that is the design rather than a stage
+not yet reached.
+
+Accepting goes through `bf_accept_offer`, SECURITY DEFINER, and `bf_app`
+has **no INSERT on `ad_views` at all** — tighter than a policy would be.
+Three things must happen together (the budget is checked, the counter
+moves, the receipt is written) and a member has no UPDATE on `ad_offers`
+to move the counter with. The function reads the member from
+`app.user_id` rather than taking one as an argument, so there is no
+parameter with which to accept on somebody else's behalf. Its
+`UPDATE ... WHERE status = 'open' AND views_taken < views_paid` is the
+race-close, the same idiom as the verify flip.
+
+`amount_cents` is frozen onto the receipt at the moment of consent. An
+admin editing an offer afterwards must not change what somebody is
+already owed, and closing an offer does not cancel receipts already
+written.
+
+`ad_offers.explicit` exists because some of the advertisements are nudes
+and most are not. It is what lets a surface that must not show them —
+an iOS app, if one is ever built — ask for the rest. Apple's line is not
+nudity in an app, it is nudity in the commerce; filtering at the query
+is cheaper than the argument.
+
 ## The support desk is a run club
 
 A membership is a token in one browser and nothing else. There is no
