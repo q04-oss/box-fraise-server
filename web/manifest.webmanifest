@@ -1,0 +1,43 @@
+{
+  "name": "Box Fraise",
+  "short_name": "box fraise",
+  "description": "A magazine, an advertising machine, and a run club on Whyte Avenue.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Gurgle",
+      "short_name": "Gurgle",
+      "url": "/gurgle"
+    },
+    {
+      "name": "Scan a mark",
+      "short_name": "Scan",
+      "url": "/scan"
+    }
+  ]
+}

@@ -315,6 +315,33 @@ Consequences worth knowing before touching this:
   sign-in then appears to do nothing at all.
 - `web/js/session.js` must load before `gurgle.js` or `chat.js`.
 
+## The site installs, and the worker must not cache a credential
+
+`web/manifest.webmanifest` plus `web/sw.js` make the site addable to a
+phone's home screen, where it opens without browser chrome. That is not
+cosmetic: **on iOS, web push is only delivered to an installed
+home-screen web app**, so anything that needs to arrive rather than be
+checked for depends on this existing first. iOS never offers the
+install — a person has to be shown, which is what the run club is for.
+
+`sw.js` is network-first everywhere. There is no build step and no
+hashed filenames here, and the site deploys several times a day, so a
+cache-first worker would hand somebody last week's page with no way to
+tell them to clear it. The cache is an offline fallback, not a
+speed-up.
+
+**Three paths are in `BYPASS` and are never cached:** `/v1/` (member
+data behind RLS — a cached response outlives the session that was
+allowed to read it, so a sign-out or a credential re-issue would leave
+the previous member's feed on the device), `/join` (the URL carries the
+credential, which is why it is noindex), and `/admin`. The default is
+to cache, so a new authenticated path that nobody adds to `BYPASS` is
+the dangerous direction — add it when you add the path.
+
+`/join` and `/run` deliberately carry no manifest link. One is a
+credential-bearing URL and the other is a redirect stub; neither is a
+page anybody should install from.
+
 ## The channel is the one thing the server cannot read
 
 Messages arrive as AES-GCM ciphertext and are stored as ciphertext.
