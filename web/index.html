@@ -53,14 +53,15 @@
     main { max-width: 660px; margin: 0 auto; padding: 30px 22px 80px; }
     section { margin-bottom: 40px; }
 
-    /* The statement. Two sentences of the three that stand on /legacy —
-       the critical-thinking one belongs with the magazine rather than
-       above a leaderboard. Set smaller than the board's heading on
-       purpose: the board is what the page is for. */
+    /* What this is, at the foot of the page. Two sentences of the three
+       that stand on /legacy — the critical-thinking one belongs with the
+       magazine. It sits at the bottom rather than the top because the
+       page opens on the board: somebody arriving wants to see who is
+       running before they are told what the project is. */
     .statement {
-      font-size: clamp(18px, 3vw, 23px); line-height: 1.5;
-      max-width: 46ch; margin: 0 0 34px;
-      padding-bottom: 26px; border-bottom: 1px solid var(--rule);
+      font-size: clamp(17px, 2.6vw, 21px); line-height: 1.55;
+      max-width: 46ch; margin: 0 0 20px;
+      padding-top: 26px; border-top: 1px solid var(--rule);
     }
     .statement strong { font-weight: 500; font-style: italic; }
 
@@ -210,9 +211,6 @@
   </header>
 
   <main>
-    <p class="statement">Playboy was the most advanced advertising machine ever built.
-    Box Fraise is the next generation of it: <strong>a consensual advertising engine.</strong></p>
-
     <section id="board-section">
       <p class="head">Who is running the most.</p>
       <p class="sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
@@ -234,8 +232,13 @@
       </div>
       <p class="purpose"><strong>Both are for making Whyte Avenue and Jasper Avenue pedestrian
       only.</strong> <a class="inline" href="/runclub">Where and why →</a></p>
-      <p class="closer">Box Fraise · Edmonton</p>
     </section>
+
+    <p class="statement">Playboy was the most advanced advertising machine ever built.
+    Box Fraise is the next generation of it: <strong>a consensual advertising engine.</strong>
+    <a class="inline" href="/legacy">The rest of it →</a></p>
+
+    <p class="closer">Box Fraise · Edmonton</p>
   </main>
 
   <script src="/js/running.js"></script>
