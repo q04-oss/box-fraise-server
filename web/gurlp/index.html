@@ -9,186 +9,177 @@
 <style>
   :root{
     --paper:#EFEAE0;--card:#FBF8F2;--brick:#C1392A;--brick-deep:#9E2C1F;
-    --ink:#1F1A16;--stone:#6B5F55;--rule:#DBD2C4;--paid:#2F6F4F;
+    --ink:#1F1A16;--stone:#6B5F55;--rule:#DBD2C4;--paid:#2F6F4F;--land:#C9BEAF;
+    --glass:rgba(245,241,233,.82);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{background:var(--paper);color:var(--ink);font-family:"Liberation Sans","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px 16px}
-  .device{width:100%;max-width:404px;background:var(--paper);border:1px solid var(--rule);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;height:min(824px,92vh);box-shadow:0 24px 60px -30px rgba(31,26,22,.5)}
+  body{background:#d9d2c6;color:var(--ink);font-family:"Liberation Sans","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .device{width:100%;max-width:404px;background:var(--paper);border:1px solid var(--rule);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;height:min(824px,92vh);box-shadow:0 24px 60px -30px rgba(31,26,22,.5);position:relative}
 
-  /* top bar: wordmark + balance */
-  .appbar{display:flex;justify-content:space-between;align-items:center;padding:16px 22px 12px;border-bottom:1px solid var(--rule)}
-  .wordmark{font-size:24px;font-weight:700;letter-spacing:-.04em;color:var(--brick);line-height:1}
-  .wordmark span{color:var(--ink)}
-  /* The wordmark is the way out. A prototype living on a real site
-     needs an exit, and a logo that goes home is the one people try. */
-  .wordmark a{color:inherit;text-decoration:none}
-  .bal{font-size:12px;font-weight:700;color:var(--ink)}
-  .bal b{color:var(--paid)}
+  .stage{flex:1;position:relative;overflow:hidden}
 
-  .screen{flex:1;overflow-y:auto;padding:0 22px 22px}
-  .screen::-webkit-scrollbar{width:0}
-  .lbl{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--stone);padding:18px 0 6px;position:sticky;top:0;background:var(--paper);z-index:2}
-  .hint{font-size:12.5px;color:var(--stone);padding:0 0 12px;line-height:1.45}
+  /* permanent map background */
+  .mapfull{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 50% 22%, #F2EEE5 0%, #EAE4D8 58%, #E4DDD0 100%)}
+  svg.world{width:120%;height:auto;display:block;opacity:.96}
+  .dot{fill:var(--land)}
+  .pin-hit{fill:transparent;cursor:pointer}
+  .pin-ring{fill:none;stroke:var(--brick);stroke-width:1.1;opacity:.5}
+  .pin-core{fill:var(--brick)}.pin-core-o{fill:#fff}
+  .you-ring{fill:none;stroke:var(--ink);stroke-width:1.2}.you-core{fill:var(--ink)}
+  .ripple{fill:none;stroke:var(--brick);stroke-width:1.4}
 
-  /* bottom tab bar */
-  .tabbar{display:flex;border-top:1px solid var(--rule);background:var(--paper)}
-  .tabbar button{flex:1;appearance:none;border:0;background:transparent;font:inherit;cursor:pointer;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--stone)}
-  .tabbar button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7}
-  .tabbar button .t{font-size:10.5px;font-weight:700;letter-spacing:.03em}
-  .tabbar button[aria-selected="true"]{color:var(--brick)}
+  /* floating top chips */
+  .mapfloat{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none;z-index:6}
+  .chip{pointer-events:auto;background:var(--glass);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid rgba(255,255,255,.55);border-radius:999px;padding:9px 15px;font-size:12px;font-weight:700;box-shadow:0 6px 18px -8px rgba(31,26,22,.4)}
+  .chip.wm{font-size:19px;letter-spacing:-.04em;color:var(--brick);padding:7px 15px}
+  .chip.wm span{color:var(--ink)}
+  /* The wordmark is the way out. A prototype living on a real site needs
+     an exit, and a logo that goes home is the one people try. */
+  .chip.wm a{color:inherit;text-decoration:none}
+  .chip .b{color:var(--paid)}
 
-  /* ---- inbox ping ---- */
-  .ping{background:var(--card);border:1px solid var(--rule);border-radius:3px;margin-bottom:12px;overflow:hidden;transition:transform .28s ease,opacity .28s ease,max-height .3s ease,margin .3s ease;max-height:340px}
-  .ping.gone{opacity:0;transform:translateX(-14px);max-height:0;margin-bottom:0;border-width:0}
-  .ping .row{display:flex;align-items:stretch}
-  .ping .meta{flex:1;padding:14px 16px;min-width:0}
-  .from{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone)}
-  .price{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:5px}
-  .price small{font-size:12px;font-weight:400;color:var(--stone);letter-spacing:0}
-  .kind{align-self:flex-start;margin-top:9px;display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);border:1px solid var(--rule);border-radius:999px;padding:3px 9px}
-  .seal{background:repeating-linear-gradient(135deg,var(--brick) 0 11px,var(--brick-deep) 11px 22px);width:74px;flex:0 0 74px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:center;line-height:1.3}
-  .acts{display:flex;border-top:1px solid var(--rule)}
-  .acts button{flex:1;appearance:none;border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;padding:12px;cursor:pointer;color:var(--ink)}
-  .acts .open{color:#fff;background:var(--brick)}
-  .acts .open:hover{background:var(--brick-deep)}
-  .acts .deny:hover{background:#F0E7DC}
-  .acts button+button{border-left:1px solid var(--rule)}
-  .opened .seal,.opened .acts{display:none}
-  .opened .content{display:block}
-  .content{display:none;padding:0 16px 15px}
-  .content .body{font-size:14.5px;line-height:1.5;padding-top:2px}
-  .earned{margin-top:11px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--paid)}
-  .earned .dot{width:6px;height:6px;border-radius:999px;background:var(--paid)}
-  .empty{padding:52px 8px;text-align:center}
-  .empty .big{font-size:19px;font-weight:700}
-  .empty .small{margin-top:8px;font-size:13.5px;color:var(--stone);line-height:1.5}
+  /* universal sheet */
+  .msheet{position:absolute;left:0;right:0;bottom:0;height:100%;background:var(--glass);backdrop-filter:blur(26px) saturate(1.5);-webkit-backdrop-filter:blur(26px) saturate(1.5);border-radius:16px 16px 0 0;box-shadow:0 -12px 40px -18px rgba(31,26,22,.42);z-index:7;touch-action:none;will-change:transform;display:flex;flex-direction:column}
+  .grab{width:100%;display:flex;justify-content:center;padding:9px 0 7px;cursor:grab;flex:0 0 auto}
+  .grab .pill{width:38px;height:5px;border-radius:999px;background:#C3B9AB}
+  .sheetc{flex:1;overflow-y:auto;overscroll-behavior:contain}
+  .sheetc::-webkit-scrollbar{width:0}
 
-  /* ---- send ---- */
-  .field{margin-top:18px}
-  .field>label{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);margin-bottom:7px}
-  textarea,input.txt{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 13px;resize:none}
-  textarea{height:92px;line-height:1.45}
-  textarea:focus,input:focus{outline:2px solid var(--brick);outline-offset:-1px;border-color:var(--brick)}
-  .two{display:flex;gap:12px}
-  .two .field{flex:1}
-  .stepper{display:flex;align-items:center;border:1px solid var(--rule);border-radius:3px;background:var(--card);overflow:hidden}
+  .stitle{padding:2px 20px 10px;font-size:20px;font-weight:700;letter-spacing:-.02em}
+  .ssearch{margin:2px 16px 10px;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.6);border-radius:11px;padding:10px 13px;color:var(--stone);font-size:14px}
+  .ssearch svg{width:16px;height:16px;stroke:var(--stone);fill:none;stroke-width:2}
+  .ssub{padding:0 20px 6px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone)}
+
+  .prow{width:100%;text-align:left;appearance:none;background:transparent;border:0;font:inherit;color:var(--ink);display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:12px;cursor:pointer;margin:0 10px;width:calc(100% - 20px)}
+  .prow:hover{background:rgba(255,255,255,.5)}
+  .prow+.prow{border-top:1px solid rgba(31,26,22,.07)}
+  .prow .ic{flex:0 0 38px;height:38px;border-radius:999px;background:var(--brick);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .prow .mid{flex:1;min-width:0}
+  .prow .t{font-size:15px;font-weight:700;line-height:1.2}
+  .prow .s{font-size:12px;color:var(--stone);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .tr{flex:0 0 auto;text-align:right;display:flex;align-items:center;gap:6px}
+  .prow .pr{font-size:15px;font-weight:700}
+  .prow .chev{color:#B9AE9F;font-size:18px}
+  .sempty{padding:40px 22px;text-align:center;color:var(--stone);font-size:13.5px;line-height:1.5}
+  .sempty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+
+  /* forms inside sheet */
+  .sbodywrap{padding:0 20px 26px}
+  .shint{font-size:12.5px;color:var(--stone);padding:0 0 8px;line-height:1.45}
+  .field{margin-top:16px}
+  .field>label{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);margin-bottom:7px}
+  textarea,input.txt{width:100%;font:inherit;font-size:15px;color:var(--ink);background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);border-radius:11px;padding:12px 13px;resize:none}
+  textarea{height:84px;line-height:1.45}
+  textarea:focus,input:focus{outline:2px solid var(--brick);outline-offset:-1px}
+  .two{display:flex;gap:12px}.two .field{flex:1}
+  .stepper{display:flex;align-items:center;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.7);border-radius:11px;overflow:hidden}
   .stepper button{appearance:none;border:0;background:transparent;font:inherit;font-size:20px;font-weight:700;width:42px;height:46px;cursor:pointer;color:var(--ink)}
-  .stepper button:hover{background:#F0E7DC}
+  .stepper button:hover{background:rgba(255,255,255,.5)}
   .stepper .n{flex:1;text-align:center;font-size:18px;font-weight:700}
-  .costbox{margin-top:20px;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden}
+  .costbox{margin-top:18px;border:1.5px solid var(--ink);border-radius:11px;overflow:hidden}
   .costrow{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;font-size:13.5px}
   .costrow+.costrow{border-top:1px solid var(--rule)}
-  .costrow .k{color:var(--stone);font-weight:600}
-  .costrow .v{font-weight:700}
+  .costrow .k{color:var(--stone);font-weight:600}.costrow .v{font-weight:700}
   .costrow.total{background:var(--ink);color:var(--paper)}
-  .costrow.total .k{color:var(--paper);font-weight:700}
-  .costrow.total .v{font-size:18px}
+  .costrow.total .k{color:var(--paper);font-weight:700}.costrow.total .v{font-size:18px}
   .fund{font-size:12px;color:var(--stone);margin-top:10px;line-height:1.5;border-left:2px solid var(--brick);padding:3px 0 3px 12px}
   .fund b{color:var(--ink)}
-  .cardwrap{margin-top:16px;display:none}
-  .cardwrap.show{display:block}
+  .cardwrap{margin-top:14px;display:none}.cardwrap.show{display:block}
   .cardgrid{display:flex;gap:10px}
   /* This is a drawing of a card form. Nothing is sent anywhere and no
      payment processor exists yet, so the page says so where somebody is
      about to type a card number. */
-  .fake{margin-top:14px;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--brick);border:1px dashed var(--brick);border-radius:3px;padding:9px 11px;line-height:1.45}
-  .send{margin-top:20px;width:100%;appearance:none;border:0;background:var(--brick);color:#fff;font:inherit;font-size:15px;font-weight:700;padding:15px;border-radius:3px;cursor:pointer}
+  .fake{margin-top:14px;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--brick);border:1px dashed var(--brick);border-radius:11px;padding:9px 11px;line-height:1.45}
+  .send{margin-top:18px;width:100%;appearance:none;border:0;background:var(--brick);color:#fff;font:inherit;font-size:15px;font-weight:700;padding:15px;border-radius:12px;cursor:pointer}
   .send:hover{background:var(--brick-deep)}
   .send:disabled{background:#C9BFB2;cursor:not-allowed}
-  .sent{padding:52px 10px;text-align:center}
-  .sent .mark{width:52px;height:52px;border-radius:999px;background:var(--paid);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
-  .sent .big{font-size:20px;font-weight:700}
-  .sent .small{margin-top:9px;font-size:13.5px;color:var(--stone);line-height:1.55}
-  .sent button{margin-top:22px;appearance:none;border:1.5px solid var(--ink);background:transparent;font:inherit;font-size:13px;font-weight:700;padding:11px 20px;border-radius:3px;cursor:pointer;color:var(--ink)}
 
-  /* ---- report list ---- */
-  .rItem{width:100%;text-align:left;appearance:none;background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:15px 16px;margin-bottom:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;font:inherit;color:var(--ink)}
+  /* reports inside sheet */
+  .rItem{width:calc(100% - 40px);margin:0 20px 11px;text-align:left;appearance:none;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.6);border-radius:12px;padding:15px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;font:inherit;color:var(--ink)}
   .rItem:hover{border-color:var(--brick)}
-  .rItem .txt{min-width:0}
   .rItem .msg{font-size:14px;font-weight:700;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .rItem .sub2{font-size:11.5px;color:var(--stone);margin-top:5px}
-  .rItem .tag{font-size:9px;font-weight:700;letter-spacing:.1em;color:#fff;background:var(--brick);padding:2px 6px;border-radius:999px;margin-left:7px;vertical-align:middle}
+  .rItem .tag{font-size:9px;font-weight:700;letter-spacing:.1em;color:#fff;background:var(--brick);padding:2px 6px;border-radius:999px;margin-left:7px}
   .rItem .rate{flex:0 0 auto;text-align:right}
   .rItem .rate .n{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--brick);line-height:1}
   .rItem .rate .c{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone);margin-top:3px}
-
-  /* ---- report detail ---- */
-  .back{appearance:none;border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--brick);cursor:pointer;padding:16px 0 4px;display:flex;align-items:center;gap:6px}
-  .rMsg{background:var(--card);border:1px solid var(--rule);border-left:3px solid var(--brick);border-radius:3px;padding:14px 16px;margin-top:8px;font-size:15px;line-height:1.5}
+  .back{appearance:none;border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;color:var(--brick);cursor:pointer;padding:0 0 6px;margin:0 20px}
+  .rMsg{margin:8px 20px 0;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.6);border-left:3px solid var(--brick);border-radius:11px;padding:14px 16px;font-size:15px;line-height:1.5}
   .rMsg .k{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);margin-bottom:6px}
-  .rlead{padding:22px 0 4px}
+  .rlead{padding:20px 20px 4px}
   .rlead .k{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
-  .bignum{font-size:66px;font-weight:700;letter-spacing:-.04em;line-height:.92;color:var(--brick);margin-top:6px}
-  .bignum small{font-size:24px;vertical-align:super;letter-spacing:0}
+  .bignum{font-size:62px;font-weight:700;letter-spacing:-.04em;line-height:.92;color:var(--brick);margin-top:6px}
+  .bignum small{font-size:22px;vertical-align:super}
   .rlead .cap{font-size:12.5px;color:var(--stone);margin-top:8px;line-height:1.45}
-  .bar{display:flex;height:34px;border-radius:3px;overflow:hidden;margin-top:18px;border:1px solid var(--rule)}
-  .bar .op{background:var(--brick);display:flex;align-items:center;padding:0 10px;color:#fff;font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
-  .bar .dn{background:var(--card);display:flex;align-items:center;padding:0 10px;color:var(--stone);font-size:11px;font-weight:700;white-space:nowrap}
-  .barleg{display:flex;justify-content:space-between;font-size:11px;color:var(--stone);margin-top:7px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden;margin-top:18px}
+  .bar{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:16px 20px 0;border:1px solid var(--rule)}
+  .bar .op{background:var(--brick);display:flex;align-items:center;padding:0 10px;color:#fff;font-size:11px;font-weight:700;white-space:nowrap}
+  .bar .dn{background:rgba(255,255,255,.55);display:flex;align-items:center;padding:0 10px;color:var(--stone);font-size:11px;font-weight:700;white-space:nowrap}
+  .barleg{display:flex;justify-content:space-between;font-size:11px;color:var(--stone);margin:7px 20px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:11px;overflow:hidden;margin:16px 20px 0}
   .cell{background:var(--card);padding:14px 16px}
   .cell .v{font-size:22px;font-weight:700;letter-spacing:-.02em}
   .cell .l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone);margin-top:5px}
-  .note{margin-top:18px;font-size:11.5px;color:var(--stone);line-height:1.5;border-left:2px solid var(--brick);padding:2px 0 2px 12px}
+  .note{margin:16px 20px 26px;font-size:11.5px;color:var(--stone);line-height:1.5;border-left:2px solid var(--brick);padding:2px 0 2px 12px}
+
+  /* place-card detail */
+  .scrim{position:absolute;inset:0;background:rgba(31,26,22,.18);opacity:0;pointer-events:none;transition:opacity .25s;z-index:9}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .dsheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:18px 18px 0 0;box-shadow:0 -16px 44px -18px rgba(31,26,22,.5);z-index:10;transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.85,.25,1);padding-bottom:18px}
+  .dsheet.open{transform:translateY(0)}
+  .dgrab{display:flex;justify-content:center;padding:9px 0 4px}
+  .dgrab .pill{width:38px;height:5px;border-radius:999px;background:#D8CEBF}
+  .dbody{padding:8px 22px 8px}
+  .dtop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .dfrom{font-size:19px;font-weight:700;letter-spacing:-.01em;line-height:1.15}
+  .dcity{font-size:12.5px;color:var(--stone);margin-top:4px}
+  .dkind{flex:0 0 auto;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);border:1px solid var(--rule);border-radius:999px;padding:4px 10px;margin-top:3px}
+  .dprice{font-size:15px;color:var(--stone);margin-top:14px}
+  .dprice b{color:var(--ink);font-size:26px;letter-spacing:-.02em}
+  .dsealnote{font-size:12.5px;color:var(--stone);margin-top:4px;line-height:1.45}
+  .dreveal{font-size:15px;line-height:1.5;margin-top:14px;display:none}
+  .dsheet.revealed .dreveal{display:block}
+  .dearned{margin-top:12px;font-size:13px;font-weight:700;color:var(--paid);display:none}
+  .dsheet.revealed .dearned{display:block}
+  .dacts{display:flex;gap:11px;margin-top:18px}
+  .dsheet.revealed .dacts{display:none}
+  .dacts button{flex:1;appearance:none;border:0;font:inherit;font-size:15px;font-weight:700;padding:14px;border-radius:12px;cursor:pointer}
+  .dopen{background:var(--brick);color:#fff}.dopen:hover{background:var(--brick-deep)}
+  .ddeny{background:#EDE6DA;color:var(--ink)}.ddeny:hover{background:#E4DBCC}
+
+  .toast{position:absolute;left:50%;bottom:78px;transform:translate(-50%,20px);background:var(--ink);color:var(--paper);font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;opacity:0;transition:opacity .3s,transform .3s;z-index:15;pointer-events:none;max-width:86%;text-align:center;line-height:1.4}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  .tabbar{display:flex;border-top:1px solid var(--rule);background:var(--paper);position:relative;z-index:12}
+  .tabbar button{flex:1;appearance:none;border:0;background:transparent;font:inherit;cursor:pointer;padding:10px 0 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--stone)}
+  .tabbar button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7}
+  .tabbar button .t{font-size:10px;font-weight:700;letter-spacing:.03em}
+  .tabbar button[aria-selected="true"]{color:var(--brick)}
 </style>
 </head>
 <body>
   <div class="device">
-    <div class="appbar">
-      <div class="wordmark"><a href="/">gurlp<span>.</span></a></div>
-      <div class="bal">balance <b id="bal">$0.00</b></div>
-    </div>
-
-    <!-- INBOX -->
-    <div class="screen" id="inbox">
-      <div class="lbl">Inbox</div>
-      <div class="hint">Your inbox is always open. Each item is sealed — open it to read it and get paid, or deny it. Denying is free and no one is told.</div>
-      <div id="pings"></div>
-    </div>
-
-    <!-- SEND -->
-    <div class="screen" id="send" style="display:none">
-      <div id="sendForm">
-        <div class="lbl">Send a ping</div>
-        <div class="hint">Write it, choose how many opens you want, set what each open is worth. You don't pick who — gurlp routes it, one open at a time. Every ping you send becomes its own report.</div>
-        <div class="field"><label for="body">Your message</label>
-          <textarea id="body" placeholder="Say the thing. It stays sealed until someone chooses to open it." oninput="recost()"></textarea></div>
-        <div class="two">
-          <div class="field"><label>Opens wanted</label>
-            <div class="stepper"><button onclick="bump(-1)">–</button><div class="n" id="opens">5</div><button onclick="bump(1)">+</button></div></div>
-          <div class="field"><label for="ppo">Price per open</label>
-            <input class="txt" id="ppo" inputmode="decimal" value="0.40" oninput="recost()"></div>
-        </div>
-        <div class="costbox">
-          <div class="costrow"><span class="k">Opens × price</span><span class="v" id="cLine">5 × $0.40</span></div>
-          <div class="costrow"><span class="k">Paid from balance</span><span class="v" id="cBal">$0.00</span></div>
-          <div class="costrow"><span class="k">Charged to card</span><span class="v" id="cCard">$2.00</span></div>
-          <div class="costrow total"><span class="k">Total</span><span class="v" id="cTotal">$2.00</span></div>
-        </div>
-        <div class="fund" id="fundNote"></div>
-        <div class="cardwrap" id="cardwrap">
-          <div class="fake">A demonstration. There is no payment processor yet — nothing you type here is sent anywhere or charged. Do not enter a real card.</div>
-          <div class="field"><label for="ccnum">Card number</label><input class="txt" id="ccnum" autocomplete="off" placeholder="4242 4242 4242 4242"></div>
-          <div class="cardgrid">
-            <div class="field" style="flex:1"><label for="ccexp">Expiry</label><input class="txt" id="ccexp" autocomplete="off" placeholder="MM/YY"></div>
-            <div class="field" style="flex:0 0 96px"><label for="cccvc">CVC</label><input class="txt" id="cccvc" autocomplete="off" placeholder="123"></div>
-          </div>
-        </div>
-        <button class="send" id="sendBtn" onclick="doSend()">Send ping</button>
+    <div class="stage">
+      <div class="mapfull"><svg class="world" id="world" viewBox="0 0 360 180" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="mapfloat">
+        <div class="chip wm"><a href="/">gurlp<span>.</span></a></div>
+        <div class="chip">balance <span class="b" id="bal">$0.00</span></div>
       </div>
-      <div id="sentState" style="display:none"></div>
+
+      <div class="msheet" id="msheet">
+        <div class="grab" id="grab"><div class="pill"></div></div>
+        <div class="sheetc" id="sheetc"></div>
+      </div>
+
+      <div class="scrim" id="scrim" onclick="closeDetail()"></div>
+      <div class="dsheet" id="dsheet"></div>
+      <div class="toast" id="toast"></div>
     </div>
 
-    <!-- REPORT -->
-    <div class="screen" id="report" style="display:none">
-      <div id="reportList"></div>
-      <div id="reportDetail" style="display:none"></div>
-    </div>
-
-    <!-- BOTTOM TABS -->
     <div class="tabbar" role="tablist">
-      <button role="tab" id="tab-inbox" aria-selected="true" onclick="show('inbox')">
+      <button role="tab" id="tab-map" aria-selected="true" onclick="show('map')">
+        <svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span class="t">Map</span></button>
+      <button role="tab" id="tab-inbox" aria-selected="false" onclick="show('inbox')">
         <svg viewBox="0 0 24 24"><path d="M3 13h4l2 3h6l2-3h4"/><path d="M5 6h14l2 7v5H3v-5z"/></svg><span class="t">Inbox</span></button>
       <button role="tab" id="tab-send" aria-selected="false" onclick="show('send')">
         <svg viewBox="0 0 24 24"><path d="M4 12l16-7-7 16-2-6z"/><path d="M11 15l9-10"/></svg><span class="t">Send</span></button>
@@ -198,145 +189,153 @@
   </div>
 
 <script>
-let balance=0;
-const reports=[]; // each ping = one report
-
+let balance=0,activeTab='map';
+const YOU={lon:-113.5,lat:53.5,city:"Edmonton, CA"};
 const PINGS=[
-  {from:"Harubaku Coffee",price:0.45,kind:"Ad",body:"Two-for-one pour-overs on Whyte till Friday. Come slow down."},
-  {from:"Someone at the run club",price:0.20,kind:"Post",body:"Pedestrian Sunday on Whyte was unreal. We owned the whole street."},
-  {from:"The Silk Road",price:0.60,kind:"Ad",body:"New harvest sumac just landed. Bright, sour, a little wild."},
-  {from:"A neighbour",price:0.15,kind:"Post",body:"Started running Fridays at McIntyre. Turns out I like mornings now."},
-  {from:"Box Fraise",price:0.50,kind:"Ad",body:"Whyte Avenue, cars out, people in. Read the vision, then come walk it."},
-  {from:"Someone nearby",price:0.25,kind:"Post",body:"Sold my second monitor. Deciding one thing at a time is underrated."},
+  {id:0,from:"Harubaku Coffee",city:"Edmonton, CA",lon:-113.5,lat:53.5,price:0.45,kind:"Ad",body:"Two-for-one pour-overs on Whyte till Friday. Come slow down.",status:"pending"},
+  {id:1,from:"Aoi Matcha",city:"Tokyo, JP",lon:139.7,lat:35.68,price:0.55,kind:"Ad",body:"First-harvest matcha, whisked to order. Ten seats only.",status:"pending"},
+  {id:2,from:"Praça Coffee",city:"Lisbon, PT",lon:-9.14,lat:38.72,price:0.35,kind:"Post",body:"Sun's out on the praça. Someone bring a guitar.",status:"pending"},
+  {id:3,from:"Studio Nord",city:"Berlin, DE",lon:13.4,lat:52.52,price:0.60,kind:"Ad",body:"Risograph zine drop Saturday. Ink still wet.",status:"pending"},
+  {id:4,from:"A neighbour",city:"Edmonton, CA",lon:-113.62,lat:53.46,price:0.15,kind:"Post",body:"Started running Fridays at McIntyre. Turns out I like mornings.",status:"pending"},
+  {id:5,from:"Feria del Sur",city:"Mexico City, MX",lon:-99.13,lat:19.43,price:0.30,kind:"Post",body:"Market's full of guavas right now. The whole block smells like it.",status:"pending"},
+  {id:6,from:"A shop",city:"Sydney, AU",lon:151.2,lat:-33.87,price:0.40,kind:"Ad",body:"Summer linen just landed. Come get out of the heat.",status:"pending"},
 ];
-// two seeded example reports so the list shows the concept
+const reports=[];
 seedReport("Run club — Fridays 6pm at McIntyre. First one's easy.",8,0.35);
 seedReport("Silk Road: new sumac, come taste it before it's gone.",5,0.50);
+function seedReport(body,sought,price){reports.push({body,sought,price,reached:Math.round(sought*1.7),filled:sought,isNew:false});}
 
-function seedReport(body,sought,price){
-  const reached=Math.round(sought*1.7), filled=sought;
-  reports.push({body,sought,price,reached,filled,isNew:false});
-}
 const money=n=>'$'+Number(n).toFixed(2);
 function paintBalance(){document.getElementById('bal').textContent=money(balance);}
-
-/* inbox */
-const wrap=document.getElementById('pings');
-function renderInbox(){
-  wrap.innerHTML='';
-  PINGS.forEach((p,i)=>{
-    const el=document.createElement('div');el.className='ping';
-    el.innerHTML=`<div class="row"><div class="seal">Sealed</div>
-      <div class="meta"><div class="from">${p.from}</div>
-      <div class="price">${money(p.price)} <small>to open</small></div>
-      <span class="kind">${p.kind}</span></div></div>
-      <div class="content"><div class="body">${p.body}</div>
-      <div class="earned"><span class="dot"></span>You earned ${money(p.price)} for opening this</div></div>
-      <div class="acts"><button class="open" onclick="openPing(${i},this)">Open</button>
-      <button class="deny" onclick="denyPing(this)">Deny</button></div>`;
-    wrap.appendChild(el);
-  });
+const NS="http://www.w3.org/2000/svg";
+const proj=(lon,lat)=>({x:(lon+180)/360*360,y:(90-lat)/180*180});
+const LAND=[[-100,50,26,20],[-92,33,16,13],[-118,41,10,12],[-150,64,16,9],[-105,60,22,10],[-84,14,9,7],[-62,-12,15,20],[-58,-35,10,14],[-40,72,11,8],[12,50,20,12],[26,60,15,10],[18,5,22,28],[45,29,16,12],[86,52,45,22],[78,23,12,13],[106,33,25,16],[122,46,16,11],[108,9,12,9],[138,37,4,7],[134,-25,16,10],[172,-42,4,6]];
+function isLand(lon,lat){for(const[e0,e1,e2,e3]of LAND){const dx=(lon-e0)/e2,dy=(lat-e1)/e3;if(dx*dx+dy*dy<=1)return true;}return false;}
+const svg=document.getElementById('world');
+function drawWorld(){for(let lon=-178;lon<=178;lon+=3.4)for(let lat=-86;lat<=84;lat+=3.4){if(isLand(lon,lat)){const{x,y}=proj(lon,lat);const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x.toFixed(1));c.setAttribute('cy',y.toFixed(1));c.setAttribute('r','0.9');c.setAttribute('class','dot');svg.appendChild(c);}}drawPins();}
+function drawPins(){
+  [...svg.querySelectorAll('.pin,.youpin')].forEach(n=>n.remove());
+  PINGS.filter(p=>p.status==='pending').forEach(p=>{const{x,y}=proj(p.lon,p.lat);const g=document.createElementNS(NS,'g');g.setAttribute('class','pin');
+    const ring=document.createElementNS(NS,'circle');ring.setAttribute('cx',x);ring.setAttribute('cy',y);ring.setAttribute('r','3.4');ring.setAttribute('class','pin-ring');
+    const o=document.createElementNS(NS,'circle');o.setAttribute('cx',x);o.setAttribute('cy',y);o.setAttribute('r','2.6');o.setAttribute('class','pin-core-o');
+    const core=document.createElementNS(NS,'circle');core.setAttribute('cx',x);core.setAttribute('cy',y);core.setAttribute('r','1.8');core.setAttribute('class','pin-core');
+    const hit=document.createElementNS(NS,'circle');hit.setAttribute('cx',x);hit.setAttribute('cy',y);hit.setAttribute('r','9');hit.setAttribute('class','pin-hit');hit.addEventListener('click',()=>openDetail(p.id));
+    g.append(ring,o,core,hit);svg.appendChild(g);});
+  const{x,y}=proj(YOU.lon,YOU.lat);const g=document.createElementNS(NS,'g');g.setAttribute('class','youpin');
+  const yr=document.createElementNS(NS,'circle');yr.setAttribute('cx',x);yr.setAttribute('cy',y);yr.setAttribute('r','3');yr.setAttribute('class','you-ring');yr.setAttribute('id','youRing');
+  const yc=document.createElementNS(NS,'circle');yc.setAttribute('cx',x);yc.setAttribute('cy',y);yc.setAttribute('r','2.1');yc.setAttribute('class','you-core');
+  g.append(yr,yc);svg.appendChild(g);pulseYou();
 }
-function openPing(i,btn){const el=btn.closest('.ping');el.classList.add('opened');el.dataset.done='1';balance+=PINGS[i].price;paintBalance();checkEmpty();}
-function denyPing(btn){const el=btn.closest('.ping');el.classList.add('gone');el.dataset.done='1';setTimeout(()=>{el.remove();checkEmpty();},300);}
-function checkEmpty(){const live=[...wrap.querySelectorAll('.ping')].filter(p=>!p.classList.contains('gone'));
-  if(live.length===0&&!document.getElementById('emptyState')){const e=document.createElement('div');e.id='emptyState';e.className='empty';
-    e.innerHTML=`<div class="big">Inbox clear.</div><div class="small">Nothing pending. Come back when someone's reached for you.</div>`;wrap.appendChild(e);}}
+function pulseYou(){let t0=performance.now();function step(t){const yr=document.getElementById('youRing');if(!yr)return;const p=((t-t0)%1800)/1800;yr.setAttribute('r',(3+p*4).toFixed(2));yr.style.opacity=(0.5*(1-p)).toFixed(2);requestAnimationFrame(step);}requestAnimationFrame(step);}
+function playRadial(){const{x,y}=proj(YOU.lon,YOU.lat);[0,420,840].forEach(delay=>{setTimeout(()=>{const r=document.createElementNS(NS,'circle');r.setAttribute('cx',x);r.setAttribute('cy',y);r.setAttribute('r','0');r.setAttribute('class','ripple');svg.appendChild(r);const t0=performance.now(),dur=2400,maxR=430;function step(t){const p=Math.min(1,(t-t0)/dur);r.setAttribute('r',(p*maxR).toFixed(1));r.style.opacity=(0.6*(1-p)).toFixed(2);if(p<1)requestAnimationFrame(step);else r.remove();}requestAnimationFrame(step);},delay);});}
 
-/* send */
-let opensWanted=5;
-function bump(d){opensWanted=Math.max(1,Math.min(50,opensWanted+d));document.getElementById('opens').textContent=opensWanted;recost();}
-function ppo(){const v=parseFloat(document.getElementById('ppo').value);return isNaN(v)||v<0?0:v;}
-function recost(){
-  const total=opensWanted*ppo(),fromBal=Math.min(balance,total),fromCard=Math.max(0,total-fromBal);
-  document.getElementById('cLine').textContent=`${opensWanted} × ${money(ppo())}`;
-  document.getElementById('cBal').textContent=money(fromBal);
-  document.getElementById('cCard').textContent=money(fromCard);
-  document.getElementById('cTotal').textContent=money(total);
-  const needCard=fromCard>0;
-  document.getElementById('cardwrap').classList.toggle('show',needCard);
-  document.getElementById('fundNote').innerHTML=needCard
-    ?`Your balance covers <b>${money(fromBal)}</b>. The rest goes to a card — how advertisers fund sending beyond what they've earned.`
-    :`Fully covered by your earned balance. <b>No card needed.</b> Attention you earned, spent to reach others.`;
-  document.getElementById('sendBtn').disabled=document.getElementById('body').value.trim().length===0||total<=0;
-}
-function doSend(){
-  const body=document.getElementById('body').value.trim();
-  const price=ppo(),total=opensWanted*price,fromBal=Math.min(balance,total);
-  balance-=fromBal;paintBalance();
-  const reached=Math.round(opensWanted*1.6);
-  reports.unshift({body,sought:opensWanted,price,reached,filled:opensWanted,isNew:true});
-  document.getElementById('sendForm').style.display='none';
-  const s=document.getElementById('sentState');s.style.display='block';
-  s.innerHTML=`<div class="sent"><div class="mark">✓</div>
-    <div class="big">Ping sent.</div>
-    <div class="small">It created a new report. Every ping gets its own — this one's now at the top of your list, filling as people open it.</div>
-    <button onclick="show('report')">See its report</button></div>`;
-  document.getElementById('body').value='';opensWanted=5;document.getElementById('opens').textContent=5;document.getElementById('ppo').value='0.40';
-}
-function resetSend(){document.getElementById('sentState').style.display='none';document.getElementById('sendForm').style.display='block';recost();}
+/* detents + drag */
+const msheet=document.getElementById('msheet');
+let detents={},curDetent='peek';
+function computeDetents(){const h=document.querySelector('.stage').clientHeight;detents={full:14,mid:Math.round(h*0.46),peek:h-150};}
+function setDetent(name,animate=true){curDetent=name;msheet.style.transition=animate?'transform .32s cubic-bezier(.2,.85,.25,1)':'none';msheet.style.transform=`translateY(${detents[name]}px)`;}
+(function(){const grab=document.getElementById('grab');let sy=0,st=0,dr=false;
+  const dn=e=>{dr=true;sy=e.clientY;st=detents[curDetent];msheet.style.transition='none';window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up);};
+  const mv=e=>{if(!dr)return;let nt=st+(e.clientY-sy);nt=Math.max(detents.full,Math.min(detents.peek,nt));msheet.style.transform=`translateY(${nt}px)`;};
+  const up=()=>{if(!dr)return;dr=false;window.removeEventListener('pointermove',mv);window.removeEventListener('pointerup',up);const cur=parseFloat(msheet.style.transform.replace(/[^-\d.]/g,''))||0;let best='peek',bd=1e9;['full','mid','peek'].forEach(n=>{const d=Math.abs(detents[n]-cur);if(d<bd){bd=d;best=n;}});setDetent(best);};
+  grab.addEventListener('pointerdown',dn);
+})();
 
-/* reports: list + detail */
-function renderReportList(){
-  const host=document.getElementById('reportList');
-  document.getElementById('reportDetail').style.display='none';
-  host.style.display='block';
-  if(reports.length===0){
-    host.innerHTML=`<div class="lbl">Reports</div>
-      <div class="empty"><div class="big">No reports yet.</div>
-      <div class="small">Every ping you send becomes a report. Send your first and it appears here.</div></div>`;
-    return;
-  }
-  const items=reports.map((r,idx)=>{
-    const rate=r.reached?Math.round(r.filled/r.reached*100):0;
-    return `<button class="rItem" onclick="openReport(${idx})">
-      <div class="txt"><div class="msg">${r.body}${r.isNew?'<span class="tag">NEW</span>':''}</div>
-      <div class="sub2">${r.filled}/${r.sought} opens · reached ${r.reached} · ${money(r.price)}/open</div></div>
-      <div class="rate"><div class="n">${rate}<span style="font-size:14px">%</span></div><div class="c">opened</div></div>
-    </button>`;
-  }).join('');
-  host.innerHTML=`<div class="lbl">Reports</div>
-    <div class="hint">Every ping you've sent, each with its own report. This is the aggregate — what your attention did, never who did it.</div>${items}`;
+/* ---- sheet content per tab ---- */
+const sc=document.getElementById('sheetc');
+function renderSheet(){
+  if(activeTab==='map'||activeTab==='inbox') sc.innerHTML=sheetInbox();
+  else if(activeTab==='send'){sc.innerHTML=sheetSend();recost();}
+  else if(activeTab==='report') sc.innerHTML=sheetReports();
+}
+function sheetInbox(){
+  const list=PINGS.filter(p=>p.status==='pending');
+  const head=`<div class="ssearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search pings</div>
+    <div class="ssub">${list.length?list.length+' pending in your inbox':'Inbox clear'}</div>`;
+  if(list.length===0)return head+`<div class="sempty"><b>Inbox clear.</b>Nothing pending right now. When someone reaches for you, it lands here.</div>`;
+  return head+list.map(p=>`<button class="prow" onclick="openDetail(${p.id})"><span class="ic">${p.kind==='Ad'?'❋':'✎'}</span><span class="mid"><span class="t">${p.from}</span><span class="s">${p.city} · sealed ${p.kind.toLowerCase()}</span></span><span class="tr"><span class="pr">${money(p.price)}</span><span class="chev">›</span></span></button>`).join('');
+}
+function sheetSend(){
+  return `<div class="stitle">Send a ping</div>
+   <div class="sbodywrap">
+    <div class="shint">You don't pick who — gurlp routes it, one open at a time. Every ping becomes its own report.</div>
+    <div class="field"><label for="body">Your message</label><textarea id="body" placeholder="Say the thing. It stays sealed until someone opens it." oninput="recost()"></textarea></div>
+    <div class="two">
+      <div class="field"><label>Opens wanted</label><div class="stepper"><button onclick="bump(-1)">–</button><div class="n" id="opens">${opensWanted}</div><button onclick="bump(1)">+</button></div></div>
+      <div class="field"><label for="ppo">Price per open</label><input class="txt" id="ppo" inputmode="decimal" value="0.40" oninput="recost()"></div></div>
+    <div class="costbox">
+      <div class="costrow"><span class="k">Opens × price</span><span class="v" id="cLine">—</span></div>
+      <div class="costrow"><span class="k">Paid from balance</span><span class="v" id="cBal">—</span></div>
+      <div class="costrow"><span class="k">Charged to card</span><span class="v" id="cCard">—</span></div>
+      <div class="costrow total"><span class="k">Total</span><span class="v" id="cTotal">—</span></div></div>
+    <div class="fund" id="fundNote"></div>
+    <div class="cardwrap" id="cardwrap">
+      <div class="fake">A demonstration. There is no payment processor yet — nothing you type here is sent anywhere or charged. Do not enter a real card.</div>
+      <div class="field"><label for="ccnum">Card number</label><input class="txt" id="ccnum" autocomplete="off" placeholder="4242 4242 4242 4242"></div>
+      <div class="cardgrid"><div class="field" style="flex:1"><label for="ccexp">Expiry</label><input class="txt" id="ccexp" autocomplete="off" placeholder="MM/YY"></div><div class="field" style="flex:0 0 96px"><label for="cccvc">CVC</label><input class="txt" id="cccvc" autocomplete="off" placeholder="123"></div></div></div>
+    <button class="send" id="sendBtn" onclick="doSend()">Send ping</button>
+   </div>`;
+}
+function sheetReports(){
+  if(reports.length===0)return `<div class="stitle">Reports</div><div class="sempty"><b>No reports yet.</b>Every ping you send becomes a report. Send your first and it appears here.</div>`;
+  const items=reports.map((r,idx)=>{const rate=r.reached?Math.round(r.filled/r.reached*100):0;return `<button class="rItem" onclick="openReport(${idx})"><div class="txt"><div class="msg">${r.body}${r.isNew?'<span class="tag">NEW</span>':''}</div><div class="sub2">${r.filled}/${r.sought} opens · reached ${r.reached} · ${money(r.price)}/open</div></div><div class="rate"><div class="n">${rate}<span style="font-size:14px">%</span></div><div class="c">opened</div></div></button>`;}).join('');
+  return `<div class="stitle">Reports</div><div class="ssub" style="padding-bottom:10px">Every ping, its own report</div>${items}`;
 }
 function openReport(idx){
-  const r=reports[idx];
-  const rate=r.reached?Math.round(r.filled/r.reached*100):0;
-  const denied=Math.max(0,r.reached-r.filled);
-  const opPct=r.reached?Math.round(r.filled/r.reached*100):0;
-  const dnPct=100-opPct;
-  const spent=r.filled*r.price;
-  document.getElementById('reportList').style.display='none';
-  const d=document.getElementById('reportDetail');d.style.display='block';
-  d.innerHTML=`
-    <button class="back" onclick="renderReportList()">← All reports</button>
+  const r=reports[idx];const rate=r.reached?Math.round(r.filled/r.reached*100):0;const denied=Math.max(0,r.reached-r.filled);const spent=r.filled*r.price;
+  sc.innerHTML=`<button class="back" onclick="renderSheet()">← All reports</button>
     <div class="rMsg"><div class="k">The ping</div>${r.body}</div>
-    <div class="rlead"><div class="k">Acceptance rate</div>
-      <div class="bignum">${rate}<small>%</small></div>
-      <div class="cap">Of everyone this ping reached, this many chose to open it. You can't manufacture it — it's their yes, not your spend.</div></div>
-    <div class="bar">
-      <div class="op" style="width:${Math.max(opPct,14)}%">${r.filled} opened</div>
-      <div class="dn" style="width:${Math.max(dnPct,14)}%">${denied} denied</div></div>
+    <div class="rlead"><div class="k">Acceptance rate</div><div class="bignum">${rate}<small>%</small></div><div class="cap">Of everyone this ping reached, this many chose to open it. You can't manufacture it — it's their yes, not your spend.</div></div>
+    <div class="bar"><div class="op" style="width:${Math.max(rate,14)}%">${r.filled} opened</div><div class="dn" style="width:${Math.max(100-rate,14)}%">${denied} denied</div></div>
     <div class="barleg"><span>Opened</span><span>Denied — free &amp; silent</span></div>
-    <div class="grid">
-      <div class="cell"><div class="v">${r.filled}/${r.sought}</div><div class="l">Opens filled</div></div>
-      <div class="cell"><div class="v">${r.reached}</div><div class="l">Reached</div></div>
-      <div class="cell"><div class="v">${money(r.price)}</div><div class="l">Price / open</div></div>
-      <div class="cell"><div class="v">${money(spent)}</div><div class="l">Total spent</div></div>
-    </div>
+    <div class="grid"><div class="cell"><div class="v">${r.filled}/${r.sought}</div><div class="l">Opens filled</div></div><div class="cell"><div class="v">${r.reached}</div><div class="l">Reached</div></div><div class="cell"><div class="v">${money(r.price)}</div><div class="l">Price / open</div></div><div class="cell"><div class="v">${money(spent)}</div><div class="l">Total spent</div></div></div>
     <div class="note">Aggregate only. gurlp counts places, never people — this report never names who opened or who denied, and never ranks anyone.</div>`;
 }
 
-/* nav */
+/* place-card detail */
+const dsheet=document.getElementById('dsheet'),scrim=document.getElementById('scrim');
+function openDetail(id){const p=PINGS.find(x=>x.id===id);if(!p||p.status!=='pending')return;
+  dsheet.className='dsheet';
+  dsheet.innerHTML=`<div class="dgrab"><div class="pill"></div></div><div class="dbody">
+    <div class="dtop"><div><div class="dfrom">${p.from}</div><div class="dcity">${p.city}</div></div><div class="dkind">${p.kind}</div></div>
+    <div class="dprice"><b>${money(p.price)}</b> to open</div>
+    <div class="dsealnote">Sealed until you open it. Opening pays you; denying is free and no one is told.</div>
+    <div class="dreveal">${p.body}</div><div class="dearned">✓ You earned ${money(p.price)} for opening this</div>
+    <div class="dacts"><button class="dopen" onclick="detailOpen(${id})">Open</button><button class="ddeny" onclick="detailDeny(${id})">Deny</button></div></div>`;
+  scrim.classList.add('on');requestAnimationFrame(()=>dsheet.classList.add('open'));
+}
+function closeDetail(){dsheet.classList.remove('open');scrim.classList.remove('on');}
+function detailOpen(id){const p=PINGS.find(x=>x.id===id);p.status='opened';balance+=p.price;paintBalance();dsheet.classList.add('revealed');drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();setTimeout(closeDetail,1200);}
+function detailDeny(id){const p=PINGS.find(x=>x.id===id);p.status='denied';drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();closeDetail();}
+
+/* send logic */
+let opensWanted=5;
+function bump(d){opensWanted=Math.max(1,Math.min(50,opensWanted+d));const el=document.getElementById('opens');if(el)el.textContent=opensWanted;recost();}
+function ppo(){const e=document.getElementById('ppo');const v=e?parseFloat(e.value):0;return isNaN(v)||v<0?0:v;}
+function recost(){const b=document.getElementById('body');if(!b)return;const total=opensWanted*ppo(),fromBal=Math.min(balance,total),fromCard=Math.max(0,total-fromBal);
+  document.getElementById('cLine').textContent=`${opensWanted} × ${money(ppo())}`;document.getElementById('cBal').textContent=money(fromBal);document.getElementById('cCard').textContent=money(fromCard);document.getElementById('cTotal').textContent=money(total);
+  document.getElementById('cardwrap').classList.toggle('show',fromCard>0);
+  document.getElementById('fundNote').innerHTML=fromCard>0?`Your balance covers <b>${money(fromBal)}</b>. The rest goes to a card — how advertisers fund sending beyond what they've earned.`:`Fully covered by your earned balance. <b>No card needed.</b> Attention you earned, spent to reach others.`;
+  document.getElementById('sendBtn').disabled=b.value.trim().length===0||total<=0;}
+function doSend(){const b=document.getElementById('body');const body=b.value.trim();const price=ppo(),total=opensWanted*price,fromBal=Math.min(balance,total);balance-=fromBal;paintBalance();
+  reports.unshift({body,sought:opensWanted,price,reached:Math.round(opensWanted*1.6),filled:opensWanted,isNew:true});opensWanted=5;
+  show('map');setDetent('peek');playRadial();showToast("Ping sent — spreading across the network. It created a report.");}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);}
+
+/* nav — every tab is a sheet over the same map */
 function show(which){
-  ['inbox','send','report'].forEach(s=>{
-    document.getElementById(s).style.display=s===which?'block':'none';
-    document.getElementById('tab-'+s).setAttribute('aria-selected',s===which);
-  });
-  if(which==='send') resetSend();
-  if(which==='report') renderReportList();
+  activeTab=which;
+  ['map','inbox','send','report'].forEach(s=>document.getElementById('tab-'+s).setAttribute('aria-selected',s===which));
+  closeDetail();
+  computeDetents();
+  renderSheet();
+  const target=which==='map'?'peek':'mid';
+  setDetent(target);
 }
 
-renderInbox();recost();
+drawWorld();
+requestAnimationFrame(()=>{computeDetents();activeTab='map';renderSheet();setDetent('peek',false);});
+window.addEventListener('resize',()=>{computeDetents();setDetent(curDetent,false);});
 </script>
 </body>
 </html>
