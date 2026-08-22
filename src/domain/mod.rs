@@ -1,4 +1,5 @@
 pub mod admin;
+pub mod adverts;
 pub mod calendar;
 pub mod businesses;
 pub mod consultations;

@@ -96,6 +96,7 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::runaway::routes::router())
         .merge(crate::domain::runs::routes::router())
         .merge(crate::domain::running::routes::router())
+        .merge(crate::domain::adverts::routes::router())
         .merge(crate::domain::whyte::routes::router())
         .merge(crate::domain::submissions::routes::router())
         // Bearer-resolution runs on every /v1 request. It's a soft pass

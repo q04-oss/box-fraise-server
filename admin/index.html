@@ -305,6 +305,43 @@
       </fieldset>
 
       <fieldset>
+        <legend>Adverts — the running inbox</legend>
+        <div class="muted">What a signed-in runner finds in their inbox on the homepage. The
+        line is what they see unopened; the body is what appears when they choose to open it,
+        and is never sent to anybody who has not. Nothing here charges anybody — the amount
+        times the count is money that already changed hands.</div>
+        <label for="ad-who">Advertiser</label>
+        <input id="ad-who" placeholder="Ferngrove Bakery">
+        <label for="ad-tease">The line, unopened</label>
+        <input id="ad-tease" placeholder="A loaf and a coffee, Saturday morning.">
+        <label for="ad-body">What opening it reveals</label>
+        <textarea id="ad-body" rows="4" placeholder="Ten percent off before nine on Saturdays. Say you ran here."></textarea>
+        <label for="ad-link">Link (optional)</label>
+        <input id="ad-link" placeholder="https://">
+        <div class="row" style="margin-top: 10px;">
+          <div>
+            <label for="ad-pays">Paid per open</label>
+            <input id="ad-pays" type="number" min="0.25" step="0.25" value="0.50">
+          </div>
+          <div>
+            <label for="ad-opens">Opens bought</label>
+            <input id="ad-opens" type="number" min="1" step="1" value="100">
+          </div>
+        </div>
+        <div style="margin-top: 12px;"><button id="ad-add">Put it in the inbox</button></div>
+        <div id="ad-msg" class="muted" style="margin-top: 8px;"></div>
+        <div id="ad-list" style="margin-top: 16px;"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Owed for adverts</legend>
+        <div class="muted">Runners who opened something and have not been handed the money.
+        Pay in cash, then mark it here. It cannot be undone.</div>
+        <div id="aw-list" style="margin-top: 14px;"></div>
+        <div id="aw-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Who works where</legend>
         <div class="muted">The link a shift needs, and the one the strike counts.
         Businesses cannot sign in yet, so it is entered here on their behalf.</div>
@@ -426,6 +463,8 @@
       loadMarks();
       loadOffers();
       loadOwed();
+      loadAdverts();
+      loadAdvertOwed();
       // Function declarations are hoisted, so these resolve even
       // though they are defined further down the script; render() is
       // only ever called after the whole file has parsed.
@@ -1145,6 +1184,117 @@
       row.appendChild(what);
       row.appendChild(st);
       row.appendChild(pay);
+      holder.appendChild(row);
+    });
+  }
+
+  // ── Adverts, and what they owe ───────────────────────────────────
+  // The running layer's inbox. Separate from Offers above: that one is
+  // for members, this one is for runners. Different tables, different
+  // credentials, and deliberately not merged.
+  async function loadAdverts() {
+    const holder = document.getElementById('ad-list');
+    let rows;
+    try { rows = await api('/admin/adverts'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    if (!rows.length) { holder.className = 'muted'; holder.textContent = 'No advert yet.'; return; }
+    holder.className = '';
+    rows.forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = a.advertiser + ' · ' + a.teaser;
+      const what = document.createElement('span');
+      what.className = 'who';
+      what.textContent = money(a.pays_cents) + ' × ' + a.opens_taken + '/' + a.opens_paid;
+      const st = document.createElement('span');
+      st.className = 'st';
+      st.textContent = a.status === 'open'
+        ? (a.opens_taken >= a.opens_paid ? 'spent' : 'live')
+        : 'closed';
+      row.appendChild(name); row.appendChild(what); row.appendChild(st);
+      if (a.status === 'open') {
+        const stop = document.createElement('button');
+        stop.className = 'secondary';
+        stop.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+        stop.textContent = 'Close';
+        stop.addEventListener('click', async () => {
+          stop.disabled = true;
+          try { await api('/admin/adverts/' + a.id + '/close', { method: 'POST' }); await loadAdverts(); }
+          catch (e) { document.getElementById('ad-msg').textContent = e.message; stop.disabled = false; }
+        });
+        row.appendChild(stop);
+      }
+      holder.appendChild(row);
+    });
+  }
+
+  document.getElementById('ad-add').addEventListener('click', async () => {
+    const msg = document.getElementById('ad-msg');
+    const advertiser = document.getElementById('ad-who').value.trim();
+    const teaser = document.getElementById('ad-tease').value.trim();
+    const body = document.getElementById('ad-body').value.trim();
+    const link = document.getElementById('ad-link').value.trim();
+    const dollars = parseFloat(document.getElementById('ad-pays').value);
+    const opens_paid = parseInt(document.getElementById('ad-opens').value, 10);
+    if (!advertiser || !teaser || !body) { msg.textContent = 'A name, a line, and something inside it.'; return; }
+    if (!(dollars > 0) || !(opens_paid > 0)) { msg.textContent = 'An amount and a count.'; return; }
+    msg.textContent = 'Putting it up…';
+    try {
+      await api('/admin/adverts', {
+        method: 'POST',
+        body: JSON.stringify({
+          advertiser, teaser, body,
+          link: link || null,
+          pays_cents: Math.round(dollars * 100),
+          opens_paid,
+        }),
+      });
+      msg.textContent = 'In every inbox. Owed if all of it is opened: '
+        + money(Math.round(dollars * 100) * opens_paid) + '.';
+      document.getElementById('ad-tease').value = '';
+      document.getElementById('ad-body').value = '';
+      await loadAdverts();
+    } catch (e) { msg.textContent = e.message; }
+  });
+
+  async function loadAdvertOwed() {
+    const holder = document.getElementById('aw-list');
+    let rows;
+    try { rows = await api('/admin/adverts/owed'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    if (!rows.length) { holder.className = 'muted'; holder.textContent = 'Nobody is owed anything.'; return; }
+    holder.className = '';
+    rows.forEach(w => {
+      const row = document.createElement('div');
+      row.className = 'tl';
+      const name = document.createElement('span');
+      name.className = 'txt';
+      name.textContent = w.username;
+      const what = document.createElement('span');
+      what.className = 'who';
+      what.textContent = w.opens + (w.opens === 1 ? ' open' : ' opens');
+      const st = document.createElement('span');
+      st.className = 'st';
+      st.textContent = money(w.owed_cents);
+      const pay = document.createElement('button');
+      pay.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+      pay.textContent = 'Handed over';
+      pay.addEventListener('click', async () => {
+        if (!confirm('Count out ' + money(w.owed_cents) + ' to ' + w.username + '? This cannot be undone.')) return;
+        pay.disabled = true;
+        try {
+          const r = await api('/admin/adverts/pay', {
+            method: 'POST',
+            body: JSON.stringify({ username: w.username }),
+          });
+          document.getElementById('aw-msg').textContent =
+            money(r.amount_cents) + ' marked paid to ' + r.username + '.';
+          await loadAdvertOwed();
+        } catch (e) { document.getElementById('aw-msg').textContent = e.message; pay.disabled = false; }
+      });
+      row.appendChild(name); row.appendChild(what); row.appendChild(st); row.appendChild(pay);
       holder.appendChild(row);
     });
   }

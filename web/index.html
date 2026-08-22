@@ -157,7 +157,32 @@
     .r-rt { flex: 1 1 auto; }
 
     /* While a run is going, everything else gets out of the way. */
-    body.running #board-section, body.running #club { opacity: 0.2; }
+    body.running #board-section, body.running #club, body.running #run-inbox { opacity: 0.2; }
+
+    /* ── The inbox ───────────────────────────────────────────────── */
+    .ad-list { border-top: 2px solid var(--ink); }
+    .ad {
+      border-bottom: 1px solid var(--rule); padding: 16px 0;
+      transition: background 140ms ease;
+    }
+    .ad.took { background: #fdf2f2; padding-left: 12px; padding-right: 12px; }
+    .ad-who { font-style: italic; font-size: 21px; line-height: 1.2; }
+    .ad-tease { font-size: 16px; line-height: 1.5; color: var(--muted); margin: 5px 0 12px; }
+    .ad-open {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; padding: 13px 20px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 46px;
+    }
+    .ad-open[disabled] { background: #ccc; cursor: default; }
+    .ad-body { font-size: 17px; line-height: 1.6; margin: 4px 0 12px; white-space: pre-wrap; }
+    .ad-link {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); text-decoration: none;
+      border-bottom: 1px solid var(--rule); padding-bottom: 3px;
+    }
+    .ad-paid {
+      font-style: italic; font-size: 26px; color: var(--accent); margin-top: 14px;
+    }
 
     /* ── The run club ────────────────────────────────────────────── */
     #club { border-top: 1px solid var(--rule); padding-top: 26px; }
@@ -196,6 +221,9 @@
 
     <section id="run-panel"></section>
 
+    <!-- Empty and silent for anybody not signed in. -->
+    <section id="run-inbox"></section>
+
     <section id="club">
       <p class="head">There is a run club.</p>
       <p class="sub">Join by showing up</p>
@@ -218,10 +246,12 @@
       const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
       if (signedIn) {
         const main = document.querySelector('main');
-        main.insertBefore(document.getElementById('run-panel'),
-                          document.getElementById('board-section'));
+        const board = document.getElementById('board-section');
+        main.insertBefore(document.getElementById('run-panel'), board);
+        main.insertBefore(document.getElementById('run-inbox'), board);
       }
       renderRunning('run-panel');
+      renderInbox('run-inbox');
       renderBoard('run-board');
     })();
   </script>

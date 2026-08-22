@@ -143,6 +143,7 @@
         // The cookie is set by the server; re-render from it.
         renderRunning('run-panel');
         if (window.renderBoard) window.renderBoard('run-board');
+        if (window.renderInbox) window.renderInbox('run-inbox');
       } catch (e) {
         msg.className = 'r-msg err';
         msg.textContent = e.message;
@@ -167,6 +168,7 @@
       await fetch('/v1/running/session', { method: 'DELETE' }).catch(() => {});
       renderRunning('run-panel');
       if (window.renderBoard) window.renderBoard('run-board');
+      if (window.renderInbox) window.renderInbox('run-inbox');
     });
     head.append(document.createTextNode(' · '), out);
     root.appendChild(head);
@@ -297,6 +299,75 @@
       holder.appendChild(row);
     });
   }
+
+  // ── The inbox ─────────────────────────────────────────────────────
+  // Adverts you choose to open, and are paid for opening.
+  //
+  // What is inside one is not on this page until you open it — the
+  // listing endpoint does not return it. Pressing the button is the
+  // whole transaction: nothing here times how long it stays open or
+  // checks whether you read it.
+  const money = (c) => '$' + (c / 100).toFixed(2);
+
+  window.renderInbox = async function renderInbox(rootId) {
+    const root = document.getElementById(rootId);
+    if (!root) return;
+    if (!who()) { root.textContent = ''; return; }
+
+    let data;
+    try { data = await api('/inbox'); } catch { root.textContent = ''; return; }
+
+    root.textContent = '';
+    const head = el('p', 'head', 'Adverts.');
+    const sub = el('p', 'sub');
+    sub.textContent = data.owed_cents > 0
+      ? money(data.owed_cents) + ' waiting for you' +
+        (data.paid_cents > 0 ? ' · ' + money(data.paid_cents) + ' collected' : '')
+      : 'You are paid when you choose to open one';
+    root.append(head, sub);
+
+    if (!data.adverts.length) {
+      root.appendChild(el('p', 'r-none',
+        'Nothing is waiting. When a business buys space it turns up here, and you decide.'));
+      return;
+    }
+
+    const list = el('div', 'ad-list');
+    root.appendChild(list);
+
+    data.adverts.forEach((ad) => {
+      const card = el('div', 'ad');
+      const who_ = el('div', 'ad-who', ad.advertiser);
+      const tease = el('div', 'ad-tease', ad.teaser);
+      const open = el('button', 'ad-open', 'Open · ' + money(ad.pays_cents));
+      card.append(who_, tease, open);
+
+      open.addEventListener('click', async () => {
+        open.disabled = true;
+        try {
+          const got = await api('/inbox/' + ad.id + '/open', { method: 'POST' });
+          card.classList.add('took');
+          open.remove();
+          const body = el('p', 'ad-body', got.body);
+          card.appendChild(body);
+          if (got.link) {
+            const a = el('a', 'ad-link', 'Go there →');
+            a.href = got.link;
+            a.rel = 'noopener nofollow';
+            a.target = '_blank';
+            card.appendChild(a);
+          }
+          card.appendChild(el('div', 'ad-paid', '+' + money(got.amount_cents)));
+          sub.textContent = money(got.owed_cents) + ' waiting for you';
+        } catch (e) {
+          open.disabled = false;
+          tease.textContent = e.message;
+        }
+      });
+
+      list.appendChild(card);
+    });
+  };
 
   // ── The board ─────────────────────────────────────────────────────
   window.renderBoard = async function renderBoard(rootId) {
