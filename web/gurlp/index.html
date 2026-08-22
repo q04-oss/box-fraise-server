@@ -189,9 +189,14 @@
     <p>Payments sit behind a trait with a Stripe implementation and a mock. <b>It runs on the
     mock by default</b> and says so at boot. The Stripe half is written against Stripe's REST
     shapes and has not yet met a live key.</p>
-    <p class="note"><b>There is no hosted API yet.</b> No public endpoint, no keys to request,
-    nothing to sign up for. It is a service you run. <a class="inline" href="/gurlp/app">The
-    app</a> is a working drawing of a client — it talks to nothing.</p>
+    <p>It is <b>deployed and answering</b>:</p>
+<pre>curl https://gurlp-api-production.up.railway.app/health
+<span class="c">ok</span></pre>
+    <p class="note"><b>No money moves through it.</b> That instance runs the mock, so a ping
+    charges nobody and an open pays nobody. There is nothing to sign up for and no keys to
+    request — registration is open, which is exactly why it is not carrying anybody's money
+    yet. <a class="inline" href="/gurlp/app">The app</a> is a working drawing of a client and
+    talks to nothing.</p>
   </section>
 
   <footer>
