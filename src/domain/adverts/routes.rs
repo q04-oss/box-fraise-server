@@ -17,6 +17,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/running/inbox", get(inbox))
         .route("/running/inbox/{id}/open", post(open))
+        .route("/running/inbox/{id}/decline", post(decline))
         .route("/adverts/requests", post(request))
         .route("/advertisers/{id}/ledger", get(ledger))
         .route("/admin/adverts/requests", get(admin_requests))

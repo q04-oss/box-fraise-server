@@ -19,6 +19,9 @@ pub async fn unopened_for(conn: &mut PgConnection, runner_id: Uuid) -> sqlx::Res
             AND NOT EXISTS (
                   SELECT 1 FROM ad_opens o
                    WHERE o.advert_id = a.id AND o.runner_id = $1)
+            AND NOT EXISTS (
+                  SELECT 1 FROM ad_declines d
+                   WHERE d.advert_id = a.id AND d.runner_id = $1)
           ORDER BY a.created_at ASC",
     )
     .bind(runner_id)
@@ -37,6 +40,43 @@ pub async fn balances(conn: &mut PgConnection, runner_id: Uuid) -> sqlx::Result<
     .bind(runner_id)
     .fetch_one(conn)
     .await
+}
+
+/// How many opens are left today, and what the ceiling is.
+///
+/// Both read from the database rather than a constant in Rust, so what
+/// a reader is told and what `bf_open_advert` will actually permit
+/// cannot disagree.
+pub async fn allowance(conn: &mut PgConnection, runner_id: Uuid) -> sqlx::Result<(i32, i32)> {
+    sqlx::query_as::<_, (i32, i32)>(
+        "SELECT GREATEST(0, bf_daily_open_limit() - bf_opens_today($1)),
+                bf_daily_open_limit()",
+    )
+    .bind(runner_id)
+    .fetch_one(conn)
+    .await
+}
+
+/// Say no. No function and no counter: refusing writes one row the
+/// runner owns, which an ordinary policy covers, and it costs the
+/// advertiser nothing. See 0043.
+pub async fn decline(
+    conn: &mut PgConnection,
+    id: Uuid,
+    advert_id: Uuid,
+    runner_id: Uuid,
+) -> sqlx::Result<()> {
+    sqlx::query(
+        "INSERT INTO ad_declines (id, advert_id, runner_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (advert_id, runner_id) DO NOTHING",
+    )
+    .bind(id)
+    .bind(advert_id)
+    .bind(runner_id)
+    .execute(conn)
+    .await?;
+    Ok(())
 }
 
 /// Choose to open one.

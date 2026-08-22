@@ -14,7 +14,8 @@ pub struct Unopened {
     pub pays_cents: i32,
 }
 
-/// The inbox in one request: what is waiting, and what it has earned.
+/// The inbox in one request: what is waiting, what it has earned, and
+/// how much attention is left today.
 #[derive(Serialize)]
 pub struct Inbox {
     pub adverts: Vec<Unopened>,
@@ -22,6 +23,11 @@ pub struct Inbox {
     pub owed_cents: i64,
     /// Collected, all time.
     pub paid_cents: i64,
+    /// Opens left today. The whole list is still shown when this is
+    /// zero — seeing what you are choosing between is the point, and
+    /// hiding the rest would turn a decision back into a queue.
+    pub opens_left: i32,
+    pub daily_limit: i32,
 }
 
 /// What comes back the moment somebody opens one.

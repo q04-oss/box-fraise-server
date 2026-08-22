@@ -52,12 +52,32 @@ pub async fn inbox(pool: &Pool, runner_id: Uuid) -> AppResult<Inbox> {
     let mut tx = RunnerRlsTransaction::begin(pool, runner_id).await?;
     let adverts = repository::unopened_for(tx.conn(), runner_id).await?;
     let (owed_cents, paid_cents) = repository::balances(tx.conn(), runner_id).await?;
+    let (opens_left, daily_limit) = repository::allowance(tx.conn(), runner_id).await?;
     tx.commit().await?;
     Ok(Inbox {
         adverts,
         owed_cents,
         paid_cents,
+        opens_left,
+        daily_limit,
     })
+}
+
+/// Say no.
+///
+/// Free, and it always will be. Nobody is paid, the advertiser is not
+/// charged, and it does not touch today's allowance — charging somebody
+/// a day's attention for refusing would make silence expensive, which is
+/// the opposite of the point.
+///
+/// It is also permanent: the listing excludes what was declined, and
+/// `bf_open_advert` refuses an advert already said no to, so there is no
+/// path back to it from either side.
+pub async fn decline(pool: &Pool, runner_id: Uuid, advert_id: Uuid) -> AppResult<()> {
+    let mut tx = RunnerRlsTransaction::begin(pool, runner_id).await?;
+    repository::decline(tx.conn(), Uuid::new_v4(), advert_id, runner_id).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
 /// Open one, and be paid for it.
