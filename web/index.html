@@ -42,6 +42,7 @@
     }
     .wordmark { font-style: italic; font-size: 21px; letter-spacing: -0.01em; margin: 0; }
     .wordmark a { color: var(--ink); text-decoration: none; }
+    .mast-links { display: flex; gap: 8px; align-items: baseline; }
     .legacy {
       font-family: var(--mono); font-size: 10px; text-transform: uppercase;
       letter-spacing: 0.16em; color: var(--muted); text-decoration: none;
@@ -49,6 +50,9 @@
       padding: 8px 14px; white-space: nowrap;
     }
     .legacy:hover { color: var(--ink); border-color: var(--ink); }
+    /* The one in the masthead that somebody is meant to press. */
+    .legacy.sell { color: var(--accent); border-color: var(--accent); }
+    .legacy.sell:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
 
     main { max-width: 660px; margin: 0 auto; padding: 30px 22px 80px; }
     section { margin-bottom: 40px; }
@@ -207,7 +211,10 @@
 <body>
   <header class="masthead">
     <p class="wordmark"><a href="/">box fraise</a></p>
-    <a class="legacy" href="/legacy">Legacy</a>
+    <span class="mast-links">
+      <a class="legacy sell" href="/advertise">Advertise</a>
+      <a class="legacy" href="/legacy">Legacy</a>
+    </span>
   </header>
 
   <main>
@@ -236,7 +243,6 @@
 
     <p class="statement">Playboy was the most advanced advertising machine ever built.
     Box Fraise is the next generation of it: <strong>a consensual advertising engine.</strong>
-    <a class="inline" href="/advertise">Advertise on it →</a>
     <a class="inline" href="/legacy">The rest of it →</a></p>
 
     <p class="closer">Box Fraise · Edmonton</p>
