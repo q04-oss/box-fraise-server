@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your adverts — box fraise</title>
+  <!-- Nothing here should ever be indexed: the URL is the credential.
+       It is only ever sent to the business it belongs to. -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ffffff">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --mono:   'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 660px; margin: 0 auto; padding: 40px 22px 90px; }
+    .kicker {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--muted); margin: 0 0 12px;
+    }
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 6.5vw, 48px); letter-spacing: -0.03em;
+      line-height: 1.03; margin: 0 0 26px;
+    }
+
+    /* The totals, as figures. */
+    .sum { border-top: 2px solid var(--ink); margin: 0 0 12px; }
+    .sum div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--rule);
+      font-family: var(--mono); font-size: 13px;
+    }
+    .sum .v { color: var(--ink); }
+    .sum .big .v { font-family: 'Newsreader', Georgia, serif; font-style: italic;
+                   font-size: 30px; color: var(--accent); line-height: 1; }
+    .note { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 34px; }
+
+    h2 {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--muted); font-weight: 500;
+      margin: 0 0 12px;
+    }
+    .ads { border-top: 2px solid var(--ink); }
+    .ad { padding: 16px 0; border-bottom: 1px solid var(--rule); }
+    .ad .line { font-style: italic; font-size: 20px; line-height: 1.25; }
+    .ad .meta {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+      color: var(--muted); margin-top: 7px;
+      display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    }
+    .ad .meta b { color: var(--ink); font-weight: 500; }
+    /* How much of what they bought has been used. */
+    .bar { height: 3px; background: var(--rule); margin-top: 10px; }
+    .bar > i { display: block; height: 100%; background: var(--accent); }
+    .state { color: var(--accent); }
+
+    .closer { color: var(--muted); font-size: 14px; margin-top: 40px; line-height: 1.6; }
+    a.inline { color: var(--ink); text-decoration: underline; text-underline-offset: 3px;
+               text-decoration-color: var(--rule); }
+    .miss { font-size: 18px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <main id="page">
+    <p class="kicker">Loading…</p>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+    const money = c => '$' + (c / 100).toFixed(2);
+    const el = (t, c, x) => { const n = document.createElement(t); if (c) n.className = c;
+                              if (x !== undefined) n.textContent = x; return n; };
+    const page = document.getElementById('page');
+
+    // The id is in the path, not a query string, so the address reads
+    // like a page rather than a lookup.
+    const id = location.pathname.split('/').filter(Boolean).pop();
+
+    (async () => {
+      let d;
+      try {
+        const r = await fetch('/v1/advertisers/' + encodeURIComponent(id) + '/ledger');
+        if (!r.ok) throw new Error('http ' + r.status);
+        d = await r.json();
+      } catch {
+        page.textContent = '';
+        page.appendChild(el('p', 'kicker', 'Box Fraise'));
+        page.appendChild(el('p', 'miss',
+          'This link does not open anything. Check it against the one you were sent, or reply to the invoice.'));
+        return;
+      }
+
+      page.textContent = '';
+      page.appendChild(el('p', 'kicker', 'Your adverts'));
+      page.appendChild(el('h1', null, d.name));
+
+      const sum = el('div', 'sum');
+      const row = (k, v, big) => {
+        const r = el('div', big ? 'big' : null);
+        r.appendChild(el('span', null, k));
+        r.appendChild(el('span', 'v', v));
+        sum.appendChild(r);
+      };
+      row('Spent with Box Fraise', money(d.spent_cents), true);
+      row('Opens bought', String(d.opens_bought));
+      row('Opens used', String(d.opens_taken));
+      row('Opens remaining', String(d.opens_bought - d.opens_taken));
+      row('Paid to readers so far', money(d.to_readers_cents));
+      page.appendChild(sum);
+
+      page.appendChild(el('p', 'note',
+        'Three dollars an open, and a dollar of every three goes to the person who chose to open it. '
+        + 'An advert has no expiry — it stays up until the opens you bought are used.'));
+
+      page.appendChild(el('h2', null, 'Each one'));
+      const list = el('div', 'ads');
+      d.adverts.forEach(a => {
+        const box = el('div', 'ad');
+        box.appendChild(el('div', 'line', a.teaser));
+
+        const meta = el('div', 'meta');
+        const left = el('span');
+        left.appendChild(el('b', null, a.opens_taken + ' of ' + a.opens_paid));
+        left.appendChild(document.createTextNode(' opened · ' + money(a.price_cents * a.opens_paid)));
+        const right = el('span', 'state');
+        right.textContent = a.status !== 'open' ? 'closed'
+          : a.opens_taken >= a.opens_paid ? 'finished'
+          : 'running since ' + new Date(a.created_at).toLocaleDateString(undefined,
+              { year: 'numeric', month: 'short', day: 'numeric' });
+        meta.append(left, right);
+        box.appendChild(meta);
+
+        const bar = el('div', 'bar');
+        const fill = el('i');
+        fill.style.width = Math.min(100, (a.opens_taken / a.opens_paid) * 100) + '%';
+        bar.appendChild(fill);
+        box.appendChild(bar);
+
+        list.appendChild(box);
+      });
+      page.appendChild(list);
+
+      page.appendChild(el('p', 'closer',
+        'This page is yours. Anybody with the address can read it, so keep it where you keep the invoice.'));
+      const foot = el('p', 'closer');
+      const a = el('a', 'inline', 'Buy more opens →');
+      a.href = '/advertise';
+      foot.appendChild(a);
+      page.appendChild(foot);
+    })();
+  })();
+  </script>
+</body>
+</html>

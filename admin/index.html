@@ -1290,7 +1290,20 @@
       st.textContent = a.status === 'open'
         ? (a.opens_taken >= a.opens_paid ? 'spent' : 'live')
         : 'closed';
-      row.appendChild(name); row.appendChild(what); row.appendChild(st);
+      // The address to put in their invoice. It is the whole permission
+      // — no account, no password — so it is only ever sent to them.
+      const led = document.createElement('button');
+      led.className = 'secondary';
+      led.style.cssText = 'flex:0 0 auto;font-size:11px;padding:4px 8px;';
+      led.textContent = 'Copy ledger link';
+      led.addEventListener('click', async () => {
+        const url = location.origin + '/advertiser/' + a.advertiser_id;
+        try { await navigator.clipboard.writeText(url); led.textContent = 'Copied'; }
+        catch { document.getElementById('ad-msg').textContent = url; }
+        setTimeout(() => { led.textContent = 'Copy ledger link'; }, 2000);
+      });
+
+      row.appendChild(name); row.appendChild(what); row.appendChild(st); row.appendChild(led);
       if (a.status === 'open') {
         const stop = document.createElement('button');
         stop.className = 'secondary';

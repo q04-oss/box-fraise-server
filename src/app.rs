@@ -127,6 +127,15 @@ pub fn build_router(state: AppState) -> Router {
             "/business/{slug}",
             ServeFile::new("web/business/index.html"),
         )
+        // A business's ledger. Any /advertiser/{id} URL serves the same
+        // page, which reads the id out of window.location and asks
+        // /v1/advertisers/{id}/ledger for the figures. There is no
+        // account behind it — the id is the permission, and it is only
+        // ever sent to the business it belongs to. See migration 0042.
+        .route_service(
+            "/advertiser/{id}",
+            ServeFile::new("web/advertiser/index.html"),
+        )
         // The sticker map used to live at /stickers; it is now the
         // homepage. Kept as a permanent redirect because the physical
         // stickers may carry the old path in print, where it cannot be

@@ -22,7 +22,8 @@ use uuid::Uuid;
 use super::{
     repository,
     types::{
-        AdminAdvert, AdminRequest, Inbox, NewAdvert, NewRequest, Opened, Owed, Paid, PayRequest,
+        AdminAdvert, AdminRequest, Inbox, Ledger, NewAdvert, NewRequest, Opened, Owed, Paid,
+        PayRequest,
     },
 };
 use crate::{
@@ -126,8 +127,10 @@ pub async fn create(pool: &Pool, admin_id: Uuid, req: NewAdvert) -> AppResult<Uu
     let link = req.link.as_deref().map(str::trim).filter(|l| !l.is_empty());
 
     let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let advertiser_id = repository::advertiser_for(tx.conn(), advertiser, "").await?;
     let id = repository::insert(
         tx.conn(),
+        advertiser_id,
         advertiser,
         teaser,
         body,
@@ -216,6 +219,42 @@ pub async fn request(pool: &Pool, req: NewRequest) -> AppResult<()> {
     Ok(())
 }
 
+/// A business's ledger, read by whoever holds the link.
+///
+/// No session, because a business does not have an account — they were
+/// sent an unguessable address. The SECURITY DEFINER function from 0042
+/// takes exactly one advertiser id and can return nothing else, so the
+/// address is the whole permission.
+pub async fn ledger(pool: &Pool, advertiser: Uuid) -> AppResult<Ledger> {
+    let mut conn = pool.acquire().await?;
+    let adverts = repository::ledger(&mut conn, advertiser).await?;
+    if adverts.is_empty() {
+        return Err(AppError::NotFound);
+    }
+    let name = adverts[0].name.clone();
+    // Totalled here rather than in SQL because the sums are trivial and
+    // this way the arithmetic behind the figures is readable.
+    let spent_cents = adverts
+        .iter()
+        .map(|a| a.price_cents as i64 * a.opens_paid as i64)
+        .sum();
+    let opens_bought = adverts.iter().map(|a| a.opens_paid as i64).sum();
+    let opens_taken = adverts.iter().map(|a| a.opens_taken as i64).sum();
+    let to_readers_cents = adverts
+        .iter()
+        .map(|a| a.pays_cents as i64 * a.opens_taken as i64)
+        .sum();
+
+    Ok(Ledger {
+        name,
+        spent_cents,
+        opens_bought,
+        opens_taken,
+        to_readers_cents,
+        adverts,
+    })
+}
+
 pub async fn list_requests(pool: &Pool) -> AppResult<Vec<AdminRequest>> {
     let mut tx = AdminRlsTransaction::begin(pool).await?;
     let rows = repository::list_requests(tx.conn()).await?;
@@ -231,8 +270,12 @@ pub async fn accept_request(pool: &Pool, admin_id: Uuid, id: Uuid) -> AppResult<
         tx.commit().await?;
         return Err(AppError::NotFound);
     };
+    // The contact from the request fills in the business's record, so
+    // the ledger link has somewhere to be sent.
+    let advertiser_id = repository::advertiser_for(tx.conn(), &r.advertiser, &r.contact).await?;
     let advert_id = repository::insert(
         tx.conn(),
+        advertiser_id,
         &r.advertiser,
         &r.teaser,
         &r.body,

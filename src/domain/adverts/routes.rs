@@ -18,6 +18,7 @@ pub fn router() -> Router<AppState> {
         .route("/running/inbox", get(inbox))
         .route("/running/inbox/{id}/open", post(open))
         .route("/adverts/requests", post(request))
+        .route("/advertisers/{id}/ledger", get(ledger))
         .route("/admin/adverts/requests", get(admin_requests))
         .route("/admin/adverts/requests/{id}/accept", post(accept_request))
         .route("/admin/adverts/requests/{id}/delete", post(delete_request))
@@ -55,6 +56,15 @@ async fn request(
 ) -> AppResult<StatusCode> {
     service::request(&state.pool, req).await?;
     Ok(StatusCode::CREATED)
+}
+
+/// What a business has spent. No session: they were sent a link, and
+/// the id in it is the permission. See 0042.
+async fn ledger(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<Ledger>> {
+    Ok(Json(service::ledger(&state.pool, id).await?))
 }
 
 async fn admin_requests(

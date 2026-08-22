@@ -83,6 +83,8 @@ pub struct AdminRequest {
 #[derive(Serialize, FromRow)]
 pub struct AdminAdvert {
     pub id: Uuid,
+    /// So the panel can offer the ledger link to put in an invoice.
+    pub advertiser_id: Uuid,
     pub advertiser: String,
     pub teaser: String,
     /// What the advertiser pays per open.
@@ -113,4 +115,36 @@ pub struct Paid {
     pub username: String,
     pub amount_cents: i64,
     pub opens: i64,
+}
+
+/// One advert on a business's ledger.
+#[derive(Serialize, FromRow)]
+pub struct LedgerRow {
+    #[serde(skip_serializing)]
+    pub name: String,
+    pub advert_id: Uuid,
+    pub teaser: String,
+    pub price_cents: i32,
+    pub pays_cents: i32,
+    pub opens_paid: i32,
+    pub opens_taken: i32,
+    pub status: String,
+    pub paid_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// What a business sees when they open the link they were sent.
+///
+/// No account, no password. The address is the permission — see 0042.
+#[derive(Serialize)]
+pub struct Ledger {
+    pub name: String,
+    /// Everything invoiced, all time.
+    pub spent_cents: i64,
+    /// Opens bought, against opens actually taken.
+    pub opens_bought: i64,
+    pub opens_taken: i64,
+    /// What has gone to readers out of that spend.
+    pub to_readers_cents: i64,
+    pub adverts: Vec<LedgerRow>,
 }

@@ -1,7 +1,7 @@
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::types::{AdminAdvert, AdminRequest, Opened, Owed, Unopened};
+use super::types::{AdminAdvert, AdminRequest, LedgerRow, Opened, Owed, Unopened};
 
 /// What is still worth showing this runner: open, in budget, and not
 /// already opened by them.
@@ -75,7 +75,7 @@ pub async fn contents(
 
 pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminAdvert>> {
     sqlx::query_as::<_, AdminAdvert>(
-        "SELECT id, advertiser, teaser, price_cents, pays_cents,
+        "SELECT id, advertiser_id, advertiser, teaser, price_cents, pays_cents,
                 opens_paid, opens_taken, status
            FROM adverts
           ORDER BY created_at DESC",
@@ -84,9 +84,31 @@ pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminAdvert>>
     .await
 }
 
+/// Find the business by name, or make one.
+///
+/// Through the SECURITY DEFINER function from 0042 so that matching is
+/// done in one statement rather than a read-then-write that races with
+/// itself. Lowercased name is the key, so two adverts typed months apart
+/// still total together.
+pub async fn advertiser_for(
+    conn: &mut PgConnection,
+    name: &str,
+    contact: &str,
+) -> sqlx::Result<Uuid> {
+    sqlx::query_scalar("SELECT bf_advertiser_for($1, $2)")
+        .bind(name)
+        .bind(contact)
+        .fetch_one(conn)
+        .await
+}
+
+/// `paid_at` is set here because an advert only goes up once the invoice
+/// has been settled. If that ever stops being true, this is the line
+/// that has to change rather than a comment somewhere.
 #[allow(clippy::too_many_arguments)]
 pub async fn insert(
     conn: &mut PgConnection,
+    advertiser_id: Uuid,
     advertiser: &str,
     teaser: &str,
     body: &str,
@@ -97,10 +119,12 @@ pub async fn insert(
 ) -> sqlx::Result<Uuid> {
     sqlx::query_scalar(
         "INSERT INTO adverts
-             (advertiser, teaser, body, link, price_cents, pays_cents, opens_paid)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+             (advertiser_id, advertiser, teaser, body, link,
+              price_cents, pays_cents, opens_paid, paid_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
          RETURNING id",
     )
+    .bind(advertiser_id)
     .bind(advertiser)
     .bind(teaser)
     .bind(body)
@@ -110,6 +134,20 @@ pub async fn insert(
     .bind(opens_paid)
     .fetch_one(conn)
     .await
+}
+
+/// One business's adverts, by id and nothing else.
+///
+/// Through the SECURITY DEFINER function from 0042: the page that calls
+/// this has no session, because a business is sent a link rather than
+/// given an account. The parameter is the whole permission — there is no
+/// way to ask for a list and no way to walk from one advertiser to
+/// another.
+pub async fn ledger(conn: &mut PgConnection, advertiser: Uuid) -> sqlx::Result<Vec<LedgerRow>> {
+    sqlx::query_as::<_, LedgerRow>("SELECT * FROM bf_advertiser_ledger($1)")
+        .bind(advertiser)
+        .fetch_all(conn)
+        .await
 }
 
 /// A business outlining an advertisement they have.
