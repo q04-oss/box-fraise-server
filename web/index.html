@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>box fraise — running</title>
-  <meta name="description" content="Log your runs, get on the board, and join a run club whose purpose is to close Whyte Avenue and Jasper Avenue to cars.">
+  <meta name="description" content="A leaderboard, and a run club on Whyte Avenue and Jasper Avenue. Join by showing up.">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
@@ -35,15 +35,12 @@
     }
 
     .masthead {
-      max-width: 720px; margin: 0 auto;
+      max-width: 660px; margin: 0 auto;
       padding: 22px 22px 16px;
       display: flex; align-items: baseline; justify-content: space-between;
       gap: 18px; border-bottom: 1px solid var(--rule);
     }
-    .wordmark {
-      font-style: italic; font-weight: 400; font-size: 21px;
-      letter-spacing: -0.01em; margin: 0;
-    }
+    .wordmark { font-style: italic; font-size: 21px; letter-spacing: -0.01em; margin: 0; }
     .wordmark a { color: var(--ink); text-decoration: none; }
     .legacy {
       font-family: var(--mono); font-size: 10px; text-transform: uppercase;
@@ -53,29 +50,43 @@
     }
     .legacy:hover { color: var(--ink); border-color: var(--ink); }
 
-    main { max-width: 720px; margin: 0 auto; padding: 34px 22px 90px; }
+    main { max-width: 660px; margin: 0 auto; padding: 30px 22px 80px; }
+    section { margin-bottom: 40px; }
 
-    h1 {
+    .head {
       font-style: italic; font-weight: 500;
-      font-size: clamp(32px, 7.5vw, 60px); letter-spacing: -0.032em;
-      line-height: 1.0; margin: 0 0 18px; text-wrap: balance;
+      font-size: clamp(28px, 6vw, 44px); letter-spacing: -0.03em;
+      line-height: 1.03; margin: 0 0 8px;
     }
-    .lede { font-size: 19px; line-height: 1.55; margin: 0 0 8px; max-width: 46ch; }
-    .fine { font-size: 15px; line-height: 1.6; color: var(--muted); margin: 0 0 30px; max-width: 46ch; }
-    h2 {
+    .sub {
       font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.16em; color: var(--muted); font-weight: 500;
-      margin: 46px 0 14px; padding-top: 22px; border-top: 1px solid var(--rule);
+      letter-spacing: 0.14em; color: var(--muted); margin: 0 0 18px;
     }
-    p { font-size: 17px; line-height: 1.6; margin: 0 0 14px; }
-    p strong { font-weight: 500; }
-    a.inline {
-      color: var(--ink); text-decoration: underline;
-      text-underline-offset: 3px; text-decoration-color: var(--rule);
-    }
-    a.inline:hover { text-decoration-color: var(--accent); }
 
-    /* ── Signing up ──────────────────────────────────────────────── */
+    /* ── The board ───────────────────────────────────────────────── */
+    #run-board { border-top: 2px solid var(--ink); }
+    .r-brow {
+      display: flex; align-items: baseline; gap: 14px;
+      padding: 15px 0; border-bottom: 1px solid var(--rule);
+    }
+    .r-brow.me .r-bu, .r-brow.me .r-bs { color: var(--accent); }
+    .r-bn { font-family: var(--mono); font-size: 12px; color: var(--accent); width: 26px; flex: 0 0 auto; }
+    .r-bmid { flex: 1 1 auto; min-width: 0; }
+    .r-bu {
+      font-style: italic; font-size: 22px; line-height: 1.15;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .r-bd {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted); margin-top: 4px;
+    }
+    .r-bs { font-style: italic; font-size: 30px; line-height: 1; flex: 0 0 auto; text-align: right; }
+    .r-brow.lead { padding: 20px 0; }
+    .r-brow.lead .r-bu { font-size: 30px; }
+    .r-brow.lead .r-bs { font-size: 42px; color: var(--accent); }
+    .r-none { font-size: 16px; color: var(--muted); margin: 18px 0 0; }
+
+    /* ── Signing up, and running ─────────────────────────────────── */
     .r-auth { max-width: 340px; }
     .r-auth input {
       display: block; width: 100%; font: inherit; font-size: 17px;
@@ -84,7 +95,6 @@
     }
     .r-auth input:focus { outline: none; border-color: var(--accent); }
     .r-lede { font-size: 15px; color: var(--muted); margin: 0 0 16px; }
-
     .r-go {
       font-family: var(--mono); font-size: 12px; text-transform: uppercase;
       letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
@@ -102,7 +112,6 @@
     .r-msg.ok  { color: var(--accent); }
     .r-msg.err { color: #444; }
 
-    /* ── Running ─────────────────────────────────────────────────── */
     .r-who {
       font-family: var(--mono); font-size: 11px; text-transform: uppercase;
       letter-spacing: 0.14em; color: var(--accent); margin: 0 0 18px;
@@ -121,18 +130,7 @@
       font-family: var(--mono); font-size: 12px; text-transform: uppercase;
       letter-spacing: 0.2em; color: var(--muted); margin-top: 4px;
     }
-    .r-meta {
-      font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em;
-      color: var(--ink); margin-top: 12px;
-    }
-    /* While a run is going the page gets out of the way. */
-    body.running .after-run, body.running h2, body.running #board-section { opacity: 0.25; }
-
-    #board-section {
-      margin: 36px 0 0; padding-top: 26px;
-      border-top: 1px solid var(--rule);
-    }
-
+    .r-meta { font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em; margin-top: 12px; }
     .r-mine { margin-top: 26px; }
     .r-standing {
       font-family: var(--mono); font-size: 11px; text-transform: uppercase;
@@ -146,61 +144,27 @@
     }
     .r-rk { color: var(--ink); flex: 0 0 auto; }
     .r-rt { flex: 1 1 auto; }
-    .r-none { font-size: 15px; color: var(--muted); margin: 0; }
 
-    /* ── The board ───────────────────────────────────────────────── */
-    /* The reason a stranger stays on this page, so it is set like a
-       standings table rather than a list: heavy rule at the top, a rank
-       column that reads as a rank, and the score big enough to be the
-       thing your eye lands on. */
-    .board-head {
-      font-family: 'Newsreader', Georgia, serif; font-style: italic;
-      font-weight: 500; font-size: clamp(26px, 5.5vw, 40px);
-      letter-spacing: -0.028em; line-height: 1.05;
-      margin: 0 0 8px; padding: 0; border: 0; text-transform: none;
-      color: var(--ink);
-    }
-    .board-sub {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; color: var(--muted); margin: 0 0 18px;
-    }
-    #run-board { border-top: 2px solid var(--ink); }
-    .r-brow {
-      display: flex; align-items: baseline; gap: 14px;
-      padding: 15px 0; border-bottom: 1px solid var(--rule);
-    }
-    .r-brow.me .r-bu { color: var(--accent); }
-    .r-brow.me .r-bs { color: var(--accent); }
-    .r-bn {
-      font-family: var(--mono); font-size: 12px; color: var(--accent);
-      width: 26px; flex: 0 0 auto;
-    }
-    .r-bmid { flex: 1 1 auto; min-width: 0; }
-    .r-bu {
-      font-family: 'Newsreader', Georgia, serif; font-style: italic;
-      font-size: 22px; line-height: 1.15;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .r-bd {
-      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
-      letter-spacing: 0.12em; color: var(--muted); margin-top: 4px;
-    }
-    .r-bs {
-      font-family: 'Newsreader', Georgia, serif; font-style: italic;
-      font-size: 30px; line-height: 1; color: var(--ink);
-      flex: 0 0 auto; text-align: right;
-    }
-    /* Whoever is winning. */
-    .r-brow.lead { padding: 20px 0; }
-    .r-brow.lead .r-bu { font-size: 30px; }
-    .r-brow.lead .r-bs { font-size: 42px; color: var(--accent); }
+    /* While a run is going, everything else gets out of the way. */
+    body.running #board-section, body.running #club { opacity: 0.2; }
 
-    .when {
-      font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
-      line-height: 2; color: var(--muted); margin: 0 0 14px;
+    /* ── The run club ────────────────────────────────────────────── */
+    #club { border-top: 1px solid var(--rule); padding-top: 26px; }
+    .when { margin: 0 0 14px; border-top: 2px solid var(--ink); }
+    .when div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+      padding: 13px 0; border-bottom: 1px solid var(--rule);
     }
-    .when b { color: var(--ink); font-weight: 500; }
-    .closer { color: var(--muted); font-size: 14px; margin-top: 42px; }
+    .when .day { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); }
+    .when .place { font-style: italic; font-size: 19px; text-align: right; }
+    .purpose { font-size: 17px; line-height: 1.55; margin: 0; }
+    .purpose strong { font-weight: 500; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 13px; margin: 34px 0 0; }
   </style>
 </head>
 <body>
@@ -210,61 +174,38 @@
   </header>
 
   <main>
-    <h1>Run it until they close it.</h1>
-    <p class="lede">Log your runs. Get on the board. Turn up on a Wednesday, a Friday or a
-    Sunday and run with people who want the same street shut to cars.</p>
-    <p class="fine">Hold your phone in your hand and press start — it works out the distance
-    from where you are. The route never leaves the phone; only how far and how long are sent.</p>
-
-    <div id="run-panel"></div>
-
-    <!-- Moved above the sign-up form for anybody who is not signed in —
-         see the script at the foot of this file. A stranger should meet
-         the competition before they meet a password field. -->
     <section id="board-section">
-      <p class="board-head">Who is running the most.</p>
-      <p class="board-sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
+      <p class="head">Who is running the most.</p>
+      <p class="sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
       <div id="run-board"></div>
     </section>
 
-    <div class="after-run">
-      <h2>There is a run club</h2>
-      <p><strong>You join by showing up.</strong> There is nothing to sign, nothing to pay and
-      nobody to ask. You do not need to be fast and you do not need to know anyone.</p>
-      <p class="when">
-        <b>Wednesday, 08:00</b> — Coffee Bureau, Jasper Avenue<br>
-        <b>Friday, 18:00</b> — McIntyre Park, Whyte Avenue<br>
-        <b>Sunday, 08:00</b> — McIntyre Park, Whyte Avenue
-      </p>
-      <p class="fine">Two streets, one club. <a class="inline" href="/runclub">Where and
-      why →</a></p>
+    <section id="run-panel"></section>
 
-      <h2>What both of them are for</h2>
-      <p><strong>Making Whyte Avenue and Jasper Avenue pedestrian only.</strong> That is the
-      purpose of the run club and the purpose of this board. Whyte is the most walked street
-      in Edmonton and it is still organised around moving cars through it. Jasper is the same
-      argument downtown.</p>
-      <p>Running down a street is the cheapest way to find out who it was built for. The
-      board exists so that people who have never come to a run are still running the same
-      streets for the same reason, and so there is a number to point at when somebody asks
-      how many of us there are.</p>
-
-      <p class="closer">Box Fraise × running · Edmonton ·
-      <a class="inline" href="/legacy">the rest of the project</a></p>
-    </div>
+    <section id="club">
+      <p class="head">There is a run club.</p>
+      <p class="sub">Join by showing up</p>
+      <div class="when">
+        <div><span class="day">Wed 08:00</span><span class="place">Coffee Bureau, Jasper Avenue</span></div>
+        <div><span class="day">Fri 18:00</span><span class="place">McIntyre Park, Whyte Avenue</span></div>
+        <div><span class="day">Sun 08:00</span><span class="place">McIntyre Park, Whyte Avenue</span></div>
+      </div>
+      <p class="purpose"><strong>Both are for making Whyte Avenue and Jasper Avenue pedestrian
+      only.</strong> <a class="inline" href="/runclub">Where and why →</a></p>
+      <p class="closer">Box Fraise · Edmonton</p>
+    </section>
   </main>
 
   <script src="/js/running.js"></script>
   <script>
-    // Signed out, the board comes first: it is the reason to sign up,
-    // and a form is a wall to put in front of somebody who has not
-    // decided yet. Signed in, the tracker leads — you came here to run.
+    // Signed out, the board leads and the form follows it. Signed in,
+    // the tracker goes to the top — you came here to run.
     (() => {
       const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
-      if (!signedIn) {
+      if (signedIn) {
         const main = document.querySelector('main');
-        main.insertBefore(document.getElementById('board-section'),
-                          document.getElementById('run-panel'));
+        main.insertBefore(document.getElementById('run-panel'),
+                          document.getElementById('board-section'));
       }
       renderRunning('run-panel');
       renderBoard('run-board');
