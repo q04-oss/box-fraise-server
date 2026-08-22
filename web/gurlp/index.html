@@ -278,18 +278,18 @@ function sheetSend(){
 }
 function sheetReports(){
   if(reports.length===0)return `<div class="stitle">Reports</div><div class="sempty"><b>No reports yet.</b>Every ping you send becomes a report. Send your first and it appears here.</div>`;
-  const items=reports.map((r,idx)=>{const rate=r.reached?Math.round(r.filled/r.reached*100):0;return `<button class="rItem" onclick="openReport(${idx})"><div class="txt"><div class="msg">${r.body}${r.isNew?'<span class="tag">NEW</span>':''}</div><div class="sub2">${r.filled}/${r.sought} opens · reached ${r.reached} · ${money(r.price)}/open</div></div><div class="rate"><div class="n">${rate}<span style="font-size:14px">%</span></div><div class="c">opened</div></div></button>`;}).join('');
-  return `<div class="stitle">Reports</div><div class="ssub" style="padding-bottom:10px">Every ping, its own report</div>${items}`;
+  const items=reports.map((r,idx)=>{const rate=r.reached?Math.round(r.filled/r.reached*100):0;return `<button class="rItem" onclick="openReport(${idx})"><div class="txt"><div class="msg">${r.body}${r.isNew?'<span class="tag">NEW</span>':''}</div><div class="sub2">${r.filled} shared · reached ${r.reached} · ${money(r.price)}/open</div></div><div class="rate"><div class="n">${rate}<span style="font-size:14px">%</span></div><div class="c">shared</div></div></button>`;}).join('');
+  return `<div class="stitle">Reports</div><div class="ssub" style="padding-bottom:10px">Each is your view of moments you shared</div>${items}`;
 }
 function openReport(idx){
   const r=reports[idx];const rate=r.reached?Math.round(r.filled/r.reached*100):0;const denied=Math.max(0,r.reached-r.filled);const spent=r.filled*r.price;
   sc.innerHTML=`<button class="back" onclick="renderSheet()">← All reports</button>
     <div class="rMsg"><div class="k">The ping</div>${r.body}</div>
-    <div class="rlead"><div class="k">Acceptance rate</div><div class="bignum">${rate}<small>%</small></div><div class="cap">Of everyone this ping reached, this many chose to open it. You can't manufacture it — it's their yes, not your spend.</div></div>
-    <div class="bar"><div class="op" style="width:${Math.max(rate,14)}%">${r.filled} opened</div><div class="dn" style="width:${Math.max(100-rate,14)}%">${denied} denied</div></div>
-    <div class="barleg"><span>Opened</span><span>Denied — free &amp; silent</span></div>
+    <div class="rlead"><div class="k">Where your attention met others</div><div class="bignum">${rate}<small>%</small></div><div class="cap">The share of reaches that became a shared open — a moment you and someone else both acted in. You can't manufacture it; it exists only because two of you made it.</div></div>
+    <div class="bar"><div class="op" style="width:${Math.max(rate,14)}%">${r.filled} shared</div><div class="dn" style="width:${Math.max(100-rate,14)}%">${denied} untouched</div></div>
+    <div class="barleg"><span>Shared opens</span><span>No meeting — free &amp; silent</span></div>
     <div class="grid"><div class="cell"><div class="v">${r.filled}/${r.sought}</div><div class="l">Opens filled</div></div><div class="cell"><div class="v">${r.reached}</div><div class="l">Reached</div></div><div class="cell"><div class="v">${money(r.price)}</div><div class="l">Price / open</div></div><div class="cell"><div class="v">${money(spent)}</div><div class="l">Total spent</div></div></div>
-    <div class="note">Aggregate only. gurlp counts places, never people — this report never names who opened or who denied, and never ranks anyone.</div>`;
+    <div class="note">This is your view of moments you shared. The same moments appear in the other person's report, framed from where they stood — same events, different centre, no version from above.</div>`;
 }
 
 /* place-card detail */
