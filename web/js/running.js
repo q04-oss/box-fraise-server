@@ -114,16 +114,32 @@
       msg.textContent = '';
     });
 
+    const send = (path) => api(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user.value, password: pass.value }),
+    });
+
     go.addEventListener('click', async () => {
       go.disabled = true;
       msg.className = 'r-msg';
       msg.textContent = 'One moment…';
       try {
-        await api('/' + (mode === 'signup' ? 'signup' : 'login'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user.value, password: pass.value }),
-        });
+        if (mode === 'signup') {
+          try {
+            await send('/signup');
+          } catch (e) {
+            // Somebody coming back types their own name into a form
+            // that happens to be showing "Sign up", and is told the
+            // name is taken — which reads as being locked out of their
+            // own account. It is theirs, so log them into it. A wrong
+            // password still fails, and says so.
+            if (!/taken/i.test(e.message)) throw e;
+            await send('/login');
+          }
+        } else {
+          await send('/login');
+        }
         // The cookie is set by the server; re-render from it.
         renderRunning('run-panel');
         if (window.renderBoard) window.renderBoard('run-board');
