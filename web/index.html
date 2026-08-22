@@ -126,7 +126,12 @@
       color: var(--ink); margin-top: 12px;
     }
     /* While a run is going the page gets out of the way. */
-    body.running .after-run, body.running h2 { opacity: 0.25; }
+    body.running .after-run, body.running h2, body.running #board-section { opacity: 0.25; }
+
+    #board-section {
+      margin: 36px 0 0; padding-top: 26px;
+      border-top: 1px solid var(--rule);
+    }
 
     .r-mine { margin-top: 26px; }
     .r-standing {
@@ -144,19 +149,51 @@
     .r-none { font-size: 15px; color: var(--muted); margin: 0; }
 
     /* ── The board ───────────────────────────────────────────────── */
+    /* The reason a stranger stays on this page, so it is set like a
+       standings table rather than a list: heavy rule at the top, a rank
+       column that reads as a rank, and the score big enough to be the
+       thing your eye lands on. */
+    .board-head {
+      font-family: 'Newsreader', Georgia, serif; font-style: italic;
+      font-weight: 500; font-size: clamp(26px, 5.5vw, 40px);
+      letter-spacing: -0.028em; line-height: 1.05;
+      margin: 0 0 8px; padding: 0; border: 0; text-transform: none;
+      color: var(--ink);
+    }
+    .board-sub {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--muted); margin: 0 0 18px;
+    }
+    #run-board { border-top: 2px solid var(--ink); }
     .r-brow {
-      display: flex; align-items: baseline; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid var(--rule);
-      font-size: 16px;
+      display: flex; align-items: baseline; gap: 14px;
+      padding: 15px 0; border-bottom: 1px solid var(--rule);
     }
-    .r-brow.me { color: var(--accent); }
-    .r-bn { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 24px; flex: 0 0 auto; }
-    .r-bu { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-    .r-bd { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 0 0 auto; }
+    .r-brow.me .r-bu { color: var(--accent); }
+    .r-brow.me .r-bs { color: var(--accent); }
+    .r-bn {
+      font-family: var(--mono); font-size: 12px; color: var(--accent);
+      width: 26px; flex: 0 0 auto;
+    }
+    .r-bmid { flex: 1 1 auto; min-width: 0; }
+    .r-bu {
+      font-family: 'Newsreader', Georgia, serif; font-style: italic;
+      font-size: 22px; line-height: 1.15;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .r-bd {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted); margin-top: 4px;
+    }
     .r-bs {
-      font-family: var(--mono); font-size: 13px; color: var(--ink);
-      width: 56px; text-align: right; flex: 0 0 auto;
+      font-family: 'Newsreader', Georgia, serif; font-style: italic;
+      font-size: 30px; line-height: 1; color: var(--ink);
+      flex: 0 0 auto; text-align: right;
     }
+    /* Whoever is winning. */
+    .r-brow.lead { padding: 20px 0; }
+    .r-brow.lead .r-bu { font-size: 30px; }
+    .r-brow.lead .r-bs { font-size: 42px; color: var(--accent); }
 
     .when {
       font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
@@ -181,13 +218,16 @@
 
     <div id="run-panel"></div>
 
-    <div class="after-run">
-      <h2>The board</h2>
-      <p class="fine">Your score is <strong>distance × speed, averaged over the runs you have
-      logged</strong>. Going further raises it and going faster raises it. Logging a hundred
-      easy kilometres does not — which is why it is divided by how many you have run.</p>
+    <!-- Moved above the sign-up form for anybody who is not signed in —
+         see the script at the foot of this file. A stranger should meet
+         the competition before they meet a password field. -->
+    <section id="board-section">
+      <p class="board-head">Who is running the most.</p>
+      <p class="board-sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
       <div id="run-board"></div>
+    </section>
 
+    <div class="after-run">
       <h2>There is a run club</h2>
       <p><strong>You join by showing up.</strong> There is nothing to sign, nothing to pay and
       nobody to ask. You do not need to be fast and you do not need to know anyone.</p>
@@ -216,8 +256,19 @@
 
   <script src="/js/running.js"></script>
   <script>
-    renderRunning('run-panel');
-    renderBoard('run-board');
+    // Signed out, the board comes first: it is the reason to sign up,
+    // and a form is a wall to put in front of somebody who has not
+    // decided yet. Signed in, the tracker leads — you came here to run.
+    (() => {
+      const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
+      if (!signedIn) {
+        const main = document.querySelector('main');
+        main.insertBefore(document.getElementById('board-section'),
+                          document.getElementById('run-panel'));
+      }
+      renderRunning('run-panel');
+      renderBoard('run-board');
+    })();
   </script>
 </body>
 </html>

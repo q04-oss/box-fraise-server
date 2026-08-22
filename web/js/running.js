@@ -289,16 +289,34 @@
     let rows;
     try { rows = await api('/board'); } catch { root.textContent = 'The board could not be reached.'; return; }
     root.textContent = '';
+    const sub = document.getElementById('board-sub');
+
     if (!rows.length) {
-      root.appendChild(el('p', 'r-none', 'Nobody has logged a run yet. The first one is free.'));
+      if (sub) sub.textContent = 'Nobody yet';
+      root.appendChild(el('p', 'r-none',
+        'Nobody has logged a run. Whoever goes first is top of it until somebody beats them.'));
       return;
     }
+
+    // What the board is worth is how many people are on it, so say so
+    // where the explanation of the score was.
+    if (sub) {
+      const total = rows.reduce((n, r) => n + Number(r.runs), 0);
+      sub.textContent = rows.length + (rows.length === 1 ? ' runner · ' : ' runners · ') +
+        total + (total === 1 ? ' run · ' : ' runs · ') + 'distance × speed, averaged';
+    }
+
     rows.forEach((r, i) => {
       const row = el('div', 'r-brow');
+      if (i === 0) row.classList.add('lead');
       if (who() && r.username === who()) row.classList.add('me');
+
       row.appendChild(el('span', 'r-bn', String(i + 1)));
-      row.appendChild(el('span', 'r-bu', r.username));
-      row.appendChild(el('span', 'r-bd', km(r.total_m) + ' km · ' + r.runs));
+      const mid = el('div', 'r-bmid');
+      mid.appendChild(el('div', 'r-bu', r.username));
+      mid.appendChild(el('div', 'r-bd',
+        km(r.total_m) + ' km · ' + r.runs + (Number(r.runs) === 1 ? ' run' : ' runs')));
+      row.appendChild(mid);
       row.appendChild(el('span', 'r-bs', r.score.toFixed(1)));
       root.appendChild(row);
     });
