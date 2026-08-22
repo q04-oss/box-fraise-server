@@ -8,153 +8,114 @@
 <meta name="theme-color" content="#EFEAE0">
 <style>
   :root{
-    --paper:#EFEAE0;
-    --card:#FBF8F2;
-    --brick:#C1392A;
-    --brick-deep:#9E2C1F;
-    --ink:#1F1A16;
-    --stone:#6B5F55;
-    --rule:#DBD2C4;
-    --paid:#2F6F4F;
+    --paper:#EFEAE0;--card:#FBF8F2;--brick:#C1392A;--brick-deep:#9E2C1F;
+    --ink:#1F1A16;--stone:#6B5F55;--rule:#DBD2C4;--paid:#2F6F4F;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:"Liberation Sans","Helvetica Neue",Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-    display:flex;align-items:center;justify-content:center;
-    padding:24px 16px;
-  }
-  .device{
-    width:100%;max-width:404px;
-    background:var(--paper);
-    border:1px solid var(--rule);
-    border-radius:22px;
-    overflow:hidden;
-    display:flex;flex-direction:column;
-    height:min(820px,92vh);
-    box-shadow:0 24px 60px -30px rgba(31,26,22,.5);
-  }
-
-  /* ---- top chrome ---- */
-  .top{
-    padding:20px 22px 0;
-    background:var(--paper);
-  }
-  /* The way out. A prototype living on a real site with no exit is a
-     dead end; everything else here is untouched. */
-  .back{
-    display:inline-block;margin-bottom:12px;
-    font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--stone);text-decoration:none;
-  }
+  body{background:var(--paper);color:var(--ink);font-family:"Liberation Sans","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .device{width:100%;max-width:404px;background:var(--paper);border:1px solid var(--rule);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;height:min(824px,92vh);box-shadow:0 24px 60px -30px rgba(31,26,22,.5)}
+  .top{padding:20px 22px 0}
+  /* The way out. A prototype living on a real site needs an exit;
+     everything else here is untouched. */
+  .back{display:inline-block;margin-bottom:12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);text-decoration:none}
   .back:hover{color:var(--ink)}
-  .wordmark{
-    font-size:30px;font-weight:700;letter-spacing:-.04em;
-    color:var(--brick);line-height:1;
-  }
+  .wordmark{font-size:30px;font-weight:700;letter-spacing:-.04em;color:var(--brick);line-height:1}
   .wordmark span{color:var(--ink)}
-  .role{
-    margin-top:14px;
-    display:flex;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden;
-  }
-  .role button{
-    flex:1;appearance:none;border:0;background:transparent;
-    font:inherit;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-    padding:9px 8px;cursor:pointer;color:var(--ink);
-  }
+  .role{margin-top:14px;display:flex;border:1.5px solid var(--ink);border-radius:2px;overflow:hidden}
+  .role button{flex:1;appearance:none;border:0;background:transparent;font:inherit;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 6px;cursor:pointer;color:var(--ink)}
   .role button+button{border-left:1.5px solid var(--ink)}
   .role button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
-
   .screen{flex:1;overflow-y:auto;padding:0 22px 28px}
   .screen::-webkit-scrollbar{width:0}
-
-  /* ---- inbox ---- */
-  .sub{
-    display:flex;justify-content:space-between;align-items:baseline;
-    padding:18px 0 6px;position:sticky;top:0;background:var(--paper);z-index:2;
-  }
+  .sub{display:flex;justify-content:space-between;align-items:baseline;padding:18px 0 6px;position:sticky;top:0;background:var(--paper);z-index:2}
   .sub .lbl{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
   .bal{font-size:12px;font-weight:700;color:var(--ink)}
   .bal b{color:var(--paid)}
   .hint{font-size:12.5px;color:var(--stone);padding:2px 0 12px;line-height:1.45}
 
-  .ping{
-    background:var(--card);
-    border:1px solid var(--rule);
-    border-radius:3px;
-    margin-bottom:12px;
-    overflow:hidden;
-    transition:transform .28s ease,opacity .28s ease,max-height .3s ease,margin .3s ease;
-    max-height:320px;
-  }
+  .ping{background:var(--card);border:1px solid var(--rule);border-radius:3px;margin-bottom:12px;overflow:hidden;transition:transform .28s ease,opacity .28s ease,max-height .3s ease,margin .3s ease;max-height:340px}
   .ping.gone{opacity:0;transform:translateX(-14px);max-height:0;margin-bottom:0;border-width:0}
   .ping .row{display:flex;align-items:stretch}
   .ping .meta{flex:1;padding:14px 16px;min-width:0}
   .from{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone)}
   .price{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:5px}
   .price small{font-size:12px;font-weight:400;color:var(--stone);letter-spacing:0}
-  .kind{
-    align-self:flex-start;margin-top:9px;display:inline-block;
-    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--stone);border:1px solid var(--rule);border-radius:999px;padding:3px 9px;
-  }
-
-  /* sealed bar */
-  .seal{
-    background:repeating-linear-gradient(135deg,var(--brick) 0 11px,var(--brick-deep) 11px 22px);
-    width:74px;flex:0 0 74px;
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
-    text-align:center;line-height:1.3;
-  }
-
+  .kind{align-self:flex-start;margin-top:9px;display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);border:1px solid var(--rule);border-radius:999px;padding:3px 9px}
+  .seal{background:repeating-linear-gradient(135deg,var(--brick) 0 11px,var(--brick-deep) 11px 22px);width:74px;flex:0 0 74px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;text-align:center;line-height:1.3}
   .acts{display:flex;border-top:1px solid var(--rule)}
-  .acts button{
-    flex:1;appearance:none;border:0;background:transparent;font:inherit;
-    font-size:13px;font-weight:700;letter-spacing:.02em;padding:12px;cursor:pointer;color:var(--ink);
-  }
+  .acts button{flex:1;appearance:none;border:0;background:transparent;font:inherit;font-size:13px;font-weight:700;padding:12px;cursor:pointer;color:var(--ink)}
   .acts .open{color:#fff;background:var(--brick)}
   .acts .open:hover{background:var(--brick-deep)}
   .acts .deny:hover{background:#F0E7DC}
   .acts button+button{border-left:1px solid var(--rule)}
-
-  /* opened state */
   .opened .seal,.opened .acts{display:none}
   .opened .content{display:block}
   .content{display:none;padding:0 16px 15px}
-  .content .body{font-size:14.5px;line-height:1.5;color:var(--ink);padding-top:2px}
-  .earned{
-    margin-top:11px;display:inline-flex;align-items:center;gap:7px;
-    font-size:12px;font-weight:700;color:var(--paid);
-  }
+  .content .body{font-size:14.5px;line-height:1.5;padding-top:2px}
+  .earned{margin-top:11px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--paid)}
   .earned .dot{width:6px;height:6px;border-radius:999px;background:var(--paid)}
-
-  .empty{padding:60px 8px;text-align:center}
+  .empty{padding:52px 8px;text-align:center}
   .empty .big{font-size:19px;font-weight:700;letter-spacing:-.01em}
   .empty .small{margin-top:8px;font-size:13.5px;color:var(--stone);line-height:1.5}
 
-  /* ---- report ---- */
+  .field{margin-top:18px}
+  .field>label{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);margin-bottom:7px}
+  textarea,input.txt{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 13px;resize:none}
+  textarea{height:96px;line-height:1.45}
+  textarea:focus,input:focus{outline:2px solid var(--brick);outline-offset:-1px;border-color:var(--brick)}
+  .two{display:flex;gap:12px}
+  .two .field{flex:1}
+  .stepper{display:flex;align-items:center;border:1px solid var(--rule);border-radius:3px;background:var(--card);overflow:hidden}
+  .stepper button{appearance:none;border:0;background:transparent;font:inherit;font-size:20px;font-weight:700;width:42px;height:46px;cursor:pointer;color:var(--ink)}
+  .stepper button:hover{background:#F0E7DC}
+  .stepper .n{flex:1;text-align:center;font-size:18px;font-weight:700}
+  .costbox{margin-top:22px;border:1.5px solid var(--ink);border-radius:3px;overflow:hidden}
+  .costrow{display:flex;justify-content:space-between;align-items:center;padding:11px 15px;font-size:13.5px}
+  .costrow+.costrow{border-top:1px solid var(--rule)}
+  .costrow .k{color:var(--stone);font-weight:600}
+  .costrow .v{font-weight:700}
+  .costrow.total{background:var(--ink);color:var(--paper)}
+  .costrow.total .k{color:var(--paper);font-weight:700;letter-spacing:.02em}
+  .costrow.total .v{font-size:18px}
+  .fund{font-size:12px;color:var(--stone);margin-top:10px;line-height:1.5;border-left:2px solid var(--brick);padding:3px 0 3px 12px}
+  .fund b{color:var(--ink)}
+  .cardwrap{margin-top:16px;display:none}
+  .cardwrap.show{display:block}
+  .cardgrid{display:flex;gap:10px}
+  /* This is a drawing of a card form. Nothing is sent anywhere and no
+     payment processor exists yet, so the page says so where somebody is
+     about to type a card number. */
+  .fake{margin-top:14px;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--brick);border:1px dashed var(--brick);border-radius:3px;padding:9px 11px;line-height:1.45}
+  .send{margin-top:22px;width:100%;appearance:none;border:0;background:var(--brick);color:#fff;font:inherit;font-size:15px;font-weight:700;letter-spacing:.02em;padding:15px;border-radius:3px;cursor:pointer}
+  .send:hover{background:var(--brick-deep)}
+  .send:disabled{background:#C9BFB2;cursor:not-allowed}
+  .sent{padding:56px 10px;text-align:center}
+  .sent .mark{width:52px;height:52px;border-radius:999px;background:var(--paid);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px}
+  .sent .big{font-size:20px;font-weight:700}
+  .sent .small{margin-top:9px;font-size:13.5px;color:var(--stone);line-height:1.55}
+  .sent button{margin-top:22px;appearance:none;border:1.5px solid var(--ink);background:transparent;font:inherit;font-size:13px;font-weight:700;padding:11px 20px;border-radius:3px;cursor:pointer;color:var(--ink)}
+
   .rlead{padding:22px 0 6px}
   .rlead .k{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
   .bignum{font-size:74px;font-weight:700;letter-spacing:-.04em;line-height:.92;color:var(--brick);margin-top:6px}
   .bignum small{font-size:26px;vertical-align:super;letter-spacing:0}
   .rlead .cap{font-size:13px;color:var(--stone);margin-top:8px;line-height:1.45}
-
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden;margin-top:20px}
   .cell{background:var(--card);padding:15px 16px}
   .cell .v{font-size:24px;font-weight:700;letter-spacing:-.02em}
   .cell .l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--stone);margin-top:5px}
-
   .cList{margin-top:24px}
   .cHead{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--stone);padding-bottom:10px;border-bottom:1.5px solid var(--ink)}
   .camp{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid var(--rule)}
   .camp .t{font-size:14px;font-weight:700}
   .camp .d{font-size:12px;color:var(--stone);margin-top:3px}
   .camp .r{font-size:17px;font-weight:700;color:var(--brick);white-space:nowrap;padding-left:12px}
+  .tag{font-size:9px;font-weight:700;letter-spacing:.1em;color:#fff;background:var(--brick);padding:2px 6px;border-radius:999px;margin-left:8px;vertical-align:middle}
   .note{margin-top:20px;font-size:11.5px;color:var(--stone);line-height:1.5;border-left:2px solid var(--brick);padding:2px 0 2px 12px}
+  .rEmpty{padding:56px 8px;text-align:center}
+  .rEmpty .big{font-size:19px;font-weight:700}
+  .rEmpty .small{margin-top:9px;font-size:13.5px;color:var(--stone);line-height:1.55}
 </style>
 </head>
 <body>
@@ -163,45 +124,62 @@
       <a class="back" href="/">← box fraise</a>
       <div class="wordmark">gurlp<span>.</span></div>
       <div class="role" role="tablist">
-        <button role="tab" id="tab-inbox" aria-selected="true" onclick="show('inbox')">Your inbox</button>
-        <button role="tab" id="tab-report" aria-selected="false" onclick="show('report')">Your report</button>
+        <button role="tab" id="tab-inbox" aria-selected="true" onclick="show('inbox')">Inbox</button>
+        <button role="tab" id="tab-send" aria-selected="false" onclick="show('send')">Send</button>
+        <button role="tab" id="tab-report" aria-selected="false" onclick="show('report')">Report</button>
       </div>
     </div>
 
-    <!-- INBOX -->
     <div class="screen" id="inbox">
-      <div class="sub">
-        <span class="lbl">Inbox</span>
-        <span class="bal">balance <b id="bal">$0.00</b></span>
-      </div>
+      <div class="sub"><span class="lbl">Inbox</span><span class="bal">balance <b id="bal">$0.00</b></span></div>
       <div class="hint">Your inbox is always open. Each item is sealed — open it to read it and get paid, or deny it. Denying is free and no one is told.</div>
       <div id="pings"></div>
     </div>
 
-    <!-- REPORT -->
-    <div class="screen" id="report" style="display:none">
-      <div class="rlead">
-        <div class="k">Acceptance rate</div>
-        <div class="bignum">62<small>%</small></div>
-        <div class="cap">Of everyone your pings reached, this many chose to open. It's the only number that matters, and you can't manufacture it — it's their yes, not your spend.</div>
+    <div class="screen" id="send" style="display:none">
+      <div id="sendForm">
+        <div class="sub"><span class="lbl">Send a ping</span><span class="bal">balance <b id="bal2">$0.00</b></span></div>
+        <div class="hint">Write it, choose how many opens you want, and set what each open is worth to you. You don't pick who — gurlp routes it, one open at a time, until it's filled.</div>
+        <div class="field">
+          <label for="body">Your message</label>
+          <textarea id="body" placeholder="Say the thing. It stays sealed until someone chooses to open it." oninput="recost()"></textarea>
+        </div>
+        <div class="two">
+          <div class="field">
+            <label>Opens wanted</label>
+            <div class="stepper"><button onclick="bump(-1)">–</button><div class="n" id="opens">5</div><button onclick="bump(1)">+</button></div>
+          </div>
+          <div class="field">
+            <label for="ppo">Price per open</label>
+            <input class="txt" id="ppo" inputmode="decimal" value="0.40" oninput="recost()">
+          </div>
+        </div>
+        <div class="costbox">
+          <div class="costrow"><span class="k">Opens × price</span><span class="v" id="cLine">5 × $0.40</span></div>
+          <div class="costrow"><span class="k">Paid from balance</span><span class="v" id="cBal">$0.00</span></div>
+          <div class="costrow"><span class="k">Charged to card</span><span class="v" id="cCard">$2.00</span></div>
+          <div class="costrow total"><span class="k">Total</span><span class="v" id="cTotal">$2.00</span></div>
+        </div>
+        <div class="fund" id="fundNote"></div>
+        <div class="cardwrap" id="cardwrap">
+          <div class="fake">A demonstration. There is no payment processor yet — nothing you type here is sent anywhere or charged. Do not enter a real card.</div>
+          <div class="field"><label for="ccnum">Card number</label><input class="txt" id="ccnum" inputmode="numeric" autocomplete="off" placeholder="4242 4242 4242 4242"></div>
+          <div class="cardgrid">
+            <div class="field" style="flex:1"><label for="ccexp">Expiry</label><input class="txt" id="ccexp" autocomplete="off" placeholder="MM/YY"></div>
+            <div class="field" style="flex:0 0 96px"><label for="cccvc">CVC</label><input class="txt" id="cccvc" inputmode="numeric" autocomplete="off" placeholder="123"></div>
+          </div>
+        </div>
+        <button class="send" id="sendBtn" onclick="doSend()">Send ping</button>
       </div>
-      <div class="grid">
-        <div class="cell"><div class="v">18 / 18</div><div class="l">Opens filled</div></div>
-        <div class="cell"><div class="v">29</div><div class="l">Reached</div></div>
-        <div class="cell"><div class="v">$0.38</div><div class="l">Avg / open</div></div>
-        <div class="cell"><div class="v">$6.84</div><div class="l">Total spent</div></div>
-      </div>
-      <div class="cList">
-        <div class="cHead">Your pings</div>
-        <div class="camp"><div><div class="t">Harubaku — pour-over</div><div class="d">sought 5 · filled 5 · reached 7</div></div><div class="r">71%</div></div>
-        <div class="camp"><div><div class="t">Run club — Friday 6pm</div><div class="d">sought 8 · filled 8 · reached 13</div></div><div class="r">62%</div></div>
-        <div class="camp"><div><div class="t">Pedestrian Whyte petition</div><div class="d">sought 5 · filled 5 · reached 9</div></div><div class="r">56%</div></div>
-      </div>
-      <div class="note">Aggregate only. gurlp counts places, never people — a report never names who opened or who denied, and never ranks anyone.</div>
+      <div id="sentState" style="display:none"></div>
     </div>
+
+    <div class="screen" id="report" style="display:none"><div id="reportBody"></div></div>
   </div>
 
 <script>
+let balance = 0;
+const campaigns = [];
 const PINGS = [
   {from:"Harubaku Coffee", price:0.45, kind:"Ad", body:"Two-for-one pour-overs on Whyte till Friday. Come slow down."},
   {from:"Someone at the run club", price:0.20, kind:"Post", body:"Pedestrian Sunday on Whyte was unreal. We owned the whole street."},
@@ -210,81 +188,110 @@ const PINGS = [
   {from:"Box Fraise", price:0.50, kind:"Ad", body:"Whyte Avenue, cars out, people in. Read the vision, then come walk it."},
   {from:"Someone nearby", price:0.25, kind:"Post", body:"Sold my second monitor. Deciding one thing at a time is underrated."},
 ];
+const money = n => '$'+Number(n).toFixed(2);
+function paintBalance(){ ['bal','bal2'].forEach(id=>{const e=document.getElementById(id); if(e) e.textContent=money(balance);}); }
 
-let balance = 0;
-const balEl = document.getElementById('bal');
 const wrap = document.getElementById('pings');
-
-function money(n){return '$'+n.toFixed(2)}
-
-function render(){
+function renderInbox(){
   wrap.innerHTML='';
   PINGS.forEach((p,i)=>{
-    const el=document.createElement('div');
-    el.className='ping';
-    el.dataset.i=i;
-    el.innerHTML=`
-      <div class="row">
-        <div class="seal">Sealed</div>
-        <div class="meta">
-          <div class="from">${p.from}</div>
-          <div class="price">${money(p.price)} <small>to open</small></div>
-          <span class="kind">${p.kind}</span>
-        </div>
-      </div>
-      <div class="content">
-        <div class="body">${p.body}</div>
-        <div class="earned"><span class="dot"></span>You earned ${money(p.price)} for opening this</div>
-      </div>
-      <div class="acts">
-        <button class="open" onclick="openPing(${i},this)">Open</button>
-        <button class="deny" onclick="denyPing(${i},this)">Deny</button>
-      </div>`;
+    const el=document.createElement('div'); el.className='ping';
+    el.innerHTML=`<div class="row"><div class="seal">Sealed</div>
+      <div class="meta"><div class="from">${p.from}</div>
+      <div class="price">${money(p.price)} <small>to open</small></div>
+      <span class="kind">${p.kind}</span></div></div>
+      <div class="content"><div class="body">${p.body}</div>
+      <div class="earned"><span class="dot"></span>You earned ${money(p.price)} for opening this</div></div>
+      <div class="acts"><button class="open" onclick="openPing(${i},this)">Open</button>
+      <button class="deny" onclick="denyPing(this)">Deny</button></div>`;
     wrap.appendChild(el);
   });
-  checkEmpty();
 }
-
-function openPing(i,btn){
-  const el=btn.closest('.ping');
-  el.classList.add('opened');
-  balance+=PINGS[i].price;
-  balEl.textContent=money(balance);
-  el.dataset.done='1';
-  checkEmpty();
-}
-
-function denyPing(i,btn){
-  const el=btn.closest('.ping');
-  el.classList.add('gone');
-  el.dataset.done='1';
-  setTimeout(()=>{el.remove();checkEmpty();},300);
-}
-
+function openPing(i,btn){const el=btn.closest('.ping');el.classList.add('opened');el.dataset.done='1';balance+=PINGS[i].price;paintBalance();checkEmpty();}
+function denyPing(btn){const el=btn.closest('.ping');el.classList.add('gone');el.dataset.done='1';setTimeout(()=>{el.remove();checkEmpty();},300);}
 function checkEmpty(){
   const live=[...wrap.querySelectorAll('.ping')].filter(p=>!p.classList.contains('gone'));
-  const pending=live.filter(p=>p.dataset.done!=='1');
-  if(pending.length===0 && !document.getElementById('emptyState')){
-    // only show empty when nothing is left pending AND opened ones are cleared visually
+  if(live.length===0 && !document.getElementById('emptyState')){
+    const e=document.createElement('div');e.id='emptyState';e.className='empty';
+    e.innerHTML=`<div class="big">Inbox clear.</div><div class="small">Nothing pending. Come back when someone's reached for you.</div>`;
+    wrap.appendChild(e);
   }
-  if(live.length===0){
-    if(!document.getElementById('emptyState')){
-      const e=document.createElement('div');
-      e.id='emptyState';e.className='empty';
-      e.innerHTML=`<div class="big">Inbox clear.</div><div class="small">Nothing pending. Come back when someone's reached for you.</div>`;
-      wrap.appendChild(e);
-    }
+}
+
+let opensWanted = 5;
+function bump(d){opensWanted=Math.max(1,Math.min(50,opensWanted+d));document.getElementById('opens').textContent=opensWanted;recost();}
+function ppo(){const v=parseFloat(document.getElementById('ppo').value);return isNaN(v)||v<0?0:v;}
+function recost(){
+  const total=opensWanted*ppo(), fromBal=Math.min(balance,total), fromCard=Math.max(0,total-fromBal);
+  document.getElementById('cLine').textContent=`${opensWanted} × ${money(ppo())}`;
+  document.getElementById('cBal').textContent=money(fromBal);
+  document.getElementById('cCard').textContent=money(fromCard);
+  document.getElementById('cTotal').textContent=money(total);
+  const needCard=fromCard>0;
+  document.getElementById('cardwrap').classList.toggle('show',needCard);
+  document.getElementById('fundNote').innerHTML = needCard
+    ? `Your balance covers <b>${money(fromBal)}</b>. The rest is charged to a card — that's how advertisers fund sending beyond what they've earned by opening.`
+    : `Fully covered by your earned balance. <b>No card needed.</b> Attention you earned, spent to reach others.`;
+  const bodyOk=document.getElementById('body').value.trim().length>0;
+  document.getElementById('sendBtn').disabled=!bodyOk||total<=0;
+}
+function doSend(){
+  const body=document.getElementById('body').value.trim();
+  const price=ppo(), total=opensWanted*price, fromBal=Math.min(balance,total);
+  balance-=fromBal; paintBalance();
+  campaigns.unshift({title:body.length>34?body.slice(0,34)+'…':body, sought:opensWanted, price, live:true});
+  document.getElementById('sendForm').style.display='none';
+  const s=document.getElementById('sentState'); s.style.display='block';
+  s.innerHTML=`<div class="sent"><div class="mark">✓</div>
+    <div class="big">Ping sent.</div>
+    <div class="small">It's routing now, one sealed open at a time, until your ${opensWanted} opens are filled. This ping just opened your report — watch it fill there.</div>
+    <button onclick="show('report')">See your report</button></div>`;
+  renderReport();
+  document.getElementById('body').value=''; opensWanted=5;
+  document.getElementById('opens').textContent=5; document.getElementById('ppo').value='0.40';
+}
+function resetSend(){document.getElementById('sentState').style.display='none';document.getElementById('sendForm').style.display='block';recost();}
+
+function renderReport(){
+  const host=document.getElementById('reportBody');
+  if(campaigns.length===0){
+    host.innerHTML=`<div class="sub"><span class="lbl">Report</span></div>
+      <div class="rEmpty"><div class="big">No report yet.</div>
+      <div class="small">Your report is what your sending adds up to. Send your first ping and it begins here — acceptance, opens, cost, all of it.</div></div>`;
+    return;
   }
+  let tSought=0,tFilled=0,tReached=0,tSpent=0;
+  campaigns.forEach(c=>{ if(c.live){c.reached=Math.round(c.sought*1.6);c.filled=c.sought;}
+    tSought+=c.sought;tFilled+=c.filled;tReached+=c.reached;tSpent+=c.filled*c.price; });
+  const rate=tReached?Math.round(tFilled/tReached*100):0;
+  const avg=tFilled?tSpent/tFilled:0;
+  const camps=campaigns.map(c=>{const r=c.reached?Math.round(c.filled/c.reached*100):0;
+    return `<div class="camp"><div><div class="t">${c.title}${c.live?'<span class="tag">NEW</span>':''}</div>
+      <div class="d">sought ${c.sought} · filled ${c.filled} · reached ${c.reached}</div></div>
+      <div class="r">${r}%</div></div>`;}).join('');
+  host.innerHTML=`<div class="rlead"><div class="k">Acceptance rate</div>
+      <div class="bignum">${rate}<small>%</small></div>
+      <div class="cap">Of everyone your pings reached, this many chose to open. It's the only number that matters, and you can't manufacture it — it's their yes, not your spend.</div></div>
+    <div class="grid">
+      <div class="cell"><div class="v">${tFilled} / ${tSought}</div><div class="l">Opens filled</div></div>
+      <div class="cell"><div class="v">${tReached}</div><div class="l">Reached</div></div>
+      <div class="cell"><div class="v">${money(avg)}</div><div class="l">Avg / open</div></div>
+      <div class="cell"><div class="v">${money(tSpent)}</div><div class="l">Total spent</div></div>
+    </div>
+    <div class="cList"><div class="cHead">Your pings</div>${camps}</div>
+    <div class="note">Aggregate only. gurlp counts places, never people — a report never names who opened or who denied, and never ranks anyone.</div>`;
 }
 
 function show(which){
-  document.getElementById('inbox').style.display = which==='inbox'?'block':'none';
-  document.getElementById('report').style.display = which==='report'?'block':'none';
-  document.getElementById('tab-inbox').setAttribute('aria-selected', which==='inbox');
-  document.getElementById('tab-report').setAttribute('aria-selected', which==='report');
+  ['inbox','send','report'].forEach(s=>{
+    document.getElementById(s).style.display=s===which?'block':'none';
+    document.getElementById('tab-'+s).setAttribute('aria-selected',s===which);
+  });
+  if(which==='send') resetSend();
+  if(which==='report') renderReport();
 }
 
-render();
+renderInbox(); recost(); renderReport();
 </script>
 </body>
 </html>
