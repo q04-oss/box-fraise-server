@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>box fraise</title>
-  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue.">
+  <title>box fraise — running</title>
+  <meta name="description" content="Log your runs, get on the board, and join a run club whose purpose is to close Whyte Avenue and Jasper Avenue to cars.">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
@@ -23,141 +23,201 @@
       --rule:   #e6e6e6;
       --muted:  #666666;
       --accent: #b21b1b;
+      --mono:   'IBM Plex Mono', ui-monospace, Menlo, monospace;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
-      background: var(--bg);
-      color: var(--ink);
-      font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
-    /* ── Masthead ────────────────────────────────────────────────── */
     .masthead {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 26px 24px 18px;
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-      border-bottom: 1px solid var(--rule);
+      max-width: 720px; margin: 0 auto;
+      padding: 22px 22px 16px;
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 18px; border-bottom: 1px solid var(--rule);
     }
     .wordmark {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: 22px;
-      line-height: 1;
-      letter-spacing: -0.01em;
-      margin: 0;
+      font-style: italic; font-weight: 400; font-size: 21px;
+      letter-spacing: -0.01em; margin: 0;
     }
     .wordmark a { color: var(--ink); text-decoration: none; }
-    .links { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
-    .links a {
-      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 120ms ease;
+    .legacy {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--muted); text-decoration: none;
+      border: 1px solid var(--rule); border-radius: 999px;
+      padding: 8px 14px; white-space: nowrap;
     }
-    .links a:hover { color: var(--ink); }
-    /* Two accents, for the two things that are not just pages. The
-       scanner does something rather than explains something; Run away
-       is what the rest of this is for. */
-    .links a.thesis { color: var(--accent); }
-    .links a.scan { color: var(--accent); }
-    .links a.scan:hover { color: var(--accent); opacity: 0.75; }
+    .legacy:hover { color: var(--ink); border-color: var(--ink); }
 
-    main {
-      max-width: 1140px;
-      margin: 0 auto;
-      padding: 40px 24px 96px;
-    }
+    main { max-width: 720px; margin: 0 auto; padding: 34px 22px 90px; }
 
-    /* ── The statement ───────────────────────────────────────────── */
-    .coverline {
-      font-family: 'Newsreader', serif;
-      font-style: italic;
-      font-weight: 500;
-      /* Runs the width of the page rather than sitting in a column.
-         The viewport term does the work on phones; the ceiling stops
-         it outgrowing the 1140px measure on a desktop. */
-      font-size: clamp(38px, 9vw, 108px);
-      letter-spacing: -0.035em;
-      line-height: 0.98;
-      margin: 0 0 32px;
-      text-wrap: balance;
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(32px, 7.5vw, 60px); letter-spacing: -0.032em;
+      line-height: 1.0; margin: 0 0 18px; text-wrap: balance;
     }
-    .intro { max-width: 60ch; }
-    .intro .standfirst {
-      font-size: clamp(19px, 2.5vw, 24px);
-      line-height: 1.5;
-      color: var(--ink);
-      margin: 0;
+    .lede { font-size: 19px; line-height: 1.55; margin: 0 0 8px; max-width: 46ch; }
+    .fine { font-size: 15px; line-height: 1.6; color: var(--muted); margin: 0 0 30px; max-width: 46ch; }
+    h2 {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--muted); font-weight: 500;
+      margin: 46px 0 14px; padding-top: 22px; border-top: 1px solid var(--rule);
     }
-    /* The definition, not a shout. 500 rather than the browser's 700,
-       which Newsreader sets too heavy at this size. */
-    .intro .standfirst strong { font-weight: 500; font-style: italic; }
-    /* The chain, in one paragraph. Smaller than the standfirst above
-       it, because it is the explanation rather than the claim. */
-    .intro .chain {
-      font-size: clamp(17px, 2vw, 20px);
-      line-height: 1.55;
-      color: var(--muted);
-      margin: 22px 0 0;
-    }
-    .intro .chain strong { color: var(--ink); font-weight: 500; }
-    /* Underlined rather than coloured: these are two words inside a
-       sentence, and the sentence should still read as a sentence. */
-    .intro .chainlink {
-      color: inherit; text-decoration: underline;
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 14px; }
+    p strong { font-weight: 500; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
       text-underline-offset: 3px; text-decoration-color: var(--rule);
-      transition: text-decoration-color 120ms ease, color 120ms ease;
     }
-    .intro .chainlink:hover { color: var(--ink); text-decoration-color: var(--accent); }
+    a.inline:hover { text-decoration-color: var(--accent); }
+
+    /* ── Signing up ──────────────────────────────────────────────── */
+    .r-auth { max-width: 340px; }
+    .r-auth input {
+      display: block; width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
+    }
+    .r-auth input:focus { outline: none; border-color: var(--accent); }
+    .r-lede { font-size: 15px; color: var(--muted); margin: 0 0 16px; }
+
+    .r-go {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 56px;
+      width: 100%; max-width: 340px; display: block;
+    }
+    .r-go[disabled] { background: #ccc; cursor: default; }
+    .r-go.on { background: var(--ink); }
+    .r-alt {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 14px 0 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .r-msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
+    .r-msg.ok  { color: var(--accent); }
+    .r-msg.err { color: #444; }
+
+    /* ── Running ─────────────────────────────────────────────────── */
+    .r-who {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 18px;
+    }
+    .r-out {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .r-dial { margin: 0 0 22px; }
+    .r-dist {
+      font-style: italic; font-weight: 500; font-size: clamp(64px, 22vw, 132px);
+      line-height: 0.9; letter-spacing: -0.04em;
+    }
+    .r-unit {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.2em; color: var(--muted); margin-top: 4px;
+    }
+    .r-meta {
+      font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em;
+      color: var(--ink); margin-top: 12px;
+    }
+    /* While a run is going the page gets out of the way. */
+    body.running .after-run, body.running h2 { opacity: 0.25; }
+
+    .r-mine { margin-top: 26px; }
+    .r-standing {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.13em; color: var(--muted);
+      margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+    }
+    .r-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      font-family: var(--mono); font-size: 12px; color: var(--muted);
+      padding: 9px 0; border-bottom: 1px solid var(--rule);
+    }
+    .r-rk { color: var(--ink); flex: 0 0 auto; }
+    .r-rt { flex: 1 1 auto; }
+    .r-none { font-size: 15px; color: var(--muted); margin: 0; }
+
+    /* ── The board ───────────────────────────────────────────────── */
+    .r-brow {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--rule);
+      font-size: 16px;
+    }
+    .r-brow.me { color: var(--accent); }
+    .r-bn { font-family: var(--mono); font-size: 11px; color: var(--muted); width: 24px; flex: 0 0 auto; }
+    .r-bu { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .r-bd { font-family: var(--mono); font-size: 11px; color: var(--muted); flex: 0 0 auto; }
+    .r-bs {
+      font-family: var(--mono); font-size: 13px; color: var(--ink);
+      width: 56px; text-align: right; flex: 0 0 auto;
+    }
+
+    .when {
+      font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em;
+      line-height: 2; color: var(--muted); margin: 0 0 14px;
+    }
+    .when b { color: var(--ink); font-weight: 500; }
+    .closer { color: var(--muted); font-size: 14px; margin-top: 42px; }
   </style>
 </head>
 <body>
   <header class="masthead">
-    <h1 class="wordmark"><a href="/">box fraise</a></h1>
-    <nav class="links" aria-label="Elsewhere">
-      <a href="/about">About</a>
-      <a class="thesis" href="/runaway">Run away</a>
-      <a href="/mvp">MVP</a>
-      <a href="/runclub">Run club</a>
-      <a href="/clubhouse">Clubhouse</a>
-      <a href="/gurgle">Gurgle</a>
-      <a href="/cash">Cash</a>
-      <a href="/profitshare">Profit share</a>
-      <a href="/tip">Tip</a>
-      <a href="/games">Games</a>
-      <a href="/os">OS</a>
-      <a class="scan" href="/scan">Scan</a>
-    </nav>
+    <p class="wordmark"><a href="/">box fraise</a></p>
+    <a class="legacy" href="/legacy">Legacy</a>
   </header>
 
   <main>
-    <p class="coverline">Do you have what it takes to run this country?</p>
+    <h1>Run it until they close it.</h1>
+    <p class="lede">Log your runs. Get on the board. Turn up on a Wednesday, a Friday or a
+    Sunday and run with people who want the same street shut to cars.</p>
+    <p class="fine">Hold your phone in your hand and press start — it works out the distance
+    from where you are. The route never leaves the phone; only how far and how long are sent.</p>
 
-    <div class="intro">
-      <p class="standfirst">Playboy was the most advanced advertising machine ever built.
-      Box Fraise is the next generation of it: <strong>a consensual advertising
-      engine.</strong> The purpose is <strong>a critical thinking engine</strong> —
-      a procedural way to develop the skill.</p>
+    <div id="run-panel"></div>
 
-      <p class="chain"><a class="chainlink" href="/magazine">The magazine</a> asks. <a class="chainlink" href="/runclub">The run club</a>
-      answers. <a class="chainlink" href="/clubhouse">The clubhouse</a> is a run monastery.
-      All of it makes the culture the business school needs — and all of it exists so that one
-      question can be answered somewhere it gets heard:
-      <strong><a class="chainlink" href="/runaway#answer">why do you want to run away?</a></strong></p>
+    <div class="after-run">
+      <h2>The board</h2>
+      <p class="fine">Your score is <strong>distance × speed, averaged over the runs you have
+      logged</strong>. Going further raises it and going faster raises it. Logging a hundred
+      easy kilometres does not — which is why it is divided by how many you have run.</p>
+      <div id="run-board"></div>
+
+      <h2>There is a run club</h2>
+      <p><strong>You join by showing up.</strong> There is nothing to sign, nothing to pay and
+      nobody to ask. You do not need to be fast and you do not need to know anyone.</p>
+      <p class="when">
+        <b>Wednesday, 08:00</b> — Coffee Bureau, Jasper Avenue<br>
+        <b>Friday, 18:00</b> — McIntyre Park, Whyte Avenue<br>
+        <b>Sunday, 08:00</b> — McIntyre Park, Whyte Avenue
+      </p>
+      <p class="fine">Two streets, one club. <a class="inline" href="/runclub">Where and
+      why →</a></p>
+
+      <h2>What both of them are for</h2>
+      <p><strong>Making Whyte Avenue and Jasper Avenue pedestrian only.</strong> That is the
+      purpose of the run club and the purpose of this board. Whyte is the most walked street
+      in Edmonton and it is still organised around moving cars through it. Jasper is the same
+      argument downtown.</p>
+      <p>Running down a street is the cheapest way to find out who it was built for. The
+      board exists so that people who have never come to a run are still running the same
+      streets for the same reason, and so there is a number to point at when somebody asks
+      how many of us there are.</p>
+
+      <p class="closer">Box Fraise × running · Edmonton ·
+      <a class="inline" href="/legacy">the rest of the project</a></p>
     </div>
   </main>
+
+  <script src="/js/running.js"></script>
+  <script>
+    renderRunning('run-panel');
+    renderBoard('run-board');
+  </script>
 </body>
 </html>

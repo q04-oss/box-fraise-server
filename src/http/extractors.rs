@@ -20,6 +20,16 @@ pub struct AuthedUser(pub Uuid);
 #[derive(Clone, Copy, Debug)]
 pub struct AuthedAdmin(pub Uuid);
 
+/// A signed-in runner. Deliberately a different type from `AuthedUser`
+/// so that no handler can accidentally accept one where it meant the
+/// other — a runner has been verified by nobody. See migration 0039.
+#[derive(Clone, Copy, Debug)]
+pub struct AuthedRunner(pub Uuid);
+
+/// Which runner session answered this request, for signing out.
+#[derive(Clone, Debug)]
+pub struct RunnerSessionHash(pub String);
+
 /// Which session answered this request — the sha256 of the token, the
 /// same value the middleware looked up by. Present alongside AuthedUser
 /// and only there.
@@ -75,6 +85,34 @@ where
             .extensions
             .get::<AuthedAdmin>()
             .copied()
+            .ok_or(AppError::Unauthorized)
+    }
+}
+
+impl<S> FromRequestParts<S> for AuthedRunner
+where
+    S: Send + Sync,
+{
+    type Rejection = AppError;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        parts
+            .extensions
+            .get::<AuthedRunner>()
+            .copied()
+            .ok_or(AppError::Unauthorized)
+    }
+}
+
+impl<S> FromRequestParts<S> for RunnerSessionHash
+where
+    S: Send + Sync,
+{
+    type Rejection = AppError;
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        parts
+            .extensions
+            .get::<RunnerSessionHash>()
+            .cloned()
             .ok_or(AppError::Unauthorized)
     }
 }

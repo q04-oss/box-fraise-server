@@ -216,6 +216,51 @@ event (`domain::onboarding`). The `users_member_no_matches_status`
 CHECK from 0024 makes forgetting one impossible — it is what caught
 the second path when only the first had been written.
 
+## A runner is not a member
+
+0039 adds a second, parallel population and this is the thing to
+understand before touching either. A **member** is a number, granted in
+person at a run by an admin who was looking at them, and there is no
+other way to get one. A **runner** signs up on the internet with a
+username and a password and has been verified by nobody.
+
+They are kept apart by construction, not by care:
+
+| | member | runner |
+|---|---|---|
+| table | `users` | `runners` |
+| credential | `bf_session` cookie / Bearer | `bf_run` cookie |
+| GUC | `app.user_id` | `app.runner_id` |
+| extractor | `AuthedUser` | `AuthedRunner` |
+| transaction | `RlsTransaction` | `RunnerRlsTransaction` |
+
+A runner's session can never satisfy a policy that reads
+`app.user_id`, and a member's can never satisfy one that reads
+`app.runner_id`. Do not add a policy that accepts either, and do not
+add a handler that takes both — the whole point is that one of them was
+vouched for by a person and the other was not. Somebody may hold both
+credentials at once; the middleware resolves them independently and
+neither displaces the other.
+
+`runner_credentials` is a separate table from `runners` for one reason:
+RLS is row-level, not column-level, so the only way to guarantee a
+public read of the board can never reach a password hash is to put the
+hash somewhere with no public SELECT policy. Login reads it under an
+`AdminRlsTransaction`, one statement, by username — the same shape as
+admin login, and the only code in the repo that touches that table.
+
+**A logged run holds how far, how long and when — never a route.** The
+browser watches its own position, computes a distance in
+`web/js/running.js`, and sends the total. No coordinates are
+transmitted and there is no column to put them in. That is the same rule
+`domain::runs::live` follows for live witnessing, stated twice because
+it is the thing somebody will eventually want to relax.
+
+The board is unverifiable in principle: the only thing that knows how
+far somebody ran is the device in their hand. The CHECK constraints in
+0039 are a bin for nonsense, not anti-cheat, exactly like the game's
+leaderboard in 0035.
+
 ## A membership is kept, not got
 
 Turning up opens the account; turning up every month keeps it able to

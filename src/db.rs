@@ -26,6 +26,35 @@ pub async fn connect(database_url: &str) -> anyhow::Result<Pool> {
     Ok(pool)
 }
 
+/// Transaction-scoped to a signed-in runner.
+///
+/// A third GUC rather than reusing `app.user_id`, because a runner and a
+/// member are different populations and must never satisfy each other's
+/// policies. A runner signed up on the internet with a password; a
+/// member was handed a number in a park. See migration 0039.
+pub struct RunnerRlsTransaction {
+    tx: Transaction<'static, Postgres>,
+}
+
+impl RunnerRlsTransaction {
+    pub async fn begin(pool: &Pool, runner_id: Uuid) -> sqlx::Result<Self> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT set_config('app.runner_id', $1, true)")
+            .bind(runner_id.to_string())
+            .execute(&mut *tx)
+            .await?;
+        Ok(Self { tx })
+    }
+
+    pub fn conn(&mut self) -> &mut sqlx::PgConnection {
+        &mut self.tx
+    }
+
+    pub async fn commit(self) -> sqlx::Result<()> {
+        self.tx.commit().await
+    }
+}
+
 /// Transaction-scoped to a single authenticated user. Hold by `&mut`,
 /// commit at the end of the request, otherwise drop = rollback.
 pub struct RlsTransaction {

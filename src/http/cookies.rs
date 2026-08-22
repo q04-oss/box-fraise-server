@@ -29,9 +29,25 @@ pub const SESSION: &str = "bf_session";
 /// and who, without a round trip on every load.
 pub const MEMBER: &str = "bf_member";
 
+/// A runner's credential. A separate cookie from a member's, because a
+/// runner is a separate population — signed up on the internet with a
+/// password, never verified by anybody. Somebody may hold both at once
+/// and they mean different things. See migration 0039.
+pub const RUNNER: &str = "bf_run";
+
+/// A runner's username, readable by script, for the same reason
+/// `bf_member` is: it is the public byline on the board and it saves the
+/// page a round trip to know who is signed in.
+pub const RUNNER_NAME: &str = "bf_runner";
+
 /// Two years. There is no shorter honest number: a membership is meant
 /// to be kept, and the thing that lapses is attendance, not this.
 const MAX_AGE: i64 = 60 * 60 * 24 * 730;
+
+/// Ninety days, matching `runner_sessions.expires_at`. Shorter than a
+/// member's because a runner who is signed out types a password again,
+/// where a member would have to turn up to a run.
+const RUNNER_MAX_AGE: i64 = 60 * 60 * 24 * 90;
 
 /// Read one of our cookies out of the request headers.
 ///
@@ -86,6 +102,20 @@ pub fn sign_out(secure: bool) -> Vec<HeaderValue> {
     vec![
         set(SESSION, "", 0, true, secure),
         set(MEMBER, "", 0, false, secure),
+    ]
+}
+
+pub fn runner_in(token: &str, username: &str, secure: bool) -> Vec<HeaderValue> {
+    vec![
+        set(RUNNER, token, RUNNER_MAX_AGE, true, secure),
+        set(RUNNER_NAME, username, RUNNER_MAX_AGE, false, secure),
+    ]
+}
+
+pub fn runner_out(secure: bool) -> Vec<HeaderValue> {
+    vec![
+        set(RUNNER, "", 0, true, secure),
+        set(RUNNER_NAME, "", 0, false, secure),
     ]
 }
 

@@ -12,6 +12,11 @@ pub struct AppState {
     /// Live game streams. In memory on purpose — a stream that ends
     /// leaves nothing behind. See domain::whyte::streams.
     pub streams: crate::domain::whyte::streams::Streams,
+    /// Runs happening right now. Also in memory, and for a stronger
+    /// reason: a stored trail of where members have been is the object
+    /// this platform argues against everywhere else. Witnessing is live
+    /// and consented; tracking is not. See domain::runs::live.
+    pub runs: crate::domain::runs::live::Runs,
 }
 
 impl AppState {
@@ -21,6 +26,7 @@ impl AppState {
             pool,
             cfg: Arc::new(cfg),
             streams: Default::default(),
+            runs: Default::default(),
         })
     }
 
@@ -88,6 +94,8 @@ pub fn build_router(state: AppState) -> Router {
         .merge(crate::domain::consultations::routes::router())
         .merge(crate::domain::pairings::routes::router())
         .merge(crate::domain::runaway::routes::router())
+        .merge(crate::domain::runs::routes::router())
+        .merge(crate::domain::running::routes::router())
         .merge(crate::domain::whyte::routes::router())
         .merge(crate::domain::submissions::routes::router())
         // Bearer-resolution runs on every /v1 request. It's a soft pass

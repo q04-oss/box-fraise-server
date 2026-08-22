@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>box fraise</title>
+  <meta name="description" content="Do you have what it takes to run this country? Box Fraise is a magazine — an advertising machine — with a run club on Whyte Avenue.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="box fraise">
+  <script src="/js/pwa.js" defer></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ── Masthead ────────────────────────────────────────────────── */
+    .masthead {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 26px 24px 18px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--rule);
+    }
+    .wordmark {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 22px;
+      line-height: 1;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .wordmark a { color: var(--ink); text-decoration: none; }
+    .links { display: flex; gap: 22px; align-items: baseline; flex-wrap: wrap; }
+    .links a {
+      font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 120ms ease;
+    }
+    .links a:hover { color: var(--ink); }
+    /* Two accents, for the two things that are not just pages. The
+       scanner does something rather than explains something; Run away
+       is what the rest of this is for. */
+    .links a.thesis { color: var(--accent); }
+    .links a.scan { color: var(--accent); }
+    .links a.scan:hover { color: var(--accent); opacity: 0.75; }
+
+    main {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 40px 24px 96px;
+    }
+
+    /* ── The statement ───────────────────────────────────────────── */
+    .coverline {
+      font-family: 'Newsreader', serif;
+      font-style: italic;
+      font-weight: 500;
+      /* Runs the width of the page rather than sitting in a column.
+         The viewport term does the work on phones; the ceiling stops
+         it outgrowing the 1140px measure on a desktop. */
+      font-size: clamp(38px, 9vw, 108px);
+      letter-spacing: -0.035em;
+      line-height: 0.98;
+      margin: 0 0 32px;
+      text-wrap: balance;
+    }
+    .intro { max-width: 60ch; }
+    .intro .standfirst {
+      font-size: clamp(19px, 2.5vw, 24px);
+      line-height: 1.5;
+      color: var(--ink);
+      margin: 0;
+    }
+    /* The definition, not a shout. 500 rather than the browser's 700,
+       which Newsreader sets too heavy at this size. */
+    .intro .standfirst strong { font-weight: 500; font-style: italic; }
+    /* The chain, in one paragraph. Smaller than the standfirst above
+       it, because it is the explanation rather than the claim. */
+    .intro .chain {
+      font-size: clamp(17px, 2vw, 20px);
+      line-height: 1.55;
+      color: var(--muted);
+      margin: 22px 0 0;
+    }
+    .intro .chain strong { color: var(--ink); font-weight: 500; }
+    /* Underlined rather than coloured: these are two words inside a
+       sentence, and the sentence should still read as a sentence. */
+    .intro .chainlink {
+      color: inherit; text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+      transition: text-decoration-color 120ms ease, color 120ms ease;
+    }
+    .intro .chainlink:hover { color: var(--ink); text-decoration-color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <h1 class="wordmark"><a href="/legacy">box fraise</a></h1>
+    <nav class="links" aria-label="Elsewhere">
+      <a href="/about">About</a>
+      <a class="thesis" href="/runaway">Run away</a>
+      <a href="/mvp">MVP</a>
+      <a href="/runclub">Run club</a>
+      <a href="/clubhouse">Clubhouse</a>
+      <a href="/gurgle">Gurgle</a>
+      <a href="/cash">Cash</a>
+      <a href="/profitshare">Profit share</a>
+      <a href="/tip">Tip</a>
+      <a href="/games">Games</a>
+      <a href="/os">OS</a>
+      <a class="scan" href="/scan">Scan</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="coverline">Do you have what it takes to run this country?</p>
+
+    <div class="intro">
+      <p class="standfirst">Playboy was the most advanced advertising machine ever built.
+      Box Fraise is the next generation of it: <strong>a consensual advertising
+      engine.</strong> The purpose is <strong>a critical thinking engine</strong> —
+      a procedural way to develop the skill.</p>
+
+      <p class="chain"><a class="chainlink" href="/magazine">The magazine</a> asks. <a class="chainlink" href="/runclub">The run club</a>
+      answers. <a class="chainlink" href="/clubhouse">The clubhouse</a> is a run monastery.
+      All of it makes the culture the business school needs — and all of it exists so that one
+      question can be answered somewhere it gets heard:
+      <strong><a class="chainlink" href="/runaway#answer">why do you want to run away?</a></strong></p>
+    </div>
+  </main>
+</body>
+</html>

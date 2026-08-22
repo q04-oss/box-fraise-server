@@ -37,7 +37,9 @@ use crate::{
     crypto::sha256_hex,
     http::{
         cookies,
-        extractors::{AuthedAdmin, AuthedUser, SessionHash, SessionToken},
+        extractors::{
+            AuthedAdmin, AuthedRunner, AuthedUser, RunnerSessionHash, SessionHash, SessionToken,
+        },
     },
 };
 
@@ -76,6 +78,27 @@ pub async fn resolve_bearer(
             req.extensions_mut().insert(AuthedAdmin(admin_id));
         }
     }
+
+    // Runners are resolved from their own cookie, separately and
+    // additionally. Somebody may hold both credentials in one browser —
+    // a member who also signed up to the running layer — and neither
+    // should displace the other. A runner is never derived from a
+    // member's token and cannot be: different cookie, different table.
+    if let Some(token) = cookies::get(req.headers(), cookies::RUNNER) {
+        let token_hash = sha256_hex(token.as_bytes());
+        if let Ok(Some((runner_id,))) = sqlx::query_as::<_, (Uuid,)>(
+            "SELECT runner_id FROM runner_sessions
+              WHERE token_hash = $1 AND expires_at > now()",
+        )
+        .bind(&token_hash)
+        .fetch_optional(&state.pool)
+        .await
+        {
+            req.extensions_mut().insert(AuthedRunner(runner_id));
+            req.extensions_mut().insert(RunnerSessionHash(token_hash));
+        }
+    }
+
     Ok(next.run(req).await)
 }
 
