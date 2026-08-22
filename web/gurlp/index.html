@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>gurlp</title>
-<meta name="description" content="An inbox where every item is sealed. Open it to read it and get paid, or deny it. Denying is free and nobody is told.">
+<meta name="description" content="An API for consented attention. Sealed pings arrive; open one and get paid, or deny it — free and silent.">
 <meta name="theme-color" content="#EFEAE0">
 <style>
   :root{
@@ -87,9 +87,10 @@
   .fund b{color:var(--ink)}
   .cardwrap{margin-top:14px;display:none}.cardwrap.show{display:block}
   .cardgrid{display:flex;gap:10px}
-  /* This is a drawing of a card form. Nothing is sent anywhere and no
-     payment processor exists yet, so the page says so where somebody is
-     about to type a card number. */
+  /* These are drawings of a card form and of an account signup. Nothing
+     is sent anywhere, no processor is connected, and no account is
+     created — so the page says so wherever somebody is about to hand
+     over details they would not want thrown away. */
   .fake{margin-top:14px;font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--brick);border:1px dashed var(--brick);border-radius:11px;padding:9px 11px;line-height:1.45}
   .send{margin-top:18px;width:100%;appearance:none;border:0;background:var(--brick);color:#fff;font:inherit;font-size:15px;font-weight:700;padding:15px;border-radius:12px;cursor:pointer}
   .send:hover{background:var(--brick-deep)}
@@ -155,6 +156,24 @@
   .tabbar button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7}
   .tabbar button .t{font-size:10px;font-weight:700;letter-spacing:.03em}
   .tabbar button[aria-selected="true"]{color:var(--brick)}
+
+  /* stripe onboarding + about sheets (reuse dsheet look) */
+  .stripe-row{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--stone);line-height:1.4}
+  .stripe-row .n{flex:0 0 22px;height:22px;border-radius:999px;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .stripe-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#635BFF;background:#635BFF14;border:1px solid #635BFF33;border-radius:999px;padding:5px 11px;margin-top:4px}
+  .stripe-badge::before{content:"";width:8px;height:8px;border-radius:2px;background:#635BFF}
+  .about-p{font-size:13.5px;line-height:1.55;color:var(--ink);margin-top:12px}
+  .about-p b{font-weight:700}
+  .about-stack{margin-top:16px;border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+  .about-layer{padding:12px 15px;background:var(--card)}
+  .about-layer+.about-layer{border-top:1px solid var(--rule)}
+  .about-layer .lk{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--stone)}
+  .about-layer .lt{font-size:14px;font-weight:700;margin-top:3px}
+  .about-layer .ld{font-size:12px;color:var(--stone);margin-top:3px;line-height:1.45}
+  .about-layer.app{border-left:3px solid var(--brick)}
+  .about-layer.api{border-left:3px solid var(--ink)}
+  .about-layer.stripe{border-left:3px solid #635BFF}
+  .info-chip{pointer-events:auto;cursor:pointer;background:var(--glass);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);border:1px solid rgba(255,255,255,.55);border-radius:999px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ink);box-shadow:0 6px 18px -8px rgba(31,26,22,.4);margin-left:8px}
 </style>
 </head>
 <body>
@@ -163,7 +182,10 @@
       <div class="mapfull"><svg class="world" id="world" viewBox="0 0 360 180" preserveAspectRatio="xMidYMid meet"></svg></div>
       <div class="mapfloat">
         <div class="chip wm"><a href="/">gurlp<span>.</span></a></div>
-        <div class="chip">balance <span class="b" id="bal">$0.00</span></div>
+        <div style="display:flex;align-items:center;pointer-events:none">
+          <div class="chip">balance <span class="b" id="bal">$0.00</span></div>
+          <div class="info-chip" onclick="openAbout()">i</div>
+        </div>
       </div>
 
       <div class="msheet" id="msheet">
@@ -189,7 +211,7 @@
   </div>
 
 <script>
-let balance=0,activeTab='map';
+let balance=0,activeTab='map',connected=false;
 const YOU={lon:-113.5,lat:53.5,city:"Edmonton, CA"};
 const PINGS=[
   {id:0,from:"Harubaku Coffee",city:"Edmonton, CA",lon:-113.5,lat:53.5,price:0.45,kind:"Ad",body:"Two-for-one pour-overs on Whyte till Friday. Come slow down.",status:"pending"},
@@ -270,7 +292,7 @@ function sheetSend(){
       <div class="costrow total"><span class="k">Total</span><span class="v" id="cTotal">—</span></div></div>
     <div class="fund" id="fundNote"></div>
     <div class="cardwrap" id="cardwrap">
-      <div class="fake">A demonstration. There is no payment processor yet — nothing you type here is sent anywhere or charged. Do not enter a real card.</div>
+      <div class="fake">A demonstration. No processor is connected — nothing you type here is sent anywhere or charged. Do not enter a real card.</div>
       <div class="field"><label for="ccnum">Card number</label><input class="txt" id="ccnum" autocomplete="off" placeholder="4242 4242 4242 4242"></div>
       <div class="cardgrid"><div class="field" style="flex:1"><label for="ccexp">Expiry</label><input class="txt" id="ccexp" autocomplete="off" placeholder="MM/YY"></div><div class="field" style="flex:0 0 96px"><label for="cccvc">CVC</label><input class="txt" id="cccvc" autocomplete="off" placeholder="123"></div></div></div>
     <button class="send" id="sendBtn" onclick="doSend()">Send ping</button>
@@ -305,8 +327,49 @@ function openDetail(id){const p=PINGS.find(x=>x.id===id);if(!p||p.status!=='pend
   scrim.classList.add('on');requestAnimationFrame(()=>dsheet.classList.add('open'));
 }
 function closeDetail(){dsheet.classList.remove('open');scrim.classList.remove('on');}
-function detailOpen(id){const p=PINGS.find(x=>x.id===id);p.status='opened';balance+=p.price;paintBalance();dsheet.classList.add('revealed');drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();setTimeout(closeDetail,1200);}
-function detailDeny(id){const p=PINGS.find(x=>x.id===id);p.status='denied';drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();closeDetail();}
+function detailOpen(id){if(!connected){requireStripe('open');return;}const p=PINGS.find(x=>x.id===id);p.status='opened';balance+=p.price;paintBalance();dsheet.classList.add('revealed');drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();setTimeout(closeDetail,1200);}
+function detailDeny(id){if(!connected){requireStripe('deny');return;}const p=PINGS.find(x=>x.id===id);p.status='denied';drawPins();if(activeTab==='map'||activeTab==='inbox')renderSheet();closeDetail();}
+
+/* Stripe Connect = the sign-up. Gates every real action. */
+let pendingAction=null;
+function requireStripe(what){
+  pendingAction=what;
+  dsheet.className='dsheet';
+  dsheet.innerHTML=`<div class="dgrab"><div class="pill"></div></div><div class="dbody">
+    <div class="stripe-badge">Powered by Stripe</div>
+    <div class="dfrom" style="margin-top:12px">Set up your account to ${what==='send'?'send':what==='deny'?'deny':'open'}</div>
+    <div class="dsealnote" style="margin-top:8px">Looking is free. To do anything — open a ping, deny one, or send — you create a Stripe account. That account <b>is</b> your gurlp identity: it's how you get paid for opening, how you pay to send, and how you sign back in on any device.</div>
+    <div class="fake">A demonstration. Stripe is not connected and no account is created — pressing Continue only unlocks the buttons on this page.</div>
+    <div class="stripe-row"><span class="n">1</span> Verify who you are (name, date of birth)</div>
+    <div class="stripe-row"><span class="n">2</span> Add a card, and a bank to be paid into</div>
+    <div class="stripe-row"><span class="n">3</span> You're in — no username, no password, ever</div>
+    <div class="dacts" style="margin-top:20px"><button class="dopen" onclick="finishStripe()">Continue with Stripe</button><button class="ddeny" onclick="closeDetail()">Not now</button></div>
+  </div>`;
+  scrim.classList.add('on');requestAnimationFrame(()=>dsheet.classList.add('open'));
+}
+function finishStripe(){
+  connected=true;closeDetail();
+  showToast("Demonstration — no Stripe account was created. Buttons unlocked.");
+  if(activeTab==='map'||activeTab==='inbox')renderSheet();
+}
+
+/* About: what the API is, what the app is, and gurlp's relationship to Stripe */
+function openAbout(){
+  dsheet.className='dsheet';
+  dsheet.innerHTML=`<div class="dgrab"><div class="pill"></div></div><div class="dbody">
+    <div class="dfrom">What gurlp is</div>
+    <div class="about-p">gurlp is an <b>API for consented attention</b>, built on top of Stripe. Stripe moves money; gurlp turns that into a way to pay for a person's attention — but only when they say yes.</div>
+    <div class="about-stack">
+      <div class="about-layer app"><div class="lk">The app</div><div class="lt">gurlp (what you're in now)</div><div class="ld">One client of the API. Sealed pings arrive; you open (and get paid) or deny (free, silent). Each ping you send returns a report.</div></div>
+      <div class="about-layer api"><div class="lk">The API</div><div class="lt">gurlp.report — consented attention</div><div class="ld">The part gurlp owns: sealing, open/deny, routing, and the report. It answers "did attention move, consentingly, and what did it cost." Any product could call it; this app is the reference client.</div></div>
+      <div class="about-layer stripe"><div class="lk">The layer below</div><div class="lt">Stripe — payments</div><div class="ld">Rented, not built. Stripe moves the money and is your account: creating a Stripe account is how you sign up, get paid, pay to send, and sign in on any device.</div></div>
+    </div>
+    <div class="about-p" style="margin-top:14px;color:var(--stone)">Advertising is the first thing the API is used for — but the primitive underneath is simply: pay to reach, get paid to attend, both consent, the moment is recorded.</div>
+    <div class="fake">This page is a working drawing, not the product. Nothing here connects to a server, a processor, or an account.</div>
+    <div class="dacts"><button class="dopen" onclick="closeDetail()">Got it</button></div>
+  </div>`;
+  scrim.classList.add('on');requestAnimationFrame(()=>dsheet.classList.add('open'));
+}
 
 /* send logic */
 let opensWanted=5;
@@ -317,7 +380,7 @@ function recost(){const b=document.getElementById('body');if(!b)return;const tot
   document.getElementById('cardwrap').classList.toggle('show',fromCard>0);
   document.getElementById('fundNote').innerHTML=fromCard>0?`Your balance covers <b>${money(fromBal)}</b>. The rest goes to a card — how advertisers fund sending beyond what they've earned.`:`Fully covered by your earned balance. <b>No card needed.</b> Attention you earned, spent to reach others.`;
   document.getElementById('sendBtn').disabled=b.value.trim().length===0||total<=0;}
-function doSend(){const b=document.getElementById('body');const body=b.value.trim();const price=ppo(),total=opensWanted*price,fromBal=Math.min(balance,total);balance-=fromBal;paintBalance();
+function doSend(){if(!connected){requireStripe('send');return;}const b=document.getElementById('body');const body=b.value.trim();const price=ppo(),total=opensWanted*price,fromBal=Math.min(balance,total);balance-=fromBal;paintBalance();
   reports.unshift({body,sought:opensWanted,price,reached:Math.round(opensWanted*1.6),filled:opensWanted,isNew:true});opensWanted=5;
   show('map');setDetent('peek');playRadial();showToast("Ping sent — spreading across the network. It created a report.");}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),3200);}
