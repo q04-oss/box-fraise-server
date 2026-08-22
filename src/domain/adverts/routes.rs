@@ -39,6 +39,20 @@ async fn inbox(
     Ok(Json(service::inbox(&state.pool, runner_id).await?))
 }
 
+/// Say no.
+///
+/// Free, permanent, and it costs the advertiser nothing. It does not
+/// touch today's allowance either — charging somebody a day's attention
+/// for refusing would make silence expensive.
+async fn decline(
+    AuthedRunner(runner_id): AuthedRunner,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    service::decline(&state.pool, runner_id, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 /// Choose to open one. This is the only path that ever returns `body`.
 async fn open(
     AuthedRunner(runner_id): AuthedRunner,
