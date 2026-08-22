@@ -305,6 +305,15 @@
       </fieldset>
 
       <fieldset>
+        <legend>Advert requests</legend>
+        <div class="muted">What businesses sent in from /advertise. Accepting one puts it in
+        every inbox at the standing price — $3 an open, $1 of it to the reader — so accept it
+        after they have paid, not before.</div>
+        <div id="aq-list" style="margin-top: 14px;"></div>
+        <div id="aq-msg" class="muted" style="margin-top: 8px;"></div>
+      </fieldset>
+
+      <fieldset>
         <legend>Adverts — the running inbox</legend>
         <div class="muted">What a signed-in runner finds in their inbox on the homepage. The
         line is what they see unopened; the body is what appears when they choose to open it,
@@ -1188,6 +1197,74 @@
     });
   }
 
+  // ── Advert requests ──────────────────────────────────────────────
+  // An open write path: anybody may send one from /advertise. Nothing
+  // appears in an inbox until it is accepted here, which is the moment
+  // it should already have been paid for.
+  const PRICE_CENTS = 300;
+
+  async function loadAdvertRequests() {
+    const holder = document.getElementById('aq-list');
+    let rows;
+    try { rows = await api('/admin/adverts/requests'); } catch (e) { holder.textContent = e.message; return; }
+    holder.textContent = '';
+    const pending = rows.filter(r => r.status === 'pending');
+    if (!pending.length) { holder.className = 'muted'; holder.textContent = 'Nothing waiting.'; return; }
+    holder.className = '';
+    pending.forEach(r => {
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1px solid #e6e6e6;border-radius:8px;padding:12px;margin-bottom:10px;';
+
+      const who = document.createElement('div');
+      who.style.cssText = 'font-weight:500;';
+      who.textContent = r.advertiser;
+
+      const meta = document.createElement('div');
+      meta.className = 'muted';
+      meta.style.cssText = 'font-size:12px;margin:3px 0 8px;';
+      meta.textContent = r.contact + ' · ' + r.opens_wanted + ' opens · invoice '
+        + money(r.opens_wanted * PRICE_CENTS)
+        + ' · ' + new Date(r.created_at).toLocaleDateString();
+
+      const tease = document.createElement('div');
+      tease.style.cssText = 'font-style:italic;margin-bottom:6px;';
+      tease.textContent = r.teaser;
+
+      const body = document.createElement('div');
+      body.style.cssText = 'font-size:14px;white-space:pre-wrap;margin-bottom:10px;';
+      body.textContent = r.body + (r.link ? '\n' + r.link : '');
+
+      const acts = document.createElement('div');
+      acts.style.cssText = 'display:flex;gap:8px;';
+      const yes = document.createElement('button');
+      yes.style.cssText = 'font-size:11px;padding:6px 12px;';
+      yes.textContent = 'Paid — put it up';
+      yes.addEventListener('click', async () => {
+        if (!confirm('Put "' + r.teaser + '" in every inbox for ' + r.opens_wanted + ' opens?')) return;
+        yes.disabled = true;
+        try { await api('/admin/adverts/requests/' + r.id + '/accept', { method: 'POST' });
+              await loadAdvertRequests(); await loadAdverts(); }
+        catch (e) { document.getElementById('aq-msg').textContent = e.message; yes.disabled = false; }
+      });
+      const no = document.createElement('button');
+      no.className = 'secondary';
+      no.style.cssText = 'font-size:11px;padding:6px 12px;';
+      no.textContent = 'Throw away';
+      no.addEventListener('click', async () => {
+        if (!confirm('Delete this? The audit row is all that is left.')) return;
+        no.disabled = true;
+        try { await api('/admin/adverts/requests/' + r.id + '/delete', { method: 'POST' });
+              await loadAdvertRequests(); }
+        catch (e) { document.getElementById('aq-msg').textContent = e.message; no.disabled = false; }
+      });
+      acts.appendChild(yes); acts.appendChild(no);
+
+      card.appendChild(who); card.appendChild(meta); card.appendChild(tease);
+      card.appendChild(body); card.appendChild(acts);
+      holder.appendChild(card);
+    });
+  }
+
   // ── Adverts, and what they owe ───────────────────────────────────
   // The running layer's inbox. Separate from Offers above: that one is
   // for members, this one is for runners. Different tables, different
@@ -1207,7 +1284,7 @@
       name.textContent = a.advertiser + ' · ' + a.teaser;
       const what = document.createElement('span');
       what.className = 'who';
-      what.textContent = money(a.pays_cents) + ' × ' + a.opens_taken + '/' + a.opens_paid;
+      what.textContent = money(a.price_cents) + ' in · ' + money(a.pays_cents) + ' out · ' + a.opens_taken + '/' + a.opens_paid;
       const st = document.createElement('span');
       st.className = 'st';
       st.textContent = a.status === 'open'

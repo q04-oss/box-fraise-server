@@ -41,8 +41,43 @@ pub struct NewAdvert {
     pub body: String,
     #[serde(default)]
     pub link: Option<String>,
-    pub pays_cents: i32,
+    /// What the advertiser pays per open. Defaults to the standing
+    /// price, so the common case is not typing it.
+    #[serde(default)]
+    pub price_cents: Option<i32>,
+    /// What the reader receives. Defaults to the standing share.
+    #[serde(default)]
+    pub pays_cents: Option<i32>,
     pub opens_paid: i32,
+}
+
+/// What a business sends in when they outline an advertisement.
+///
+/// The only place on the running layer that collects a contact detail. A
+/// runner gives no email and is never asked for one; a business has to
+/// be reachable, because somebody has to invoice them.
+#[derive(Deserialize)]
+pub struct NewRequest {
+    pub advertiser: String,
+    pub contact: String,
+    pub teaser: String,
+    pub body: String,
+    #[serde(default)]
+    pub link: Option<String>,
+    pub opens_wanted: i32,
+}
+
+#[derive(Serialize, FromRow)]
+pub struct AdminRequest {
+    pub id: Uuid,
+    pub advertiser: String,
+    pub contact: String,
+    pub teaser: String,
+    pub body: String,
+    pub link: Option<String>,
+    pub opens_wanted: i32,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Serialize, FromRow)]
@@ -50,6 +85,10 @@ pub struct AdminAdvert {
     pub id: Uuid,
     pub advertiser: String,
     pub teaser: String,
+    /// What the advertiser pays per open.
+    pub price_cents: i32,
+    /// What the reader receives per open. The difference is what the
+    /// platform keeps, and both are stored so it can be told.
     pub pays_cents: i32,
     pub opens_paid: i32,
     pub opens_taken: i32,

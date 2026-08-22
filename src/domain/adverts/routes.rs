@@ -17,6 +17,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/running/inbox", get(inbox))
         .route("/running/inbox/{id}/open", post(open))
+        .route("/adverts/requests", post(request))
+        .route("/admin/adverts/requests", get(admin_requests))
+        .route("/admin/adverts/requests/{id}/accept", post(accept_request))
+        .route("/admin/adverts/requests/{id}/delete", post(delete_request))
         .route("/admin/adverts", get(admin_list).post(create))
         .route("/admin/adverts/{id}/close", post(close))
         .route("/admin/adverts/owed", get(owed))
@@ -40,6 +44,42 @@ async fn open(
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Opened>> {
     Ok(Json(service::open(&state.pool, runner_id, id).await?))
+}
+
+/// A business outlining an advertisement they have. Open to anybody —
+/// see 0041 for what bounds it. Nothing appears in an inbox until an
+/// admin accepts it.
+async fn request(
+    State(state): State<AppState>,
+    Json(req): Json<NewRequest>,
+) -> AppResult<StatusCode> {
+    service::request(&state.pool, req).await?;
+    Ok(StatusCode::CREATED)
+}
+
+async fn admin_requests(
+    AuthedAdmin(_): AuthedAdmin,
+    State(state): State<AppState>,
+) -> AppResult<Json<Vec<AdminRequest>>> {
+    Ok(Json(service::list_requests(&state.pool).await?))
+}
+
+async fn accept_request(
+    AuthedAdmin(admin_id): AuthedAdmin,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<Json<serde_json::Value>> {
+    let advert_id = service::accept_request(&state.pool, admin_id, id).await?;
+    Ok(Json(serde_json::json!({ "id": advert_id })))
+}
+
+async fn delete_request(
+    AuthedAdmin(admin_id): AuthedAdmin,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> AppResult<StatusCode> {
+    service::delete_request(&state.pool, admin_id, id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 async fn admin_list(

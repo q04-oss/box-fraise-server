@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Advertise — box fraise</title>
+  <meta name="description" content="Three dollars an open, and a dollar of it goes to the person who opens it. Outline an advertisement and we will be in touch.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="box fraise">
+  <script src="/js/pwa.js" defer></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --mono:   'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+    }
+    main { max-width: 620px; margin: 0 auto; padding: 40px 22px 90px; }
+    .backlink {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 34px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 6.5vw, 48px); letter-spacing: -0.03em;
+      line-height: 1.03; margin: 0 0 14px; text-wrap: balance;
+    }
+    .lede { font-size: 18px; line-height: 1.55; margin: 0 0 28px; color: var(--muted); }
+
+    /* The price, as a figure rather than a sentence. */
+    .price { border-top: 2px solid var(--ink); margin: 0 0 30px; }
+    .price div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+      padding: 13px 0; border-bottom: 1px solid var(--rule);
+      font-family: var(--mono); font-size: 13px;
+    }
+    .price .v { color: var(--accent); }
+    .price .note { color: var(--muted); font-size: 11px; }
+
+    label {
+      display: block; font-family: var(--mono);
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+      color: var(--muted); margin: 20px 0 7px;
+    }
+    input, textarea {
+      width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 13px 14px; background: #fff; color: var(--ink); resize: vertical;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea { min-height: 120px; line-height: 1.55; }
+    .hint { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+
+    .total {
+      font-style: italic; font-size: 30px; margin: 24px 0 0;
+    }
+    .total span { color: var(--accent); }
+    .send {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer;
+      margin-top: 18px; min-height: 56px;
+    }
+    .send[disabled] { background: #ccc; cursor: default; }
+    .msg { font-size: 16px; line-height: 1.55; margin-top: 14px; min-height: 22px; }
+    .msg.ok { color: var(--accent); }
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 14px; }
+    p strong { font-weight: 500; }
+    .closer { color: var(--muted); font-size: 14px; margin-top: 36px; }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>A dollar of every three goes to the person who read it.</h1>
+    <p class="lede">Your advertisement sits in an inbox. Nobody is shown it against their
+    will and nobody is tracked into it — a person chooses to open it, and is paid for
+    choosing.</p>
+
+    <div class="price">
+      <div><span>You pay, per open</span><span class="v">$3.00</span></div>
+      <div><span>The reader receives</span><span class="v">$1.00</span></div>
+      <div><span>Box Fraise keeps</span><span class="v">$2.00</span></div>
+      <div><span class="note">You are invoiced after we speak. Nothing is charged here.</span></div>
+    </div>
+
+    <p><strong>Outline what you have.</strong> Somebody reads every one of these.</p>
+
+    <label for="ad-who">Business</label>
+    <input id="ad-who" placeholder="Ferngrove Bakery" maxlength="80">
+
+    <label for="ad-contact">How to reach you</label>
+    <input id="ad-contact" placeholder="an email or a telephone number" maxlength="200">
+
+    <label for="ad-tease">The line they see unopened</label>
+    <input id="ad-tease" placeholder="A loaf and a coffee, Saturday morning." maxlength="140">
+    <p class="hint">Your name sits above it. This is the reason somebody opens it.</p>
+
+    <label for="ad-body">What opening it reveals</label>
+    <textarea id="ad-body" maxlength="4000" placeholder="Ten percent off before nine on Saturdays. Say you ran here."></textarea>
+
+    <label for="ad-link">A link, if there is one</label>
+    <input id="ad-link" placeholder="https://" maxlength="400">
+
+    <label for="ad-opens">How many opens</label>
+    <input id="ad-opens" type="number" min="1" step="1" value="100">
+
+    <p class="total">Total <span id="ad-total">$300.00</span></p>
+
+    <button class="send" type="button" id="ad-send">Send it</button>
+    <p class="msg" id="ad-msg"></p>
+
+    <p class="closer">Box Fraise · Edmonton ·
+      <a href="/" style="color:var(--muted)">the board and the run club</a></p>
+  </main>
+
+  <script>
+  (() => {
+    'use strict';
+    // Mirrors PRICE_CENTS in src/domain/adverts/service.rs. The server
+    // is the authority; this only lets somebody see what they are asking
+    // for before they ask for it.
+    const PRICE = 300;
+    const money = c => '$' + (c / 100).toFixed(2);
+    const $ = id => document.getElementById(id);
+
+    const opens = $('ad-opens');
+    const total = $('ad-total');
+    const paint = () => {
+      const n = parseInt(opens.value, 10);
+      total.textContent = n > 0 ? money(n * PRICE) : '—';
+    };
+    opens.addEventListener('input', paint);
+    paint();
+
+    $('ad-send').addEventListener('click', async () => {
+      const msg = $('ad-msg');
+      const btn = $('ad-send');
+      const body = {
+        advertiser: $('ad-who').value.trim(),
+        contact: $('ad-contact').value.trim(),
+        teaser: $('ad-tease').value.trim(),
+        body: $('ad-body').value.trim(),
+        link: $('ad-link').value.trim() || null,
+        opens_wanted: parseInt(opens.value, 10),
+      };
+      if (!body.advertiser || !body.contact || !body.teaser || !body.body) {
+        msg.className = 'msg';
+        msg.textContent = 'A name, a way to reach you, a line, and something inside it.';
+        return;
+      }
+      btn.disabled = true;
+      msg.className = 'msg';
+      msg.textContent = 'Sending…';
+      try {
+        const r = await fetch('/v1/adverts/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const raw = await r.text();
+        let parsed = null;
+        if (raw) { try { parsed = JSON.parse(raw); } catch { /* leave null */ } }
+        if (!r.ok) throw new Error((parsed && (parsed.message || parsed.error)) || 'http ' + r.status);
+        msg.className = 'msg ok';
+        msg.textContent = 'Sent. Somebody will be in touch about the invoice, and it goes up once it is paid.';
+        ['ad-who','ad-contact','ad-tease','ad-body','ad-link'].forEach(id => { $(id).value = ''; });
+      } catch (e) {
+        msg.className = 'msg';
+        msg.textContent = e.message || 'It did not send. Try again in a moment.';
+        btn.disabled = false;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

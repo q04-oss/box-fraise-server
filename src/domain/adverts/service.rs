@@ -21,7 +21,9 @@ use uuid::Uuid;
 
 use super::{
     repository,
-    types::{AdminAdvert, Inbox, NewAdvert, Opened, Owed, Paid, PayRequest},
+    types::{
+        AdminAdvert, AdminRequest, Inbox, NewAdvert, NewRequest, Opened, Owed, Paid, PayRequest,
+    },
 };
 use crate::{
     audit,
@@ -33,6 +35,17 @@ use crate::{
 /// attention is worth — a guard against a typo becoming a debt.
 const MAX_PAYS_CENTS: i32 = 10_000;
 const MAX_OPENS: i32 = 100_000;
+
+/// The standing price: **an advertiser pays $3 an open, and the person
+/// who opens it gets $1 of that.** The remaining $2 is what the platform
+/// keeps for running it.
+///
+/// Both halves are stored on every advert rather than derived from these
+/// constants, so changing the price later does not rewrite what was
+/// already sold, and one advertiser can be given a different rate
+/// without a migration.
+pub const PRICE_CENTS: i32 = 300;
+pub const PAYS_CENTS: i32 = 100;
 
 pub async fn inbox(pool: &Pool, runner_id: Uuid) -> AppResult<Inbox> {
     let mut tx = RunnerRlsTransaction::begin(pool, runner_id).await?;
@@ -99,8 +112,13 @@ pub async fn create(pool: &Pool, admin_id: Uuid, req: NewAdvert) -> AppResult<Uu
     if body.chars().count() > 4000 {
         return Err(AppError::bad_request("that is too much to put inside one"));
     }
-    if req.pays_cents <= 0 || req.pays_cents > MAX_PAYS_CENTS {
+    let price_cents = req.price_cents.unwrap_or(PRICE_CENTS);
+    let pays_cents = req.pays_cents.unwrap_or(PAYS_CENTS);
+    if pays_cents <= 0 || pays_cents > MAX_PAYS_CENTS {
         return Err(AppError::bad_request("the amount is outside what an advert may pay"));
+    }
+    if price_cents < pays_cents {
+        return Err(AppError::bad_request("an advert cannot pay out more than it charges"));
     }
     if req.opens_paid <= 0 || req.opens_paid > MAX_OPENS {
         return Err(AppError::bad_request("that is not a number of opens"));
@@ -114,7 +132,8 @@ pub async fn create(pool: &Pool, admin_id: Uuid, req: NewAdvert) -> AppResult<Uu
         teaser,
         body,
         link,
-        req.pays_cents,
+        price_cents,
+        pays_cents,
         req.opens_paid,
     )
     .await?;
@@ -126,11 +145,136 @@ pub async fn create(pool: &Pool, admin_id: Uuid, req: NewAdvert) -> AppResult<Uu
         Some(admin_id),
         "advert.created",
         Some(&id.to_string()),
-        serde_json::json!({ "pays_cents": req.pays_cents, "opens_paid": req.opens_paid }),
+        serde_json::json!({
+            "price_cents": price_cents,
+            "pays_cents": pays_cents,
+            "opens_paid": req.opens_paid,
+        }),
     )
     .await;
 
     Ok(id)
+}
+
+/// A business outlining an advertisement they have.
+///
+/// Open to anybody — the second unauthenticated write path on the
+/// platform. It is bounded by the policy in 0041: INSERT only, only as
+/// `pending`, and nothing public can read the table back. A request is
+/// not an advert; it appears in nobody's inbox until an admin turns it
+/// into one, which is the moment money has changed hands.
+pub async fn request(pool: &Pool, req: NewRequest) -> AppResult<()> {
+    let advertiser = req.advertiser.trim();
+    let contact = req.contact.trim();
+    let teaser = req.teaser.trim();
+    let body = req.body.trim();
+    if advertiser.is_empty() || contact.is_empty() || teaser.is_empty() || body.is_empty() {
+        return Err(AppError::bad_request(
+            "a name, a way to reach you, a line, and something inside it",
+        ));
+    }
+    if contact.chars().count() < 3 || contact.chars().count() > 200 {
+        return Err(AppError::bad_request("an email or a telephone number"));
+    }
+    if teaser.chars().count() > 140 {
+        return Err(AppError::bad_request("that line is too long for an inbox"));
+    }
+    if body.chars().count() > 4000 {
+        return Err(AppError::bad_request("that is too much to put inside one"));
+    }
+    if req.opens_wanted <= 0 || req.opens_wanted > MAX_OPENS {
+        return Err(AppError::bad_request("that is not a number of opens"));
+    }
+    let link = req.link.as_deref().map(str::trim).filter(|l| !l.is_empty());
+
+    // Generated here, not read back: there is no non-admin SELECT policy
+    // on this table, so RETURNING would be refused.
+    let id = Uuid::new_v4();
+    let mut conn = pool.acquire().await?;
+    repository::insert_request(
+        &mut conn,
+        id,
+        advertiser,
+        contact,
+        teaser,
+        body,
+        link,
+        req.opens_wanted,
+    )
+    .await?;
+
+    audit::write(
+        pool,
+        "public",
+        None,
+        "advert.requested",
+        Some(&id.to_string()),
+        serde_json::json!({ "opens_wanted": req.opens_wanted }),
+    )
+    .await;
+
+    Ok(())
+}
+
+pub async fn list_requests(pool: &Pool) -> AppResult<Vec<AdminRequest>> {
+    let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let rows = repository::list_requests(tx.conn()).await?;
+    tx.commit().await?;
+    Ok(rows)
+}
+
+/// Turn a request into an advert. This is the moment it goes into every
+/// inbox, so it is also the moment somebody should have been paid.
+pub async fn accept_request(pool: &Pool, admin_id: Uuid, id: Uuid) -> AppResult<Uuid> {
+    let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let Some(r) = repository::take_request(tx.conn(), id).await? else {
+        tx.commit().await?;
+        return Err(AppError::NotFound);
+    };
+    let advert_id = repository::insert(
+        tx.conn(),
+        &r.advertiser,
+        &r.teaser,
+        &r.body,
+        r.link.as_deref(),
+        PRICE_CENTS,
+        PAYS_CENTS,
+        r.opens_wanted,
+    )
+    .await?;
+    tx.commit().await?;
+
+    audit::write(
+        pool,
+        "admin",
+        Some(admin_id),
+        "advert.request_accepted",
+        Some(&advert_id.to_string()),
+        serde_json::json!({ "request_id": id, "opens_paid": r.opens_wanted }),
+    )
+    .await;
+
+    Ok(advert_id)
+}
+
+/// Throw one away. The audit entry is the only record it ever existed.
+pub async fn delete_request(pool: &Pool, admin_id: Uuid, id: Uuid) -> AppResult<()> {
+    let mut tx = AdminRlsTransaction::begin(pool).await?;
+    let done = repository::delete_request(tx.conn(), id).await?;
+    tx.commit().await?;
+    if !done {
+        return Err(AppError::NotFound);
+    }
+    audit::write(
+        pool,
+        "admin",
+        Some(admin_id),
+        "advert.request_rejected",
+        Some(&id.to_string()),
+        serde_json::json!({}),
+    )
+    .await;
+    Ok(())
 }
 
 /// Stop it appearing. Receipts already written stay owed — what somebody

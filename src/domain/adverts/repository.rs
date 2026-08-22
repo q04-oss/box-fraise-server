@@ -1,7 +1,7 @@
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use super::types::{AdminAdvert, Opened, Owed, Unopened};
+use super::types::{AdminAdvert, AdminRequest, Opened, Owed, Unopened};
 
 /// What is still worth showing this runner: open, in budget, and not
 /// already opened by them.
@@ -75,7 +75,8 @@ pub async fn contents(
 
 pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminAdvert>> {
     sqlx::query_as::<_, AdminAdvert>(
-        "SELECT id, advertiser, teaser, pays_cents, opens_paid, opens_taken, status
+        "SELECT id, advertiser, teaser, price_cents, pays_cents,
+                opens_paid, opens_taken, status
            FROM adverts
           ORDER BY created_at DESC",
     )
@@ -83,28 +84,103 @@ pub async fn list_all(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminAdvert>>
     .await
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn insert(
     conn: &mut PgConnection,
     advertiser: &str,
     teaser: &str,
     body: &str,
     link: Option<&str>,
+    price_cents: i32,
     pays_cents: i32,
     opens_paid: i32,
 ) -> sqlx::Result<Uuid> {
     sqlx::query_scalar(
-        "INSERT INTO adverts (advertiser, teaser, body, link, pays_cents, opens_paid)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO adverts
+             (advertiser, teaser, body, link, price_cents, pays_cents, opens_paid)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING id",
     )
     .bind(advertiser)
     .bind(teaser)
     .bind(body)
     .bind(link)
+    .bind(price_cents)
     .bind(pays_cents)
     .bind(opens_paid)
     .fetch_one(conn)
     .await
+}
+
+/// A business outlining an advertisement they have.
+///
+/// The id is generated in Rust rather than read back. There is no
+/// non-admin SELECT policy on this table, so `INSERT ... RETURNING`
+/// would be refused with 42501 — the same reason `submissions` does it
+/// this way. Do not widen the policy to make `RETURNING` work.
+#[allow(clippy::too_many_arguments)]
+pub async fn insert_request(
+    conn: &mut PgConnection,
+    id: Uuid,
+    advertiser: &str,
+    contact: &str,
+    teaser: &str,
+    body: &str,
+    link: Option<&str>,
+    opens_wanted: i32,
+) -> sqlx::Result<()> {
+    sqlx::query(
+        "INSERT INTO advert_requests
+             (id, advertiser, contact, teaser, body, link, opens_wanted)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    )
+    .bind(id)
+    .bind(advertiser)
+    .bind(contact)
+    .bind(teaser)
+    .bind(body)
+    .bind(link)
+    .bind(opens_wanted)
+    .execute(conn)
+    .await?;
+    Ok(())
+}
+
+pub async fn list_requests(conn: &mut PgConnection) -> sqlx::Result<Vec<AdminRequest>> {
+    sqlx::query_as::<_, AdminRequest>(
+        "SELECT id, advertiser, contact, teaser, body, link,
+                opens_wanted, status, created_at
+           FROM advert_requests
+          ORDER BY status DESC, created_at ASC",
+    )
+    .fetch_all(conn)
+    .await
+}
+
+pub async fn take_request(
+    conn: &mut PgConnection,
+    id: Uuid,
+) -> sqlx::Result<Option<AdminRequest>> {
+    // The race-close: two admins accepting at once means exactly one
+    // UPDATE returns a row, so an advert is created once.
+    sqlx::query_as::<_, AdminRequest>(
+        "UPDATE advert_requests
+            SET status = 'accepted'
+          WHERE id = $1 AND status = 'pending'
+      RETURNING id, advertiser, contact, teaser, body, link,
+                opens_wanted, status, created_at",
+    )
+    .bind(id)
+    .fetch_optional(conn)
+    .await
+}
+
+pub async fn delete_request(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<bool> {
+    let done = sqlx::query("DELETE FROM advert_requests WHERE id = $1")
+        .bind(id)
+        .execute(conn)
+        .await?;
+    Ok(done.rows_affected() == 1)
 }
 
 pub async fn close(conn: &mut PgConnection, id: Uuid) -> sqlx::Result<bool> {
