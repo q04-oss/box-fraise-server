@@ -100,48 +100,6 @@
     .steps b { font-weight: 500; display: block; }
     .steps span.d { color: var(--muted); font-size: 15px; }
 
-    /* Sign in */
-    .signin { max-width: 340px; margin-top: 22px; }
-    .signin input {
-      display: block; width: 100%; font: inherit; font-size: 17px;
-      border: 1px solid var(--rule); border-radius: 8px;
-      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
-    }
-    .signin input:focus { outline: none; border-color: var(--accent); }
-    .signin button {
-      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.15em; padding: 17px 28px; border: 0; border-radius: 999px;
-      background: var(--accent); color: #fff; cursor: pointer; min-height: 54px;
-      width: 100%; display: block;
-    }
-    .signin button[disabled] { background: #ccc; cursor: default; }
-    .signin .msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
-    .signin .msg.ok { color: var(--accent); }
-    .who {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 14px;
-    }
-    .who button {
-      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
-      background: none; border: 0; color: var(--muted); cursor: pointer;
-      padding: 0; text-decoration: underline; text-underline-offset: 3px;
-    }
-
-    /* The index */
-    .index { border-top: 2px solid var(--ink); }
-    .index a {
-      display: flex; align-items: baseline; gap: 14px;
-      padding: 13px 0; border-bottom: 1px solid var(--rule);
-      text-decoration: none; color: inherit;
-    }
-    .index a:hover .t { color: var(--accent); }
-    .index .t { font-style: italic; font-size: 19px; flex: 0 0 auto; }
-    .index .d { font-size: 14px; color: var(--muted); text-align: right; flex: 1 1 auto; }
-
-    .note {
-      font-size: 14px; line-height: 1.6; color: var(--muted);
-      border-left: 2px solid var(--accent); padding: 3px 0 3px 12px; margin: 18px 0 0;
-    }
     .closer { color: var(--muted); font-size: 13px; margin: 40px 0 0; line-height: 1.7; }
   </style>
 </head>
@@ -149,10 +107,7 @@
   <header class="masthead">
     <p class="wordmark"><a href="/">box fraise</a></p>
     <span class="pills">
-      <a class="pill now" href="#in">Sign in</a>
-      <a class="pill" href="/gurlp">Gurlp</a>
-      <a class="pill" href="/advertise">Advertise</a>
-      <a class="pill" href="/legacy">Legacy</a>
+      <a class="pill now" href="/signin">Sign in</a>
     </span>
   </header>
 
@@ -186,50 +141,9 @@
         over a telephone.</span></span></li>
       </ol>
 
-      <div class="signin" id="signin"></div>
-
-      <p class="note">Signing in with a YubiKey is not wired up yet. The box above is the
-      account system that works today.</p>
     </section>
 
     <p class="closer">Box Fraise · Edmonton</p>
   </main>
-
-  <script src="/js/running.js"></script>
-  <script>
-    // The account system that exists today. renderRunning mounts either
-    // the sign-in form or, once somebody is signed in, who they are and
-    // a way out. The YubiKey path above is not wired to it yet, and the
-    // page says so rather than implying otherwise.
-    (() => {
-      'use strict';
-      const root = document.getElementById('signin');
-      const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
-      if (signedIn) {
-        const name = decodeURIComponent(
-          (document.cookie.split(';').map(p => p.trim().split('='))
-            .find(([k]) => k === 'bf_runner') || [])[1] || '');
-        const who = document.createElement('p');
-        who.className = 'who';
-        who.textContent = 'Signed in as ' + name + ' · ';
-        const out = document.createElement('button');
-        out.type = 'button';
-        out.textContent = 'sign out';
-        out.addEventListener('click', async () => {
-          await fetch('/v1/running/session', { method: 'DELETE' }).catch(() => {});
-          location.reload();
-        });
-        who.appendChild(out);
-        root.appendChild(who);
-        const go = document.createElement('a');
-        go.className = 'pill now';
-        go.href = '/running';
-        go.textContent = 'Your inbox and the board';
-        root.appendChild(go);
-        return;
-      }
-      renderRunning('signin');
-    })();
-  </script>
 </body>
 </html>

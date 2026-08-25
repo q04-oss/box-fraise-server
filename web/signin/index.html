@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — box fraise</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="box fraise">
+  <script src="/js/pwa.js" defer></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --mono:   'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    main { max-width: 480px; margin: 0 auto; padding: 44px 22px 90px; }
+    .backlink {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--muted); text-decoration: none;
+      display: inline-block; margin-bottom: 38px;
+    }
+    .backlink:hover { color: var(--ink); }
+    h1 {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(30px, 6.5vw, 46px); letter-spacing: -0.03em;
+      line-height: 1.03; margin: 0 0 26px;
+    }
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 14px; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+
+    /* The form. running.js builds into #signin and uses these names. */
+    .r-auth { max-width: 340px; }
+    .r-auth input {
+      display: block; width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
+    }
+    .r-auth input:focus { outline: none; border-color: var(--accent); }
+    .r-lede { font-size: 15px; color: var(--muted); margin: 0 0 16px; }
+    .r-go {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 56px;
+      width: 100%; max-width: 340px; display: block;
+    }
+    .r-go[disabled] { background: #ccc; cursor: default; }
+    .r-alt {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 14px 0 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .r-msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
+    .r-msg.ok  { color: var(--accent); }
+    .r-msg.err { color: #444; }
+    .who {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 16px;
+    }
+    .who button {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .pill {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.16em; text-decoration: none;
+      border: 1px solid var(--accent); background: var(--accent); color: #fff;
+      border-radius: 999px; padding: 12px 20px; display: inline-block;
+    }
+    .pill:hover { background: var(--ink); border-color: var(--ink); }
+    /* The tracker half of the panel is not wanted here. */
+    .r-dial, .r-mine { display: none; }
+
+    .note {
+      font-size: 14px; line-height: 1.6; color: var(--muted);
+      border-left: 2px solid var(--accent); padding: 3px 0 3px 12px; margin: 26px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="backlink" href="/">← box fraise</a>
+
+    <h1>Sign in.</h1>
+
+    <div id="signin"></div>
+
+    <p class="note">Signing in with a YubiKey is not wired up yet — the box above is the
+    account system that works today. A key is handed over in person at
+    <a class="inline" href="/">the run club</a>, and Stripe Connect comes first.</p>
+  </main>
+
+  <script src="/js/running.js"></script>
+  <script>
+    (() => {
+      'use strict';
+      const root = document.getElementById('signin');
+      const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
+      if (!signedIn) { renderRunning('signin'); return; }
+
+      const name = decodeURIComponent(
+        (document.cookie.split(';').map(p => p.trim().split('='))
+          .find(([k]) => k === 'bf_runner') || [])[1] || '');
+      const who = document.createElement('p');
+      who.className = 'who';
+      who.textContent = 'Signed in as ' + name + ' · ';
+      const out = document.createElement('button');
+      out.type = 'button';
+      out.textContent = 'sign out';
+      out.addEventListener('click', async () => {
+        await fetch('/v1/running/session', { method: 'DELETE' }).catch(() => {});
+        location.reload();
+      });
+      who.appendChild(out);
+      const go = document.createElement('a');
+      go.className = 'pill';
+      go.href = '/running';
+      go.textContent = 'Your inbox and the board';
+      root.append(who, go);
+    })();
+  </script>
+</body>
+</html>
