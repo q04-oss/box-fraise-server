@@ -214,16 +214,16 @@
 let balance=0,activeTab='map',connected=false;
 const YOU={lon:-113.5,lat:53.5,city:"Edmonton, CA"};
 const PINGS=[
-  {id:0,from:"Harubaku Coffee",city:"Edmonton, CA",lon:-113.5,lat:53.5,price:0.45,kind:"Ad",body:"Two-for-one pour-overs on Whyte till Friday. Come slow down.",status:"pending"},
+  {id:0,from:"Harubaku Coffee",city:"Edmonton, CA",lon:-113.5,lat:53.5,price:0.45,kind:"Ad",body:"Two-for-one pour-overs at the Mercury Block till Friday. Come slow down.",status:"pending"},
   {id:1,from:"Aoi Matcha",city:"Tokyo, JP",lon:139.7,lat:35.68,price:0.55,kind:"Ad",body:"First-harvest matcha, whisked to order. Ten seats only.",status:"pending"},
   {id:2,from:"Praça Coffee",city:"Lisbon, PT",lon:-9.14,lat:38.72,price:0.35,kind:"Post",body:"Sun's out on the praça. Someone bring a guitar.",status:"pending"},
   {id:3,from:"Studio Nord",city:"Berlin, DE",lon:13.4,lat:52.52,price:0.60,kind:"Ad",body:"Risograph zine drop Saturday. Ink still wet.",status:"pending"},
-  {id:4,from:"A neighbour",city:"Edmonton, CA",lon:-113.62,lat:53.46,price:0.15,kind:"Post",body:"Started running Fridays at McIntyre. Turns out I like mornings.",status:"pending"},
+  {id:4,from:"A neighbour",city:"Edmonton, CA",lon:-113.62,lat:53.46,price:0.15,kind:"Post",body:"Started running Saturdays at the Mercury Block. Turns out I like mornings.",status:"pending"},
   {id:5,from:"Feria del Sur",city:"Mexico City, MX",lon:-99.13,lat:19.43,price:0.30,kind:"Post",body:"Market's full of guavas right now. The whole block smells like it.",status:"pending"},
   {id:6,from:"A shop",city:"Sydney, AU",lon:151.2,lat:-33.87,price:0.40,kind:"Ad",body:"Summer linen just landed. Come get out of the heat.",status:"pending"},
 ];
 const reports=[];
-seedReport("Run club — Fridays 6pm at McIntyre. First one's easy.",8,0.35);
+seedReport("Run club — Saturdays 10am, Mercury Block. First one's easy.",8,0.35);
 seedReport("Silk Road: new sumac, come taste it before it's gone.",5,0.50);
 function seedReport(body,sought,price){reports.push({body,sought,price,reached:Math.round(sought*1.7),filled:sought,isNew:false});}
 

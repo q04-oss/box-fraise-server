@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>box fraise — running</title>
-  <meta name="description" content="A leaderboard, and a run club on Whyte Avenue and Jasper Avenue. Join by showing up.">
+  <title>box fraise</title>
+  <meta name="description" content="Box Fraise studies sanctioned transgression — the conditions under which a group can cross its own lines together — and is built to meet those conditions itself.">
   <meta name="theme-color" content="#ffffff">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="apple-touch-icon" href="/icons/icon-180.png">
@@ -35,251 +35,225 @@
     }
 
     .masthead {
-      max-width: 660px; margin: 0 auto;
+      max-width: 720px; margin: 0 auto;
       padding: 22px 22px 16px;
       display: flex; align-items: baseline; justify-content: space-between;
-      gap: 12px 18px; border-bottom: 1px solid var(--rule);
-      /* Four pills and a wordmark do not fit across a phone. Without
-         this they run off the right edge and the last one is simply
-         gone, which is how Gurlp disappeared. */
-      flex-wrap: wrap;
+      gap: 12px 18px; flex-wrap: wrap; border-bottom: 1px solid var(--rule);
     }
     .wordmark { font-style: italic; font-size: 21px; letter-spacing: -0.01em; margin: 0; }
     .wordmark a { color: var(--ink); text-decoration: none; }
-    .mast-links { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-    .legacy {
+    .pills { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .pill {
       font-family: var(--mono); font-size: 10px; text-transform: uppercase;
       letter-spacing: 0.16em; color: var(--muted); text-decoration: none;
       border: 1px solid var(--rule); border-radius: 999px;
-      padding: 8px 14px; white-space: nowrap;
+      padding: 8px 14px; white-space: nowrap; background: none; cursor: pointer;
     }
-    .legacy:hover { color: var(--ink); border-color: var(--ink); }
-    /* The one in the masthead that somebody is meant to press. */
-    .legacy.sell { color: var(--accent); border-color: var(--accent); }
-    .legacy.sell:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
-    /* And the one that shows them what it is, in ten seconds, without
-       an account. Filled, because it is the first thing to press. */
-    .legacy.demo {
-      background: var(--accent); border-color: var(--accent); color: #fff;
-      font-family: var(--mono); cursor: pointer;
-    }
-    .legacy.demo:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .pill:hover { color: var(--ink); border-color: var(--ink); }
+    .pill.now { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .pill.now:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
 
-    main { max-width: 660px; margin: 0 auto; padding: 30px 22px 80px; }
-    section { margin-bottom: 40px; }
+    main { max-width: 720px; margin: 0 auto; padding: 36px 22px 90px; }
+    section { padding-bottom: 40px; margin-bottom: 40px; border-bottom: 1px solid var(--rule); }
+    section:last-of-type { border-bottom: 0; }
 
-    /* What this is, at the foot of the page. Two sentences of the three
-       that stand on /legacy — the critical-thinking one belongs with the
-       magazine. It sits at the bottom rather than the top because the
-       page opens on the board: somebody arriving wants to see who is
-       running before they are told what the project is. */
+    /* The statement. The whole page is downstream of it. */
     .statement {
-      font-size: clamp(17px, 2.6vw, 21px); line-height: 1.55;
-      max-width: 46ch; margin: 0 0 20px;
-      padding-top: 26px; border-top: 1px solid var(--rule);
-    }
-    .statement strong { font-weight: 500; font-style: italic; }
-
-    .head {
       font-style: italic; font-weight: 500;
-      font-size: clamp(28px, 6vw, 44px); letter-spacing: -0.03em;
-      line-height: 1.03; margin: 0 0 8px;
+      font-size: clamp(24px, 4.6vw, 38px); letter-spacing: -0.028em;
+      line-height: 1.18; margin: 0; max-width: 22ch;
     }
-    .sub {
+    .statement em { font-style: italic; color: var(--accent); }
+
+    h2 {
       font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; color: var(--muted); margin: 0 0 18px;
+      letter-spacing: 0.16em; color: var(--muted); font-weight: 500; margin: 0 0 16px;
     }
-
-    /* ── The board ───────────────────────────────────────────────── */
-    #run-board { border-top: 2px solid var(--ink); }
-    .r-brow {
-      display: flex; align-items: baseline; gap: 14px;
-      padding: 15px 0; border-bottom: 1px solid var(--rule);
-    }
-    .r-brow.me .r-bu, .r-brow.me .r-bs { color: var(--accent); }
-    .r-bn { font-family: var(--mono); font-size: 12px; color: var(--accent); width: 26px; flex: 0 0 auto; }
-    .r-bmid { flex: 1 1 auto; min-width: 0; }
-    .r-bu {
-      font-style: italic; font-size: 22px; line-height: 1.15;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .r-bd {
-      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
-      letter-spacing: 0.12em; color: var(--muted); margin-top: 4px;
-    }
-    .r-bs { font-style: italic; font-size: 30px; line-height: 1; flex: 0 0 auto; text-align: right; }
-    .r-brow.lead { padding: 20px 0; }
-    .r-brow.lead .r-bu { font-size: 30px; }
-    .r-brow.lead .r-bs { font-size: 42px; color: var(--accent); }
-    .r-none { font-size: 16px; color: var(--muted); margin: 18px 0 0; }
-
-    /* ── Signing up, and running ─────────────────────────────────── */
-    .r-auth { max-width: 340px; }
-    .r-auth input {
-      display: block; width: 100%; font: inherit; font-size: 17px;
-      border: 1px solid var(--rule); border-radius: 8px;
-      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
-    }
-    .r-auth input:focus { outline: none; border-color: var(--accent); }
-    .r-lede { font-size: 15px; color: var(--muted); margin: 0 0 16px; }
-    .r-go {
-      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
-      background: var(--accent); color: #fff; cursor: pointer; min-height: 56px;
-      width: 100%; max-width: 340px; display: block;
-    }
-    .r-go[disabled] { background: #ccc; cursor: default; }
-    .r-go.on { background: var(--ink); }
-    .r-alt {
-      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
-      background: none; border: 0; color: var(--muted); cursor: pointer;
-      padding: 14px 0 0; text-decoration: underline; text-underline-offset: 3px;
-    }
-    .r-msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
-    .r-msg.ok  { color: var(--accent); }
-    .r-msg.err { color: #444; }
-
-    .r-who {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 18px;
-    }
-    .r-out {
-      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
-      background: none; border: 0; color: var(--muted); cursor: pointer;
-      padding: 0; text-decoration: underline; text-underline-offset: 3px;
-    }
-    .r-dial { margin: 0 0 22px; }
-    .r-dist {
-      font-style: italic; font-weight: 500; font-size: clamp(64px, 22vw, 132px);
-      line-height: 0.9; letter-spacing: -0.04em;
-    }
-    .r-unit {
-      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
-      letter-spacing: 0.2em; color: var(--muted); margin-top: 4px;
-    }
-    .r-meta { font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em; margin-top: 12px; }
-    .r-mine { margin-top: 26px; }
-    .r-standing {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.13em; color: var(--muted);
-      margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
-    }
-    .r-row {
-      display: flex; justify-content: space-between; gap: 12px;
-      font-family: var(--mono); font-size: 12px; color: var(--muted);
-      padding: 9px 0; border-bottom: 1px solid var(--rule);
-    }
-    .r-rk { color: var(--ink); flex: 0 0 auto; }
-    .r-rt { flex: 1 1 auto; }
-
-    /* While a run is going, everything else gets out of the way. */
-    body.running #board-section, body.running #club, body.running #run-inbox { opacity: 0.2; }
-
-    /* ── The inbox ───────────────────────────────────────────────── */
-    .ad-list { border-top: 2px solid var(--ink); }
-    .ad {
-      border-bottom: 1px solid var(--rule); padding: 16px 0;
-      transition: background 140ms ease;
-    }
-    .ad.took { background: #fdf2f2; padding-left: 12px; padding-right: 12px; }
-    .ad-who { font-style: italic; font-size: 21px; line-height: 1.2; }
-    .ad-tease { font-size: 16px; line-height: 1.5; color: var(--muted); margin: 5px 0 12px; }
-    .ad-open {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; padding: 13px 20px; border: 0; border-radius: 999px;
-      background: var(--accent); color: #fff; cursor: pointer; min-height: 46px;
-    }
-    .ad-open[disabled] { background: #ccc; cursor: default; }
-    .ad-body { font-size: 17px; line-height: 1.6; margin: 4px 0 12px; white-space: pre-wrap; }
-    .ad-link {
-      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-      letter-spacing: 0.14em; color: var(--accent); text-decoration: none;
-      border-bottom: 1px solid var(--rule); padding-bottom: 3px;
-    }
-    .ad-paid {
-      font-style: italic; font-size: 26px; color: var(--accent); margin-top: 14px;
-    }
-
-    /* ── The run club ────────────────────────────────────────────── */
-    #club { border-top: 1px solid var(--rule); padding-top: 26px; }
-    .when { margin: 0 0 14px; border-top: 2px solid var(--ink); }
-    .when div {
-      display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
-      padding: 13px 0; border-bottom: 1px solid var(--rule);
-    }
-    .when .day { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); }
-    .when .place { font-style: italic; font-size: 19px; text-align: right; }
-    .purpose { font-size: 17px; line-height: 1.55; margin: 0; }
-    .purpose strong { font-weight: 500; }
+    p { font-size: 17px; line-height: 1.6; margin: 0 0 14px; }
+    p strong { font-weight: 500; }
     a.inline {
       color: var(--ink); text-decoration: underline;
       text-underline-offset: 3px; text-decoration-color: var(--rule);
     }
     a.inline:hover { text-decoration-color: var(--accent); }
-    .closer { color: var(--muted); font-size: 13px; margin: 34px 0 0; }
+
+    /* The run */
+    .when { border-top: 2px solid var(--ink); margin: 0 0 16px; }
+    .when div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--rule);
+    }
+    .when .day { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); }
+    .when .place { font-style: italic; font-size: 19px; text-align: right; }
+
+    /* Getting in */
+    .steps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+    .steps li {
+      display: flex; gap: 16px; align-items: baseline;
+      border-bottom: 1px solid var(--rule); padding: 16px 0;
+      font-size: 17px; line-height: 1.55;
+    }
+    .steps .n {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+      color: var(--accent); flex: 0 0 auto;
+    }
+    .steps b { font-weight: 500; display: block; }
+    .steps span.d { color: var(--muted); font-size: 15px; }
+
+    /* Sign in */
+    .signin { max-width: 340px; margin-top: 22px; }
+    .signin input {
+      display: block; width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
+    }
+    .signin input:focus { outline: none; border-color: var(--accent); }
+    .signin button {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.15em; padding: 17px 28px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 54px;
+      width: 100%; display: block;
+    }
+    .signin button[disabled] { background: #ccc; cursor: default; }
+    .signin .msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
+    .signin .msg.ok { color: var(--accent); }
+    .who {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 14px;
+    }
+    .who button {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+
+    /* The index */
+    .index { border-top: 2px solid var(--ink); }
+    .index a {
+      display: flex; align-items: baseline; gap: 14px;
+      padding: 13px 0; border-bottom: 1px solid var(--rule);
+      text-decoration: none; color: inherit;
+    }
+    .index a:hover .t { color: var(--accent); }
+    .index .t { font-style: italic; font-size: 19px; flex: 0 0 auto; }
+    .index .d { font-size: 14px; color: var(--muted); text-align: right; flex: 1 1 auto; }
+
+    .note {
+      font-size: 14px; line-height: 1.6; color: var(--muted);
+      border-left: 2px solid var(--accent); padding: 3px 0 3px 12px; margin: 18px 0 0;
+    }
+    .closer { color: var(--muted); font-size: 13px; margin: 40px 0 0; line-height: 1.7; }
   </style>
 </head>
 <body>
   <header class="masthead">
     <p class="wordmark"><a href="/">box fraise</a></p>
-    <span class="mast-links">
-      <button class="legacy demo" type="button" id="show-inbox">Inbox</button>
-      <a class="legacy" href="/gurlp">Gurlp</a>
-      <a class="legacy sell" href="/advertise">Advertise</a>
-      <a class="legacy" href="/legacy">Legacy</a>
+    <span class="pills">
+      <a class="pill now" href="#in">Sign in</a>
+      <a class="pill" href="/gurlp">Gurlp</a>
+      <a class="pill" href="/advertise">Advertise</a>
+      <a class="pill" href="/legacy">Legacy</a>
     </span>
   </header>
 
   <main>
-    <section id="board-section">
-      <p class="head">Who is running the most.</p>
-      <p class="sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
-      <div id="run-board"></div>
+    <section>
+      <p class="statement">Box Fraise studies <em>sanctioned transgression</em> — the
+      conditions under which a group can cross its own lines together — and is built to meet
+      those conditions itself.</p>
     </section>
 
-    <section id="run-panel"></section>
-
-    <!-- Empty and silent for anybody not signed in. -->
-    <section id="run-inbox"></section>
-
-    <section id="club">
-      <p class="head">There is a run club.</p>
-      <p class="sub">Join by showing up</p>
+    <section>
+      <h2>The run club</h2>
       <div class="when">
-        <div><span class="day">Wed 08:00</span><span class="place">Coffee Bureau, Jasper Avenue</span></div>
-        <div><span class="day">Fri 18:00</span><span class="place">McIntyre Park, Whyte Avenue</span></div>
-        <div><span class="day">Sun 08:00</span><span class="place">McIntyre Park, Whyte Avenue</span></div>
+        <div><span class="day">Sat 10:00</span><span class="place">Coffee Bureau, Mercury Block</span></div>
       </div>
-      <p class="purpose"><strong>Both are for making Whyte Avenue and Jasper Avenue pedestrian
-      only.</strong> <a class="inline" href="/runclub">Where and why →</a></p>
+      <p><strong>It is topless.</strong> Nobody is photographed there, at any point, for any
+      reason.</p>
+      <p>You join by showing up. There is nothing to sign, nothing to pay, and nobody to ask.
+      You do not need to be fast and you do not need to know anyone.</p>
     </section>
 
-    <p class="statement">Playboy was the most advanced advertising machine ever built.
-    Box Fraise is the next generation of it: <strong>a consensual advertising engine.</strong>
-    <a class="inline" href="/legacy">The rest of it →</a></p>
+    <section id="in">
+      <h2>Getting in</h2>
+      <ol class="steps">
+        <li><span class="n">01</span><span><b>Set up Stripe Connect.</b>
+        <span class="d">It is how you are paid and it is your identity — there is no username
+        and no password to lose. The thing that pays you is the thing that is you.</span></span></li>
+        <li><span class="n">02</span><span><b>Take a YubiKey at the run club.</b>
+        <span class="d">Free, handed over in person on a Saturday. It is the key to the
+        platform: hardware you hold, nothing to phish, and nothing anybody can talk out of you
+        over a telephone.</span></span></li>
+      </ol>
+
+      <div class="signin" id="signin"></div>
+
+      <p class="note"><strong>Signing in with a YubiKey is not wired up yet.</strong> The box
+      above is the account system that works today — a name and a password. The two steps
+      above are the way in that is being built, and the keys are real.</p>
+    </section>
+
+    <section>
+      <h2>Everything else</h2>
+      <div class="index">
+        <a href="/running"><span class="t">Running</span><span class="d">Log runs, get on the board</span></a>
+        <a href="/gurlp"><span class="t">Gurlp</span><span class="d">An API for consented attention — deployed and answering</span></a>
+        <a href="/gurlp/app"><span class="t">Gurlp, the app</span><span class="d">A working drawing of the client</span></a>
+        <a href="/advertise"><span class="t">Advertise</span><span class="d">Three dollars an open, a dollar to the reader</span></a>
+        <a href="/runaway"><span class="t">Run away</span><span class="d">Why do you want to run away?</span></a>
+        <a href="/clubhouse"><span class="t">Clubhouse</span><span class="d">A run monastery, and who it is for</span></a>
+        <a href="/magazine"><span class="t">Magazine</span><span class="d">Gurgle, printed</span></a>
+        <a href="/gurgle"><span class="t">Gurgle</span><span class="d">The feed, the channels, the inbox</span></a>
+        <a href="/cash"><span class="t">Cash</span><span class="d">Money you can leave with</span></a>
+        <a href="/profitshare"><span class="t">Profit share</span><span class="d">A cut of what your attention earned</span></a>
+        <a href="/games"><span class="t">Games</span><span class="d">Two games about the same street</span></a>
+        <a href="/scan"><span class="t">Scan</span><span class="d">Point a camera at an advertisement</span></a>
+        <a href="/mvp"><span class="t">MVP</span><span class="d">Without community, nothing can be built</span></a>
+        <a href="/tip"><span class="t">Tip</span><span class="d">The businesses that refuse it</span></a>
+        <a href="/runclub"><span class="t">Run club</span><span class="d">Where and why</span></a>
+        <a href="/os"><span class="t">OS</span><span class="d">A desktop</span></a>
+        <a href="/about"><span class="t">About</span><span class="d">The project</span></a>
+        <a href="/legacy"><span class="t">Legacy</span><span class="d">The site this one grew out of</span></a>
+      </div>
+    </section>
 
     <p class="closer">Box Fraise · Edmonton</p>
   </main>
 
   <script src="/js/running.js"></script>
-  <script src="/js/demo.js"></script>
   <script>
-    document.getElementById('show-inbox').addEventListener('click', openInboxDemo);
-  </script>
-  <script>
-    // Signed out, the board leads and the form follows it. Signed in,
-    // the tracker goes to the top — you came here to run.
+    // The account system that exists today. renderRunning mounts either
+    // the sign-in form or, once somebody is signed in, who they are and
+    // a way out. The YubiKey path above is not wired to it yet, and the
+    // page says so rather than implying otherwise.
     (() => {
+      'use strict';
+      const root = document.getElementById('signin');
       const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
       if (signedIn) {
-        const main = document.querySelector('main');
-        const board = document.getElementById('board-section');
-        main.insertBefore(document.getElementById('run-panel'), board);
-        main.insertBefore(document.getElementById('run-inbox'), board);
+        const name = decodeURIComponent(
+          (document.cookie.split(';').map(p => p.trim().split('='))
+            .find(([k]) => k === 'bf_runner') || [])[1] || '');
+        const who = document.createElement('p');
+        who.className = 'who';
+        who.textContent = 'Signed in as ' + name + ' · ';
+        const out = document.createElement('button');
+        out.type = 'button';
+        out.textContent = 'sign out';
+        out.addEventListener('click', async () => {
+          await fetch('/v1/running/session', { method: 'DELETE' }).catch(() => {});
+          location.reload();
+        });
+        who.appendChild(out);
+        root.appendChild(who);
+        const go = document.createElement('a');
+        go.className = 'pill now';
+        go.href = '/running';
+        go.textContent = 'Your inbox and the board';
+        root.appendChild(go);
+        return;
       }
-      renderRunning('run-panel');
-      renderInbox('run-inbox');
-      renderBoard('run-board');
+      renderRunning('signin');
     })();
   </script>
 </body>

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>box fraise — running</title>
+  <meta name="description" content="A leaderboard, and a run club on Whyte Avenue and Jasper Avenue. Join by showing up.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="box fraise">
+  <script src="/js/pwa.js" defer></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:     #ffffff;
+      --ink:    #1a1a1a;
+      --rule:   #e6e6e6;
+      --muted:  #666666;
+      --accent: #b21b1b;
+      --mono:   'IBM Plex Mono', ui-monospace, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--ink);
+      font-family: 'Newsreader', Georgia, serif;
+      min-height: 100vh; -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .masthead {
+      max-width: 660px; margin: 0 auto;
+      padding: 22px 22px 16px;
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 12px 18px; border-bottom: 1px solid var(--rule);
+      /* Four pills and a wordmark do not fit across a phone. Without
+         this they run off the right edge and the last one is simply
+         gone, which is how Gurlp disappeared. */
+      flex-wrap: wrap;
+    }
+    .wordmark { font-style: italic; font-size: 21px; letter-spacing: -0.01em; margin: 0; }
+    .wordmark a { color: var(--ink); text-decoration: none; }
+    .mast-links { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .legacy {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.16em; color: var(--muted); text-decoration: none;
+      border: 1px solid var(--rule); border-radius: 999px;
+      padding: 8px 14px; white-space: nowrap;
+    }
+    .legacy:hover { color: var(--ink); border-color: var(--ink); }
+    /* The one in the masthead that somebody is meant to press. */
+    .legacy.sell { color: var(--accent); border-color: var(--accent); }
+    .legacy.sell:hover { color: #fff; background: var(--accent); border-color: var(--accent); }
+    /* And the one that shows them what it is, in ten seconds, without
+       an account. Filled, because it is the first thing to press. */
+    .legacy.demo {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+      font-family: var(--mono); cursor: pointer;
+    }
+    .legacy.demo:hover { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+    main { max-width: 660px; margin: 0 auto; padding: 30px 22px 80px; }
+    section { margin-bottom: 40px; }
+
+    /* What this is, at the foot of the page. Two sentences of the three
+       that stand on /legacy — the critical-thinking one belongs with the
+       magazine. It sits at the bottom rather than the top because the
+       page opens on the board: somebody arriving wants to see who is
+       running before they are told what the project is. */
+    .statement {
+      font-size: clamp(17px, 2.6vw, 21px); line-height: 1.55;
+      max-width: 46ch; margin: 0 0 20px;
+      padding-top: 26px; border-top: 1px solid var(--rule);
+    }
+    .statement strong { font-weight: 500; font-style: italic; }
+
+    .head {
+      font-style: italic; font-weight: 500;
+      font-size: clamp(28px, 6vw, 44px); letter-spacing: -0.03em;
+      line-height: 1.03; margin: 0 0 8px;
+    }
+    .sub {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--muted); margin: 0 0 18px;
+    }
+
+    /* ── The board ───────────────────────────────────────────────── */
+    #run-board { border-top: 2px solid var(--ink); }
+    .r-brow {
+      display: flex; align-items: baseline; gap: 14px;
+      padding: 15px 0; border-bottom: 1px solid var(--rule);
+    }
+    .r-brow.me .r-bu, .r-brow.me .r-bs { color: var(--accent); }
+    .r-bn { font-family: var(--mono); font-size: 12px; color: var(--accent); width: 26px; flex: 0 0 auto; }
+    .r-bmid { flex: 1 1 auto; min-width: 0; }
+    .r-bu {
+      font-style: italic; font-size: 22px; line-height: 1.15;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .r-bd {
+      font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--muted); margin-top: 4px;
+    }
+    .r-bs { font-style: italic; font-size: 30px; line-height: 1; flex: 0 0 auto; text-align: right; }
+    .r-brow.lead { padding: 20px 0; }
+    .r-brow.lead .r-bu { font-size: 30px; }
+    .r-brow.lead .r-bs { font-size: 42px; color: var(--accent); }
+    .r-none { font-size: 16px; color: var(--muted); margin: 18px 0 0; }
+
+    /* ── Signing up, and running ─────────────────────────────────── */
+    .r-auth { max-width: 340px; }
+    .r-auth input {
+      display: block; width: 100%; font: inherit; font-size: 17px;
+      border: 1px solid var(--rule); border-radius: 8px;
+      padding: 14px; margin-bottom: 10px; background: #fff; color: var(--ink);
+    }
+    .r-auth input:focus { outline: none; border-color: var(--accent); }
+    .r-lede { font-size: 15px; color: var(--muted); margin: 0 0 16px; }
+    .r-go {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.15em; padding: 18px 30px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 56px;
+      width: 100%; max-width: 340px; display: block;
+    }
+    .r-go[disabled] { background: #ccc; cursor: default; }
+    .r-go.on { background: var(--ink); }
+    .r-alt {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 14px 0 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .r-msg { font-size: 15px; line-height: 1.5; margin: 12px 0 0; min-height: 20px; }
+    .r-msg.ok  { color: var(--accent); }
+    .r-msg.err { color: #444; }
+
+    .r-who {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); margin: 0 0 18px;
+    }
+    .r-out {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+      background: none; border: 0; color: var(--muted); cursor: pointer;
+      padding: 0; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .r-dial { margin: 0 0 22px; }
+    .r-dist {
+      font-style: italic; font-weight: 500; font-size: clamp(64px, 22vw, 132px);
+      line-height: 0.9; letter-spacing: -0.04em;
+    }
+    .r-unit {
+      font-family: var(--mono); font-size: 12px; text-transform: uppercase;
+      letter-spacing: 0.2em; color: var(--muted); margin-top: 4px;
+    }
+    .r-meta { font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em; margin-top: 12px; }
+    .r-mine { margin-top: 26px; }
+    .r-standing {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.13em; color: var(--muted);
+      margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--rule);
+    }
+    .r-row {
+      display: flex; justify-content: space-between; gap: 12px;
+      font-family: var(--mono); font-size: 12px; color: var(--muted);
+      padding: 9px 0; border-bottom: 1px solid var(--rule);
+    }
+    .r-rk { color: var(--ink); flex: 0 0 auto; }
+    .r-rt { flex: 1 1 auto; }
+
+    /* While a run is going, everything else gets out of the way. */
+    body.running #board-section, body.running #club, body.running #run-inbox { opacity: 0.2; }
+
+    /* ── The inbox ───────────────────────────────────────────────── */
+    .ad-list { border-top: 2px solid var(--ink); }
+    .ad {
+      border-bottom: 1px solid var(--rule); padding: 16px 0;
+      transition: background 140ms ease;
+    }
+    .ad.took { background: #fdf2f2; padding-left: 12px; padding-right: 12px; }
+    .ad-who { font-style: italic; font-size: 21px; line-height: 1.2; }
+    .ad-tease { font-size: 16px; line-height: 1.5; color: var(--muted); margin: 5px 0 12px; }
+    .ad-open {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; padding: 13px 20px; border: 0; border-radius: 999px;
+      background: var(--accent); color: #fff; cursor: pointer; min-height: 46px;
+    }
+    .ad-open[disabled] { background: #ccc; cursor: default; }
+    .ad-body { font-size: 17px; line-height: 1.6; margin: 4px 0 12px; white-space: pre-wrap; }
+    .ad-link {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.14em; color: var(--accent); text-decoration: none;
+      border-bottom: 1px solid var(--rule); padding-bottom: 3px;
+    }
+    .ad-paid {
+      font-style: italic; font-size: 26px; color: var(--accent); margin-top: 14px;
+    }
+
+    /* ── The run club ────────────────────────────────────────────── */
+    #club { border-top: 1px solid var(--rule); padding-top: 26px; }
+    .when { margin: 0 0 14px; border-top: 2px solid var(--ink); }
+    .when div {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 14px;
+      padding: 13px 0; border-bottom: 1px solid var(--rule);
+    }
+    .when .day { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--accent); }
+    .when .place { font-style: italic; font-size: 19px; text-align: right; }
+    .purpose { font-size: 17px; line-height: 1.55; margin: 0; }
+    .purpose strong { font-weight: 500; }
+    a.inline {
+      color: var(--ink); text-decoration: underline;
+      text-underline-offset: 3px; text-decoration-color: var(--rule);
+    }
+    a.inline:hover { text-decoration-color: var(--accent); }
+    .closer { color: var(--muted); font-size: 13px; margin: 34px 0 0; }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <p class="wordmark"><a href="/">box fraise</a></p>
+    <span class="mast-links">
+      <button class="legacy demo" type="button" id="show-inbox">Inbox</button>
+      <a class="legacy" href="/gurlp">Gurlp</a>
+      <a class="legacy sell" href="/advertise">Advertise</a>
+      <a class="legacy" href="/legacy">Legacy</a>
+    </span>
+  </header>
+
+  <main>
+    <section id="board-section">
+      <p class="head">Who is running the most.</p>
+      <p class="sub" id="board-sub">Distance × speed, averaged over the runs logged</p>
+      <div id="run-board"></div>
+    </section>
+
+    <section id="run-panel"></section>
+
+    <!-- Empty and silent for anybody not signed in. -->
+    <section id="run-inbox"></section>
+
+    <section id="club">
+      <p class="head">There is a run club.</p>
+      <p class="sub">Join by showing up</p>
+      <div class="when">
+        <div><span class="day">Sat 10:00</span><span class="place">Coffee Bureau, Mercury Block</span></div>
+      </div>
+      <p class="purpose"><strong>It is topless, and it is for promoting consensual
+      transgression.</strong> <a class="inline" href="/runclub">Where and why →</a></p>
+    </section>
+
+    <p class="statement">Playboy was the most advanced advertising machine ever built.
+    Box Fraise is the next generation of it: <strong>a consensual advertising engine.</strong>
+    <a class="inline" href="/legacy">The rest of it →</a></p>
+
+    <p class="closer">Box Fraise · Edmonton</p>
+  </main>
+
+  <script src="/js/running.js"></script>
+  <script src="/js/demo.js"></script>
+  <script>
+    document.getElementById('show-inbox').addEventListener('click', openInboxDemo);
+  </script>
+  <script>
+    // Signed out, the board leads and the form follows it. Signed in,
+    // the tracker goes to the top — you came here to run.
+    (() => {
+      const signedIn = document.cookie.split(';').some(p => p.trim().startsWith('bf_runner='));
+      if (signedIn) {
+        const main = document.querySelector('main');
+        const board = document.getElementById('board-section');
+        main.insertBefore(document.getElementById('run-panel'), board);
+        main.insertBefore(document.getElementById('run-inbox'), board);
+      }
+      renderRunning('run-panel');
+      renderInbox('run-inbox');
+      renderBoard('run-board');
+    })();
+  </script>
+</body>
+</html>
